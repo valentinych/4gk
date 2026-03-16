@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { UserMenu, UserMenuMobile } from "@/components/UserMenu";
 
 const navItems = [
   { href: "/warsaw", label: "Чемпионат Варшавы" },
@@ -36,12 +37,9 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/auth/signin"
-            className="hidden rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-surface sm:block"
-          >
-            Войти
-          </Link>
+          <div className="hidden sm:block">
+            <UserMenu />
+          </div>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="rounded-lg p-2 text-muted hover:bg-surface md:hidden"
@@ -63,14 +61,7 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          <Link
-            href="/auth/signin"
-            onClick={() => setMobileOpen(false)}
-            className="mt-2 flex items-center gap-2 rounded-lg border border-border px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-surface"
-          >
-            <User className="h-4 w-4" />
-            Войти
-          </Link>
+          <UserMenuMobile />
         </div>
       )}
     </header>

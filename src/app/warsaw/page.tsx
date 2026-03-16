@@ -163,7 +163,7 @@ export default function WarsawPage() {
 
       <div className="mb-6 flex gap-1 rounded-xl border border-border bg-surface p-1">
         <TabButton active={tab === "chgk"} onClick={() => setTab("chgk")}>ЧГК</TabButton>
-        <TabButton active={tab === "ksi"} onClick={() => setTab("ksi")}>КСИ (Своя игра)</TabButton>
+        <TabButton active={tab === "ksi"} onClick={() => setTab("ksi")}>КСИ</TabButton>
       </div>
 
       {tab === "chgk" ? (
@@ -265,10 +265,14 @@ interface CrossTableProps {
 function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTableProps) {
   const [popup, setPopup] = useState<{ row: number; col: number; x: number; y: number } | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function close(e: MouseEvent) {
-      if (tableRef.current && !tableRef.current.contains(e.target as Node)) setPopup(null);
+      if (
+        tableRef.current && !tableRef.current.contains(e.target as Node) &&
+        popupRef.current && !popupRef.current.contains(e.target as Node)
+      ) setPopup(null);
     }
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
@@ -285,12 +289,10 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
   function handleCellClick(row: number, col: number, e: React.MouseEvent) {
     if (row === col || !teams[row].results[col]) return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const containerRect = tableRef.current?.getBoundingClientRect();
-    if (!containerRect) return;
     setPopup({
       row, col,
-      x: rect.left - containerRect.left + rect.width / 2,
-      y: rect.top - containerRect.top,
+      x: rect.left + rect.width / 2,
+      y: rect.top,
     });
   }
 
@@ -305,11 +307,11 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
   return (
     <div>
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
-      <div className="relative overflow-x-auto rounded-xl border border-border bg-white" ref={tableRef}>
+      <div className="overflow-x-auto rounded-xl border border-border bg-white" ref={tableRef}>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border">
-              <th className="sticky left-0 z-10 bg-white px-2 py-2 text-left font-medium text-muted w-8">#</th>
+              <th className="sticky left-0 z-10 bg-white px-2 py-2 text-left font-medium text-muted w-8">М</th>
               <th className="sticky left-8 z-10 bg-white px-2 py-2 text-left font-medium text-muted min-w-[140px]">Команда</th>
               <th className="px-1.5 py-2 text-center font-medium text-muted w-8">О</th>
               <th className="px-1.5 py-2 text-center font-medium text-muted w-7">В</th>
@@ -349,12 +351,20 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
             ))}
           </tbody>
         </table>
+      </div>
 
-        {/* Popup */}
-        {popup && homeResult && (
+      {/* Popup — rendered as fixed overlay so it's never clipped */}
+      {popup && homeResult && (
+        <div className="fixed inset-0 z-[100]" onClick={() => setPopup(null)}>
           <div
-            className="absolute z-50 w-80 rounded-xl border border-border bg-white shadow-xl"
-            style={{ left: Math.max(8, Math.min(popup.x - 160, (tableRef.current?.scrollWidth ?? 320) - 328)), top: popup.y - 8, transform: "translateY(-100%)" }}
+            ref={popupRef}
+            className="absolute w-80 rounded-xl border border-border bg-white shadow-xl"
+            style={{
+              left: Math.max(8, Math.min(popup.x - 160, window.innerWidth - 328)),
+              top: Math.max(8, popup.y - 8),
+              transform: "translateY(-100%)",
+            }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
               <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">Микроматч</span>
@@ -407,8 +417,8 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -419,7 +429,7 @@ function KsiTab({ groupA, groupB }: { groupA: KsiTeam[]; groupB: KsiTeam[] }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">КСИ (Своя игра)</h2>
+        <h2 className="text-lg font-bold">КСИ</h2>
         <a href="https://docs.google.com/spreadsheets/d/1qFeswBW7vho7U8h9GvGGe8ZAXIqN4Tn0oZHeH5vzo4A" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-accent hover:underline">
           Google Sheets <ExternalLink className="h-3 w-3" />
         </a>
@@ -452,7 +462,7 @@ function KsiTable({ title, teams }: { title: string; teams: KsiTeam[] }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
-              <th className="px-3 py-2.5 text-left font-medium w-10">М</th>
+              <th className="px-3 py-2.5 text-left font-medium w-14">М</th>
               <th className="px-3 py-2.5 text-left font-medium min-w-[180px]">Команда</th>
               {Array.from({ length: maxTours }, (_, i) => (
                 <th key={i} className="px-3 py-2.5 text-right font-medium w-16">Тур {i + 1}</th>
@@ -464,10 +474,11 @@ function KsiTable({ title, teams }: { title: string; teams: KsiTeam[] }) {
           <tbody className="divide-y divide-border">
             {teams.map((team, i) => {
               const minIdx = getMinTourIdx(team.tours);
-              const dropped = team.sum !== team.total;
+              const playedTours = team.tours.filter((t) => t !== null).length;
+              const dropped = playedTours >= 2 && team.tours[minIdx] !== undefined;
               return (
                 <tr key={i} className="hover:bg-surface/50">
-                  <td className="px-3 py-2.5 font-bold text-muted">{team.pos}</td>
+                  <td className="px-3 py-2.5 font-bold text-muted whitespace-nowrap">{team.pos}</td>
                   <td className="px-3 py-2.5 font-medium whitespace-nowrap">{team.name}</td>
                   {team.tours.map((v, ti) => (
                     <td

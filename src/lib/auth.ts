@@ -17,9 +17,13 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
-        const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { chgkId: true } });
+        const dbUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: { chgkId: true, role: true },
+        });
         session.user.id = user.id;
         session.user.chgkId = dbUser?.chgkId ?? null;
+        session.user.role = (dbUser?.role as "PLAYER" | "ADMIN") ?? "PLAYER";
       }
       return session;
     },

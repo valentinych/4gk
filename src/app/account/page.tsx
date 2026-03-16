@@ -3,7 +3,7 @@
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { LogOut, Mail, Shield } from "lucide-react";
+import { LogOut, Mail, Shield, Settings2 } from "lucide-react";
 import ChgkProfile from "@/components/ChgkProfile";
 
 export default function AccountPage() {
@@ -74,11 +74,32 @@ export default function AccountPage() {
         <div className="flex items-center gap-3 px-5 py-4">
           <Shield className="h-4 w-4 text-muted shrink-0" />
           <div>
-            <p className="text-xs text-muted">Провайдер</p>
-            <p className="text-sm font-medium">Google</p>
+            <p className="text-xs text-muted">Роль</p>
+            <p className="text-sm font-medium">
+              {user.role === "ADMIN" ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
+                  <Shield className="h-3 w-3" /> Администратор
+                </span>
+              ) : (
+                "Игрок"
+              )}
+            </p>
           </div>
         </div>
       </div>
+
+      {user.role === "ADMIN" && (
+        <Link
+          href="/admin"
+          className="mt-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
+        >
+          <Settings2 className="h-5 w-5" />
+          <div>
+            <p className="font-semibold">Управление</p>
+            <p className="text-xs font-normal text-amber-600">Пользователи, роли, привязка Rating ID</p>
+          </div>
+        </Link>
+      )}
 
       {/* CHGK Profile */}
       <div className="mt-4">

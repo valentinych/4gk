@@ -9,7 +9,6 @@ interface ChgkPlayer {
   name: string;
   patronymic: string;
   surname: string;
-  gotQuestionsTag: number | null;
 }
 
 interface ChgkTeam {
@@ -18,10 +17,10 @@ interface ChgkTeam {
   town?: { id: number; name: string; country?: { id: number; name: string } };
 }
 
-interface SeasonEntry {
-  idplayer: number;
-  idseason: number;
-  idteam: number;
+interface ProfileData {
+  player: ChgkPlayer | null;
+  currentTeam: ChgkTeam | null;
+  tournamentsCount: number;
 }
 
 export default function ChgkProfile() {
@@ -32,49 +31,25 @@ export default function ChgkProfile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [player, setPlayer] = useState<ChgkPlayer | null>(null);
-  const [currentTeam, setCurrentTeam] = useState<ChgkTeam | null>(null);
-  const [tournamentsCount, setTournamentsCount] = useState(0);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
-  const loadProfile = useCallback(async (id: number) => {
+  const loadProfile = useCallback(async () => {
     setProfileLoading(true);
     try {
-      const [playerRes, seasonsRes, tournamentsRes] = await Promise.all([
-        fetch(`https://api.rating.chgk.info/players/${id}.json`),
-        fetch(`https://api.rating.chgk.info/players/${id}/seasons.json`),
-        fetch(`https://api.rating.chgk.info/players/${id}/tournaments.json`),
-      ]);
-
-      if (playerRes.ok) {
-        const p: ChgkPlayer = await playerRes.json();
-        setPlayer(p);
-      }
-
-      if (tournamentsRes.ok) {
-        const t = await tournamentsRes.json();
-        setTournamentsCount(Array.isArray(t) ? t.length : 0);
-      }
-
-      if (seasonsRes.ok) {
-        const seasons: SeasonEntry[] = await seasonsRes.json();
-        if (seasons.length > 0) {
-          const latest = seasons.sort((a, b) => b.idseason - a.idseason)[0];
-          const teamRes = await fetch(`https://api.rating.chgk.info/teams/${latest.idteam}.json`);
-          if (teamRes.ok) {
-            setCurrentTeam(await teamRes.json());
-          }
-        }
+      const res = await fetch("/api/account/chgk/profile");
+      if (res.ok) {
+        setProfile(await res.json());
       }
     } catch {
-      /* API unavailable, keep whatever we have */
+      /* keep whatever we have */
     } finally {
       setProfileLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (chgkId) loadProfile(chgkId);
+    if (chgkId) loadProfile();
   }, [chgkId, loadProfile]);
 
   async function linkAccount() {
@@ -121,9 +96,7 @@ export default function ChgkProfile() {
         return;
       }
 
-      setPlayer(null);
-      setCurrentTeam(null);
-      setTournamentsCount(0);
+      setProfile(null);
       await update();
     } catch {
       setError("Ошибка сети");
@@ -172,7 +145,7 @@ export default function ChgkProfile() {
     );
   }
 
-  if (profileLoading && !player) {
+  if (profileLoading && !profile) {
     return (
       <div className="rounded-xl border border-border bg-white p-6">
         <div className="flex items-center gap-2 text-sm text-muted">
@@ -182,6 +155,10 @@ export default function ChgkProfile() {
       </div>
     );
   }
+
+  const player = profile?.player;
+  const currentTeam = profile?.currentTeam;
+  const tournamentsCount = profile?.tournamentsCount ?? 0;
 
   return (
     <div className="rounded-xl border border-border bg-white">

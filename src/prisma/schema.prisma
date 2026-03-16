@@ -64,6 +64,5 @@ model NewsArticle {
 
 enum Role {
   PLAYER
-  MODERATOR
   ADMIN
 }

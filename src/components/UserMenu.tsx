@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, Shield } from "lucide-react";
 
 export function UserMenu() {
   const { data: session, status } = useSession();
@@ -80,6 +80,16 @@ export function UserMenu() {
               <Settings className="h-4 w-4" />
               Настройки
             </Link>
+            {user.role === "ADMIN" && (
+              <Link
+                href="/admin"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-amber-600 transition-colors hover:bg-amber-50"
+              >
+                <Shield className="h-4 w-4" />
+                Управление
+              </Link>
+            )}
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
               className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-surface hover:text-foreground"
@@ -133,6 +143,15 @@ export function UserMenuMobile() {
         <Settings className="h-4 w-4" />
         Настройки
       </Link>
+      {user.role === "ADMIN" && (
+        <Link
+          href="/admin"
+          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-amber-600 transition-colors hover:bg-amber-50"
+        >
+          <Shield className="h-4 w-4" />
+          Управление
+        </Link>
+      )}
       <button
         onClick={() => signOut({ callbackUrl: "/" })}
         className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-surface hover:text-foreground"

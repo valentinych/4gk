@@ -29,7 +29,7 @@ export interface ChgkTournamentEntry {
 
 export async function fetchPlayer(id: number): Promise<ChgkPlayer | null> {
   try {
-    const res = await fetch(`${BASE}/players/${id}.json`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${BASE}/players/${id}.json`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -39,7 +39,7 @@ export async function fetchPlayer(id: number): Promise<ChgkPlayer | null> {
 
 export async function fetchTeam(id: number): Promise<ChgkTeam | null> {
   try {
-    const res = await fetch(`${BASE}/teams/${id}.json`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${BASE}/teams/${id}.json`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -49,7 +49,7 @@ export async function fetchTeam(id: number): Promise<ChgkTeam | null> {
 
 export async function fetchPlayerSeasons(playerId: number): Promise<ChgkSeasonEntry[]> {
   try {
-    const res = await fetch(`${BASE}/players/${playerId}/seasons.json`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${BASE}/players/${playerId}/seasons.json`, { cache: "no-store" });
     if (!res.ok) return [];
     return res.json();
   } catch {
@@ -59,7 +59,7 @@ export async function fetchPlayerSeasons(playerId: number): Promise<ChgkSeasonEn
 
 export async function fetchPlayerTournaments(playerId: number): Promise<ChgkTournamentEntry[]> {
   try {
-    const res = await fetch(`${BASE}/players/${playerId}/tournaments.json`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${BASE}/players/${playerId}/tournaments.json`, { cache: "no-store" });
     if (!res.ok) return [];
     return res.json();
   } catch {

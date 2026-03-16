@@ -1,15 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
+import { useTheme } from "@/components/ThemeProvider";
 
 export function Footer() {
+  const { theme } = useTheme();
+
   return (
     <footer className="border-t border-border bg-surface/50">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent font-mono text-sm font-bold text-white">
-                4GK
-              </div>
+            <div className="flex items-center gap-2.5">
+              <Logo variant={theme.logoVariant} size="sm" />
               <span className="text-lg font-semibold">4gk.pl</span>
             </div>
             <p className="mt-3 text-sm text-foreground/50">
@@ -22,9 +26,9 @@ export function Footer() {
               Портал
             </h3>
             <ul className="mt-3 space-y-2">
-              <li><Link href="/results" className="text-sm text-foreground/60 hover:text-foreground">Результаты</Link></li>
-              <li><Link href="/leaderboard" className="text-sm text-foreground/60 hover:text-foreground">Рейтинг</Link></li>
-              <li><Link href="/news" className="text-sm text-foreground/60 hover:text-foreground">Новости</Link></li>
+              <li><Link href="/results" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Результаты</Link></li>
+              <li><Link href="/leaderboard" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Рейтинг</Link></li>
+              <li><Link href="/news" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Новости</Link></li>
             </ul>
           </div>
 
@@ -33,8 +37,10 @@ export function Footer() {
               Игры
             </h3>
             <ul className="mt-3 space-y-2">
-              <li><Link href="/lobby" className="text-sm text-foreground/60 hover:text-foreground">Лобби</Link></li>
-              <li><Link href="/lobby" className="text-sm text-foreground/60 hover:text-foreground">Квиз</Link></li>
+              <li><Link href="/lobby" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Лобби</Link></li>
+              <li><Link href="/quiz" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Квиз</Link></li>
+              <li><Link href="/reaction" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Реакция</Link></li>
+              <li><Link href="/memory" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Память</Link></li>
             </ul>
           </div>
 
@@ -43,9 +49,9 @@ export function Footer() {
               Информация
             </h3>
             <ul className="mt-3 space-y-2">
-              <li><Link href="#" className="text-sm text-foreground/60 hover:text-foreground">О проекте</Link></li>
-              <li><Link href="#" className="text-sm text-foreground/60 hover:text-foreground">Контакты</Link></li>
-              <li><Link href="#" className="text-sm text-foreground/60 hover:text-foreground">Правила</Link></li>
+              <li><Link href="#" className="text-sm text-foreground/60 hover:text-foreground transition-colors">О проекте</Link></li>
+              <li><Link href="#" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Контакты</Link></li>
+              <li><Link href="#" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Правила</Link></li>
             </ul>
           </div>
         </div>

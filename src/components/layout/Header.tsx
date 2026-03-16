@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Gamepad2, Trophy, Newspaper, Menu, X, User } from "lucide-react";
+import { Trophy, Newspaper, Menu, X, User, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ThemeProvider";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { Logo } from "@/components/Logo";
 
 const navItems = [
   { href: "/", label: "Главная", icon: Gamepad2 },
@@ -15,14 +18,13 @@ const navItems = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme } = useTheme();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-border backdrop-blur-xl" style={{ background: theme.vars["--header-bg"] }}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent font-mono text-sm font-bold text-white">
-            4GK
-          </div>
+        <Link href="/" className="flex items-center gap-2.5">
+          <Logo variant={theme.logoVariant} size="sm" />
           <span className="hidden text-lg font-semibold sm:block">4gk.pl</span>
         </Link>
 
@@ -45,6 +47,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeSwitcher />
           <Link
             href="/auth/signin"
             className="hidden items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-surface-light sm:flex"

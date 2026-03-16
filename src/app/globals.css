@@ -11,6 +11,9 @@
   --success: #00d2d3;
   --warning: #feca57;
   --danger: #ff6b6b;
+  --header-bg: rgba(10, 10, 15, 0.8);
+  --glow-color: rgba(108, 92, 231, 0.3);
+  --glow-color-strong: rgba(108, 92, 231, 0.6);
 }
 
 @theme inline {
@@ -31,6 +34,18 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+}
+
+a, button {
+  transition-property: all;
+  transition-duration: 0.15s;
 }
 
 @keyframes fade-in {
@@ -39,8 +54,8 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(108, 92, 231, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(108, 92, 231, 0.6); }
+  0%, 100% { box-shadow: 0 0 20px var(--glow-color); }
+  50% { box-shadow: 0 0 40px var(--glow-color-strong); }
 }
 
 .animate-fade-in {
@@ -49,4 +64,21 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }

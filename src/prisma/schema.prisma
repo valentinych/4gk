@@ -62,6 +62,12 @@ model NewsArticle {
   updatedAt   DateTime  @updatedAt
 }
 
+model DataCache {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
 enum Role {
   PLAYER
   ADMIN

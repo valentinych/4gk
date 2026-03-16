@@ -4,6 +4,7 @@ export interface KsiTeam {
   pos: string;
   name: string;
   tours: (number | null)[];
+  themes: (number | null)[][];
   sum: number;
   total: number;
 }
@@ -44,9 +45,18 @@ export async function parseKsiSheets(): Promise<KsiData> {
     if (!/^\d/.test(c0)) continue;
 
     const tours: (number | null)[] = [];
+    const themes: (number | null)[][] = [];
+
     for (const idx of tourIndices) {
       const v = parseNum(row[idx]);
       tours.push(isNaN(v) ? null : v);
+
+      const themeScores: (number | null)[] = [];
+      for (let t = 5; t >= 1; t--) {
+        const tv = parseNum(row[idx - t]);
+        themeScores.push(isNaN(tv) ? null : tv);
+      }
+      themes.push(themeScores);
     }
 
     const nonNullTours = tours.filter((t) => t !== null);
@@ -56,11 +66,11 @@ export async function parseKsiSheets(): Promise<KsiData> {
     const sum = parseNum(lastTwo[0]);
     const total = parseNum(lastTwo[1]);
 
-    groupA === currentGroup || groupB === currentGroup;
     currentGroup.push({
       pos: c0,
       name: c1,
       tours,
+      themes,
       sum: isNaN(sum) ? 0 : sum,
       total: isNaN(total) ? 0 : total,
     });
@@ -85,6 +95,7 @@ function trimEmptyTours(teams: KsiTeam[]) {
   }
   for (const team of teams) {
     team.tours = team.tours.slice(0, lastActive + 1);
+    team.themes = team.themes.slice(0, lastActive + 1);
   }
 }
 

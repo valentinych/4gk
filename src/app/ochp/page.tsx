@@ -1,38 +1,44 @@
-import { Calendar, Globe, Users, Trophy } from "lucide-react";
+import { Calendar, Trophy } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "ОЧП",
-  description: "Открытый чемпионат Польши по интеллектуальным играм",
+  title: "ОЧП'26",
+  description: "Открытый чемпионат Польши по интеллектуальным играм — сезон 2026",
 };
+
+const tiles: { slug: string; emoji: string; title: string; href?: string }[] = [
+  { slug: "schedule",     emoji: "📅", title: "Расписание ОЧП'26" },
+  { slug: "rating-page",  emoji: "🌐", title: "Страница турнира на сайте рейтинга" },
+  { slug: "participants", emoji: "👥", title: "Список участников ОЧП'26" },
+  { slug: "rules",        emoji: "📜", title: "Регламент ОЧП'26" },
+  { slug: "results-chgk", emoji: "❓", title: "Результаты Что? Где? Когда?" },
+  { slug: "results-brain", emoji: "🧠", title: "Результаты Брэйн-Ринга" },
+  { slug: "results-storm", emoji: "⚡", title: "Результаты Мозгового Штурма" },
+  { slug: "appeals",      emoji: "⚖️", title: "Апелляции на ЧГК", href: "https://docs.google.com/forms/u/1/d/e/1FAIpQLSeAGwAPKBgtASfzkZGMQ_KocQNnnNahXuv_azY_hZ8cyV3Lbg/viewform?usp=send_form" },
+  { slug: "sync-signup",  emoji: "3️⃣", title: "Заявка на синхрон в пятницу 20.03", href: "https://forms.gle/1M2ACrutmUEeWgMt8" },
+  { slug: "rosters",      emoji: "📋", title: "Подача составов на ОЧП'26", href: "https://forms.gle/aqzNpBBmYTYDWcfZ7" },
+  { slug: "legionnaires", emoji: "🔍", title: "Поиск легионеров на ОЧП'26", href: "https://t.me/chgkpolska/85" },
+  { slug: "food",         emoji: "🍽️", title: "Где поесть рядом с МПИ" },
+  { slug: "excursions",   emoji: "🏛️", title: "Запись на экскурсии по Варшаве", href: "https://t.me/chgkpolska/89" },
+];
 
 export default function OchpPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <div className="mb-10">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
           <Trophy className="h-3.5 w-3.5" />
           Чемпионат
         </div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ОЧП</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">ОЧП&apos;26</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
           Открытый чемпионат Польши по интеллектуальным играм.
           Крупнейший национальный турнир, объединяющий команды со всей страны.
         </p>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-border bg-white p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
-              <Globe className="h-4 w-4 text-muted" />
-            </div>
-            <div>
-              <p className="text-xs text-muted">Масштаб</p>
-              <p className="text-sm font-bold">Польша</p>
-            </div>
-          </div>
-        </div>
+      <div className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
@@ -40,26 +46,51 @@ export default function OchpPage() {
             </div>
             <div>
               <p className="text-xs text-muted">Сезон</p>
-              <p className="text-sm font-bold">2025/2026</p>
+              <p className="text-sm font-bold">2026</p>
             </div>
           </div>
         </div>
         <div className="rounded-xl border border-border bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
-              <Users className="h-4 w-4 text-muted" />
+              <Trophy className="h-4 w-4 text-muted" />
             </div>
             <div>
-              <p className="text-xs text-muted">Команды</p>
-              <p className="text-sm font-bold">Скоро</p>
+              <p className="text-xs text-muted">Дата</p>
+              <p className="text-sm font-bold">21–22 марта 2026</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
-        <p className="text-base font-medium text-muted/60">Результаты и турнирная таблица</p>
-        <p className="mt-2 text-sm text-muted/40">Данные появятся после начала сезона</p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {tiles.map((tile) =>
+          tile.href ? (
+            <a
+              key={tile.slug}
+              href={tile.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+              <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                {tile.title}
+              </span>
+            </a>
+          ) : (
+            <Link
+              key={tile.slug}
+              href={`/ochp/${tile.slug}`}
+              className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+              <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                {tile.title}
+              </span>
+            </Link>
+          ),
+        )}
       </div>
     </div>
   );

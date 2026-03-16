@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { parseMicromatches } from "@/lib/parsers/micromatches";
 import { parseKsiSheets } from "@/lib/parsers/ksi-sheets";
+import { parseIsiSheets } from "@/lib/parsers/isi-sheets";
 
 export async function POST() {
   const admin = await requireAdmin();
@@ -33,6 +34,18 @@ export async function POST() {
     });
   } catch (e) {
     errors.push(`КСИ: ${e instanceof Error ? e.message : "unknown error"}`);
+  }
+
+  try {
+    const isiData = await parseIsiSheets();
+    const json = JSON.parse(JSON.stringify(isiData)) as Prisma.InputJsonValue;
+    await db.dataCache.upsert({
+      where: { key: "warsaw-isi" },
+      update: { value: json },
+      create: { key: "warsaw-isi", value: json },
+    });
+  } catch (e) {
+    errors.push(`ИСИ: ${e instanceof Error ? e.message : "unknown error"}`);
   }
 
   if (errors.length > 0) {

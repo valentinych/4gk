@@ -11,6 +11,7 @@ export interface KsiTeam {
   pos: string;
   name: string;
   tours: (number | null)[];
+  themes?: (number | null)[][];
   sum: number;
   total: number;
 }

@@ -15,9 +15,11 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/signin",
   },
   callbacks: {
-    session({ session, user }) {
+    async session({ session, user }) {
       if (session.user) {
+        const dbUser = await db.user.findUnique({ where: { id: user.id }, select: { chgkId: true } });
         session.user.id = user.id;
+        session.user.chgkId = dbUser?.chgkId ?? null;
       }
       return session;
     },

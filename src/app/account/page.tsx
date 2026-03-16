@@ -3,7 +3,8 @@
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { LogOut, Mail, Calendar, Shield } from "lucide-react";
+import { LogOut, Mail, Shield } from "lucide-react";
+import ChgkProfile from "@/components/ChgkProfile";
 
 export default function AccountPage() {
   const { data: session, status } = useSession();
@@ -77,13 +78,11 @@ export default function AccountPage() {
             <p className="text-sm font-medium">Google</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-5 py-4">
-          <Calendar className="h-4 w-4 text-muted shrink-0" />
-          <div>
-            <p className="text-xs text-muted">ID пользователя</p>
-            <p className="text-sm font-mono text-muted">{user.id}</p>
-          </div>
-        </div>
+      </div>
+
+      {/* CHGK Profile */}
+      <div className="mt-4">
+        <ChgkProfile />
       </div>
 
       {/* Actions */}

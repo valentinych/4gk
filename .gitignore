@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# SSH keys
+.ssh_4gk
+.ssh_4gk.pub
+
 # debug
 npm-debug.log*
 yarn-debug.log*

@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.ssh_4gk
+.ssh_4gk.pub
+.env*
+!.env.example
+docker-compose.yml
+Caddyfile
+README.md

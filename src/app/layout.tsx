@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/ThemeProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
@@ -39,15 +38,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ThemeProvider>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-        </ThemeProvider>
+    <html lang="pl">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <Header />
+        <main className="min-h-screen">{children}</main>
+        <Footer />
       </body>
     </html>
   );

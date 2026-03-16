@@ -14,6 +14,7 @@ const mockNews = [
     excerpt: "Мы рады объявить о запуске нашего нового портала онлайн-игр! Присоединяйтесь к нам и начните соревноваться уже сегодня.",
     date: "16.03.2026",
     category: "Анонс",
+    categoryColor: "bg-blue-50 text-blue-700 border-blue-100",
   },
   {
     slug: "quiz-update",
@@ -21,6 +22,7 @@ const mockNews = [
     excerpt: "Добавлены новые категории вопросов: наука, история, география. Более 500 новых вопросов ждут вас!",
     date: "15.03.2026",
     category: "Обновление",
+    categoryColor: "bg-emerald-50 text-emerald-700 border-emerald-100",
   },
   {
     slug: "tournament",
@@ -28,40 +30,41 @@ const mockNews = [
     excerpt: "Регистрация на первый официальный турнир по игре «Реакция» открыта. Призовой фонд: 1000 PLN!",
     date: "14.03.2026",
     category: "Турнир",
+    categoryColor: "bg-amber-50 text-amber-700 border-amber-100",
   },
 ];
 
 export default function NewsPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Новости</h1>
-        <p className="mt-2 text-foreground/50">Последние обновления и события портала</p>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Новости</h1>
+        <p className="mt-1 text-sm text-muted">Последние обновления и события портала</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {mockNews.map((article) => (
           <Link
             key={article.slug}
             href={`/news/${article.slug}`}
-            className="group block overflow-hidden rounded-2xl border border-border bg-surface p-6 transition-all hover:border-accent/30 hover:shadow-lg"
+            className="group block rounded-xl border border-border bg-white p-6 transition-all hover:border-border-hover hover:shadow-sm"
           >
             <div className="flex items-center gap-3 text-sm">
-              <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent-light">
+              <span className={`rounded-md border px-2.5 py-1 text-xs font-medium ${article.categoryColor}`}>
                 {article.category}
               </span>
-              <span className="flex items-center gap-1.5 text-foreground/40">
-                <Calendar className="h-3.5 w-3.5" />
+              <span className="flex items-center gap-1.5 text-xs text-muted">
+                <Calendar className="h-3 w-3" />
                 {article.date}
               </span>
             </div>
-            <h2 className="mt-4 text-xl font-bold transition-colors group-hover:text-accent-light">
+            <h2 className="mt-3 text-lg font-bold transition-colors group-hover:text-muted">
               {article.title}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-foreground/50">{article.excerpt}</p>
-            <div className="mt-4 flex items-center gap-2 text-sm font-medium text-accent-light opacity-0 transition-opacity group-hover:opacity-100">
+            <p className="mt-1.5 text-sm leading-relaxed text-muted">{article.excerpt}</p>
+            <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-muted opacity-0 transition-opacity group-hover:opacity-100">
               Читать далее
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3 w-3" />
             </div>
           </Link>
         ))}

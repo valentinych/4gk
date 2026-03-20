@@ -36,7 +36,7 @@ export default function GamesPage() {
           {
             href: "/dziki-sopot",
             title: "Dziki Sopot",
-            description: "Лига интеллектуальных игр в Сопоте",
+            description: "Международный турнир по интеллектуальным играм. 05–06 сентября 2026 года",
             badge: "Сопот",
             badgeColor: "bg-amber-50 text-amber-700 border-amber-100",
           },

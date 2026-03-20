@@ -1,16 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, MapPin, Globe, Trophy, Calendar } from "lucide-react";
+import RecentGames from "@/components/RecentGames";
 
 const leagues = [
-  {
-    href: "/warsaw",
-    title: "Чемпионат Варшавы",
-    description: "Регулярный чемпионат по интеллектуальным играм среди команд Варшавы",
-    badge: "Варшава",
-    badgeColor: "bg-blue-50 text-blue-700 border-blue-100",
-    icon: MapPin,
-    iconBg: "bg-blue-100 text-blue-600",
-  },
   {
     href: "/ochp",
     title: "ОЧП",
@@ -21,9 +13,18 @@ const leagues = [
     iconBg: "bg-emerald-100 text-emerald-600",
   },
   {
+    href: "/warsaw",
+    title: "Чемпионат Варшавы",
+    description: "Регулярный чемпионат по интеллектуальным играм среди команд Варшавы",
+    badge: "Варшава",
+    badgeColor: "bg-blue-50 text-blue-700 border-blue-100",
+    icon: MapPin,
+    iconBg: "bg-blue-100 text-blue-600",
+  },
+  {
     href: "/dziki-sopot",
     title: "Dziki Sopot",
-    description: "Лига интеллектуальных игр в Сопоте в формате «Что? Где? Когда?»",
+    description: "Международный турнир по интеллектуальным играм. 05–06 сентября 2026 года",
     badge: "Сопот",
     badgeColor: "bg-amber-50 text-amber-700 border-amber-100",
     icon: Trophy,
@@ -50,10 +51,10 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
-                href="/warsaw"
+                href="/ochp"
                 className="flex items-center gap-2 rounded-xl bg-accent px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
               >
-                Чемпионат Варшавы
+                Открытый Чемпионат Польши
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
@@ -121,24 +122,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20">
-        <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Присоединяйся
-          </h2>
-          <p className="mt-3 text-muted">
-            Войди чтобы следить за результатами своей команды
-          </p>
-          <Link
-            href="/auth/signin"
-            className="mt-8 inline-flex items-center gap-2 rounded-xl bg-accent px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
-          >
-            Войти
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </section>
+      {/* CTA / Recent Games */}
+      <RecentGames />
     </div>
   );
 }

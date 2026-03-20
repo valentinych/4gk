@@ -1,4 +1,5 @@
 import { ArrowLeft, MapPin, Clock, ExternalLink, Navigation, Users, Pen, Gavel, Scale, Calendar, Hash } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import TeamsTable from "./TeamsTable";
 import ChgkResults from "./ChgkResults";
@@ -9,7 +10,7 @@ const titles: Record<string, string> = {
   "schedule":      "Расписание ОЧП'26",
   "rating-page":   "Страница турнира на сайте рейтинга",
   "participants":  "Список участников ОЧП'26",
-  "rules":         "Регламент ОЧП'26",
+  "rules":         "Положение ОЧП'26",
   "results-chgk":  "Результаты Что? Где? Когда?",
   "results-brain":       "Результаты Брэйн-Ринга",
   "results-brain-1-16":  "Брэйн-Ринг: Турнир 01–16",
@@ -29,6 +30,7 @@ interface ScheduleEvent {
   title: string;
   note?: string;
   regUrl?: string;
+  editors?: string[];
 }
 
 interface ScheduleDay {
@@ -42,8 +44,8 @@ const schedule: ScheduleDay[] = [
     day: "Пятница",
     date: "20 марта",
     events: [
-      { time: "15:00", title: 'Экскурсия «Прогулка в мир Пражских муралов»', note: "регистрация в тг, сбор около МПИ" },
-      { time: "18:00", title: 'Экскурсия «Криминальная Варшава»', note: "регистрация в тг, сбор около МПИ" },
+      { time: "15:00", title: 'Экскурсия «Прогулка в мир Пражских муралов»', note: "сбор около МПИ", regUrl: "https://t.me/chgkpolska/89" },
+      { time: "18:00", title: 'Экскурсия «Криминальная Варшава»', note: "сбор около МПИ", regUrl: "https://t.me/chgkpolska/89" },
       { time: "18:00", title: 'Синхронный рейтинговый турнир «Кубок Бесконечности»', note: "Алексей Скуратов, Артём Савочкин, Илья Орлов, Дмитрий Макаров", regUrl: "https://forms.gle/1M2ACrutmUEeWgMt8" },
     ],
   },
@@ -52,7 +54,7 @@ const schedule: ScheduleDay[] = [
     date: "21 марта",
     events: [
       { time: "10:50–11:00", title: "Открытие" },
-      { time: "11:00–14:00", title: "ЧГК — Туры 1–3" },
+      { time: "11:00–14:00", title: "ЧГК — Туры 1–3", editors: ["Николай Лёгенький", "Михаил Иванов", "Максим Мерзляков"] },
       { time: "14:30–19:10", title: '«Мозговой штурм»', note: "1 час на решение в любом месте города в любой промежуток этого времени. Сдать бланк нужно до 19:10" },
       { time: "14:30–16:15", title: "Турнир по Брейн-рингу", note: "для команд с 1 по 16 места ЧГК" },
       { time: "16:30–18:15", title: "Турнир по Брейн-рингу", note: "для команд с 17 по 32 места ЧГК" },
@@ -66,7 +68,7 @@ const schedule: ScheduleDay[] = [
     date: "22 марта",
     events: [
       { time: "10:00–10:50", title: "Второй и финальный этапы турнира по Брейн-рингу", note: "для команд с 33–48 места ЧГК" },
-      { time: "11:10–15:00", title: "ЧГК — Туры 4–7" },
+      { time: "11:10–15:00", title: "ЧГК — Туры 4–7", editors: ["Михаил Карпук", "Александр Мерзликин", "Антон Саксонов", "Александр Рождествин"] },
       { time: "15:00–15:30", title: "Апелляции, возможная перестрелка", note: "по необходимости" },
       { time: "15:30–16:00", title: "Награждение команд, закрытие турнира" },
     ],
@@ -117,6 +119,19 @@ function SchedulePage() {
                 <div>
                   <p className="text-sm font-medium">{ev.title}</p>
                   {ev.note && <p className="text-xs text-muted mt-0.5">{ev.note}</p>}
+                  {ev.editors && (
+                    <ol className="mt-1.5 space-y-0.5">
+                      {ev.editors.map((name, ei) => {
+                        const tourStartNum = ev.title.includes("1–3") ? 1 : 4;
+                        return (
+                          <li key={ei} className="text-xs text-muted">
+                            <span className="font-mono text-muted/60">{tourStartNum + ei}.</span>{" "}
+                            {name}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
                   {ev.regUrl && (
                     <a
                       href={ev.regUrl}
@@ -256,13 +271,13 @@ async function RatingPage() {
             <Users className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Команды</span>
           </div>
-          <p className="text-sm font-bold">{teams.length}</p>
+          <p className="text-sm font-bold">{teams.length}/48</p>
         </div>
         <div className="rounded-xl border border-border bg-white p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs text-muted">Сложность</span>
           </div>
-          <p className="text-sm font-bold">{t.difficultyForecast} / 10</p>
+          <p className="text-sm font-bold">{t.difficultyForecast}</p>
         </div>
       </div>
 
@@ -613,7 +628,16 @@ export default async function OchpSubPage({ params }: { params: Promise<{ slug: 
         <ArrowLeft className="h-4 w-4" />
         {slug.startsWith("results-brain-") ? "Назад к Брэйн-Рингу" : "Назад к ОЧП"}
       </Link>
-      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl mb-6">{title}</h1>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        <Image
+          src="/ochp-logo.png"
+          alt="ОЧП'26"
+          width={56}
+          height={70}
+          className="shrink-0 hidden sm:block"
+        />
+      </div>
 
       {slug === "schedule" ? (
         <SchedulePage />
@@ -661,6 +685,16 @@ export default async function OchpSubPage({ params }: { params: Promise<{ slug: 
           <p className="text-base font-medium text-muted/60">Содержимое появится скоро</p>
         </div>
       )}
+
+      <div className="mt-12 flex justify-center">
+        <Image
+          src="/ochp-sponsors.png"
+          alt="Партнёры ОЧП'26"
+          width={700}
+          height={50}
+          className=""
+        />
+      </div>
     </div>
   );
 }

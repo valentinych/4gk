@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { ChevronRight, LogIn } from "lucide-react";
+import Link from "next/link";
 
 interface TeamMember {
   flag: string;
@@ -23,6 +25,8 @@ const FLAG_LABELS: Record<string, string> = {
 };
 
 export default function TeamsTable({ teams }: { teams: TeamResult[] }) {
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   function toggle(id: number) {
@@ -66,23 +70,35 @@ export default function TeamsTable({ teams }: { teams: TeamResult[] }) {
               </div>
               {isOpen && hasMembers && (
                 <div className="bg-surface/40 px-4 py-2.5 border-t border-border/50">
-                  <div className="flex flex-wrap gap-1.5 pl-10">
-                    {members.map((m) => (
-                      <a
-                        key={m.player.id}
-                        href={`https://rating.chgk.info/players/${m.player.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-md bg-white border border-border px-2.5 py-1 text-xs font-medium hover:border-accent/30 hover:text-accent transition-colors"
-                        title={FLAG_LABELS[m.flag] ?? m.flag}
+                  {isAuthenticated ? (
+                    <div className="flex flex-wrap gap-1.5 pl-10">
+                      {members.map((m) => (
+                        <a
+                          key={m.player.id}
+                          href={`https://rating.chgk.info/players/${m.player.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-md bg-white border border-border px-2.5 py-1 text-xs font-medium hover:border-accent/30 hover:text-accent transition-colors"
+                          title={FLAG_LABELS[m.flag] ?? m.flag}
+                        >
+                          {m.player.name} {m.player.surname}
+                          {m.flag === "Б" && <span className="text-[10px] text-green-700 font-bold">Б</span>}
+                          {m.flag === "Л" && <span className="text-[10px] text-amber-600 font-bold">Л</span>}
+                          {m.flag === "К" && <span className="text-[10px] text-accent font-bold">К</span>}
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="pl-10">
+                      <Link
+                        href="/auth/signin"
+                        className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
                       >
-                        {m.player.name} {m.player.surname}
-                        {m.flag === "Б" && <span className="text-[10px] text-green-700 font-bold">Б</span>}
-                        {m.flag === "Л" && <span className="text-[10px] text-amber-600 font-bold">Л</span>}
-                        {m.flag === "К" && <span className="text-[10px] text-accent font-bold">К</span>}
-                      </a>
-                    ))}
-                  </div>
+                        <LogIn className="h-3.5 w-3.5" />
+                        Войдите, чтобы увидеть состав команды
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

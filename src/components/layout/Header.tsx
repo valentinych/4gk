@@ -7,9 +7,10 @@ import { Logo } from "@/components/Logo";
 import { UserMenu, UserMenuMobile } from "@/components/UserMenu";
 
 const navItems = [
-  { href: "/warsaw", label: "Чемпионат Варшавы" },
   { href: "/ochp", label: "ОЧП" },
   { href: "/dziki-sopot", label: "Dziki Sopot" },
+  { href: "/warsaw", label: "Чемпионат Варшавы" },
+  { href: "/calendar", label: "Календарь" },
   { href: "/games", label: "Другие игры" },
 ];
 

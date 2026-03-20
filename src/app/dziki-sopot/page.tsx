@@ -16,8 +16,7 @@ export default function DzikiSopotPage() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dziki Sopot</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Лига интеллектуальных игр в Сопоте.
-          Регулярные встречи команд в формате «Что? Где? Когда?» и других интеллектуальных дисциплин.
+          Международный турнир по интеллектуальным играм. 05–06 сентября 2026 года.
         </p>
       </div>
 

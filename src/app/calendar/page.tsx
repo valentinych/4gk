@@ -1,0 +1,666 @@
+"use client";
+
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
+  MapPin,
+  ExternalLink,
+  Plus,
+  X,
+  Loader2,
+  Trash2,
+  Megaphone,
+} from "lucide-react";
+import {
+  getCityColor,
+  EVENT_TYPES,
+  CITY_OPTIONS,
+  type CalendarEvent,
+} from "@/data/calendar";
+
+const MONTHS_RU = [
+  "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+  "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+];
+
+const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+const TYPE_LABELS: Record<string, string> = {
+  tournament: "Турнир",
+  sync: "Синхрон",
+  league: "Лига",
+  other: "Другое",
+};
+
+function dateKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function toDateKey(isoOrDateStr: string) {
+  return isoOrDateStr.slice(0, 10);
+}
+
+function parseDate(s: string) {
+  const [y, m, d] = s.slice(0, 10).split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function eachDay(start: string, end?: string | null): string[] {
+  const startKey = toDateKey(start);
+  const days: string[] = [startKey];
+  if (!end) return days;
+  const endKey = toDateKey(end);
+  const s = parseDate(startKey);
+  const e = parseDate(endKey);
+  const cur = new Date(s);
+  cur.setDate(cur.getDate() + 1);
+  while (cur <= e) {
+    days.push(dateKey(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
+function buildEventMap(events: CalendarEvent[]) {
+  const map = new Map<string, CalendarEvent[]>();
+  for (const ev of events) {
+    for (const day of eachDay(ev.startDate, ev.endDate)) {
+      const list = map.get(day) ?? [];
+      list.push(ev);
+      map.set(day, list);
+    }
+  }
+  return map;
+}
+
+function getMonthDays(year: number, month: number) {
+  const first = new Date(year, month, 1);
+  let startDay = first.getDay() - 1;
+  if (startDay < 0) startDay = 6;
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cells: (Date | null)[] = [];
+  for (let i = 0; i < startDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+
+  const remainder = cells.length % 7;
+  if (remainder) {
+    for (let i = 0; i < 7 - remainder; i++) cells.push(null);
+  }
+  return cells;
+}
+
+function formatDateRange(start: string, end?: string | null) {
+  const s = parseDate(start);
+  if (end) {
+    const e = parseDate(end);
+    if (e.getMonth() === s.getMonth()) {
+      return `${s.getDate()}–${e.getDate()} ${MONTHS_RU[s.getMonth()].toLowerCase()}`;
+    }
+    return `${s.getDate()} ${MONTHS_RU[s.getMonth()].toLowerCase()} – ${e.getDate()} ${MONTHS_RU[e.getMonth()].toLowerCase()}`;
+  }
+  return `${s.getDate()} ${MONTHS_RU[s.getMonth()].toLowerCase()}`;
+}
+
+const emptyForm = {
+  title: "",
+  type: "tournament",
+  startDate: "",
+  endDate: "",
+  city: "Варшава",
+  venue: "",
+  venueMapUrl: "",
+  description: "",
+  registrationLink: "",
+  mediaLink: "",
+  mediaLinkLabel: "",
+};
+
+export default function CalendarPage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
+
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth());
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchEvents = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/calendar");
+      if (res.ok) setEvents(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  const eventMap = useMemo(() => buildEventMap(events), [events]);
+  const cells = useMemo(() => getMonthDays(year, month), [year, month]);
+
+  const monthEvents = useMemo(() => {
+    const seen = new Set<string>();
+    const result: CalendarEvent[] = [];
+    for (const ev of events) {
+      const s = parseDate(ev.startDate);
+      const e = ev.endDate ? parseDate(ev.endDate) : s;
+      if (
+        (s.getFullYear() === year && s.getMonth() === month) ||
+        (e.getFullYear() === year && e.getMonth() === month)
+      ) {
+        if (!seen.has(ev.id)) {
+          seen.add(ev.id);
+          result.push(ev);
+        }
+      }
+    }
+    return result.sort(
+      (a, b) => parseDate(a.startDate).getTime() - parseDate(b.startDate).getTime()
+    );
+  }, [events, year, month]);
+
+  const selectedEvents = selectedDay ? (eventMap.get(selectedDay) ?? []) : [];
+
+  function prevMonth() {
+    if (month === 0) { setMonth(11); setYear(year - 1); }
+    else setMonth(month - 1);
+    setSelectedDay(null);
+  }
+
+  function nextMonth() {
+    if (month === 11) { setMonth(0); setYear(year + 1); }
+    else setMonth(month + 1);
+    setSelectedDay(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/calendar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Ошибка при сохранении");
+        return;
+      }
+      setForm(emptyForm);
+      setShowForm(false);
+      await fetchEvents();
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Удалить мероприятие?")) return;
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/calendar/${id}`, { method: "DELETE" });
+      if (res.ok) await fetchEvents();
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  const todayKey = dateKey(today);
+
+  const usedCities = useMemo(() => {
+    const cities = new Set<string>();
+    for (const ev of events) cities.add(ev.city);
+    return Array.from(cities);
+  }, [events]);
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div className="mb-10 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Календарь
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            Расписание интеллектуальных игр и турниров в Польше
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+          >
+            {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            {showForm ? "Закрыть" : "Добавить"}
+          </button>
+        )}
+      </div>
+
+      {/* Admin form */}
+      {isAdmin && showForm && (
+        <div className="mb-8 rounded-xl border border-border bg-white p-5">
+          <h3 className="text-sm font-bold">Новое мероприятие</h3>
+
+          {error && (
+            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-danger">
+              {error}
+              <button onClick={() => setError(null)} className="ml-2 font-medium hover:underline">✕</button>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Название *</label>
+                <input
+                  type="text"
+                  required
+                  value={form.title}
+                  onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="VII Открытый Чемпионат Польши"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Тип</label>
+                <select
+                  value={form.type}
+                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                >
+                  {EVENT_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Дата начала *</label>
+                <input
+                  type="date"
+                  required
+                  value={form.startDate}
+                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Дата окончания</label>
+                <input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Город *</label>
+                <select
+                  value={form.city}
+                  onChange={(e) => setForm({ ...form, city: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                >
+                  {CITY_OPTIONS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Место проведения</label>
+                <input
+                  type="text"
+                  value={form.venue}
+                  onChange={(e) => setForm({ ...form, venue: e.target.value })}
+                  placeholder="Название площадки"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">Ссылка на Google Maps</label>
+              <input
+                type="url"
+                value={form.venueMapUrl}
+                onChange={(e) => setForm({ ...form, venueMapUrl: e.target.value })}
+                placeholder="https://maps.google.com/..."
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">Описание</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={3}
+                placeholder="Краткое описание мероприятия: редакторы, стоимость и т.д."
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent resize-none"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Ссылка на регистрацию</label>
+                <input
+                  type="url"
+                  value={form.registrationLink}
+                  onChange={(e) => setForm({ ...form, registrationLink: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Медиа-ссылка (Telegram и др.)</label>
+                <input
+                  type="url"
+                  value={form.mediaLink}
+                  onChange={(e) => setForm({ ...form, mediaLink: e.target.value })}
+                  placeholder="https://t.me/..."
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="sm:w-1/2">
+              <label className="mb-1 block text-xs font-medium text-muted">Название медиа-ссылки</label>
+              <input
+                type="text"
+                value={form.mediaLinkLabel}
+                onChange={(e) => setForm({ ...form, mediaLinkLabel: e.target.value })}
+                placeholder="Telegram-группа"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                Создать мероприятие
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* City legend */}
+      {usedCities.length > 0 && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {usedCities.map((city) => {
+            const c = getCityColor(city);
+            return (
+              <span
+                key={city}
+                className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}
+              >
+                <span className={`h-2 w-2 rounded-full ${c.dot}`} />
+                {city}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted" />
+        </div>
+      ) : (
+        <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+          {/* Calendar grid */}
+          <div className="rounded-xl border border-border bg-white">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <button
+                onClick={prevMonth}
+                className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface hover:text-foreground"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-base font-bold">
+                {MONTHS_RU[month]} {year}
+              </h2>
+              <button
+                onClick={nextMonth}
+                className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface hover:text-foreground"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 border-b border-border">
+              {WEEKDAYS.map((wd) => (
+                <div
+                  key={wd}
+                  className="py-2.5 text-center text-xs font-medium text-muted"
+                >
+                  {wd}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7">
+              {cells.map((cell, i) => {
+                if (!cell) {
+                  return <div key={`empty-${i}`} className="border-b border-r border-border/50 bg-surface/30 p-2" style={{ minHeight: 72 }} />;
+                }
+
+                const key = dateKey(cell);
+                const dayEvents = eventMap.get(key) ?? [];
+                const isToday = key === todayKey;
+                const isSelected = key === selectedDay;
+                const isWeekend = cell.getDay() === 0 || cell.getDay() === 6;
+
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedDay(isSelected ? null : key)}
+                    className={`border-b border-r border-border/50 p-2 text-left transition-colors hover:bg-surface/80 ${
+                      isSelected ? "bg-surface ring-2 ring-accent/20 ring-inset" : ""
+                    }`}
+                    style={{ minHeight: 72 }}
+                  >
+                    <span
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
+                        isToday
+                          ? "bg-accent text-white"
+                          : isWeekend
+                          ? "text-muted/60"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {cell.getDate()}
+                    </span>
+                    {dayEvents.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-0.5">
+                        {dayEvents.map((ev) => {
+                          const c = getCityColor(ev.city);
+                          return (
+                            <span
+                              key={ev.id}
+                              className={`hidden h-1.5 rounded-full sm:block ${c.dot}`}
+                              style={{ width: "100%", maxWidth: 48 }}
+                            />
+                          );
+                        })}
+                        <span className="mt-0.5 block truncate text-[10px] font-medium leading-tight text-muted sm:hidden">
+                          {dayEvents.length} {dayEvents.length === 1 ? "событие" : "события"}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-muted">
+              {selectedDay
+                ? `События ${parseDate(selectedDay).getDate()} ${MONTHS_RU[month].toLowerCase()}`
+                : `События за ${MONTHS_RU[month].toLowerCase()}`}
+            </h3>
+
+            {(selectedDay ? selectedEvents : monthEvents).length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-surface/50 p-8 text-center">
+                <CalendarDays className="mx-auto h-8 w-8 text-muted/30" />
+                <p className="mt-2 text-xs text-muted/60">Нет событий</p>
+              </div>
+            ) : (
+              (selectedDay ? selectedEvents : monthEvents).map((ev) => (
+                <EventCard
+                  key={ev.id}
+                  event={ev}
+                  isAdmin={isAdmin}
+                  deleting={deleting === ev.id}
+                  onDelete={() => handleDelete(ev.id)}
+                />
+              ))
+            )}
+
+            {selectedDay && (
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="w-full rounded-lg py-2 text-center text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+              >
+                Показать все события месяца
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EventCard({
+  event,
+  isAdmin,
+  deleting,
+  onDelete,
+}: {
+  event: CalendarEvent;
+  isAdmin: boolean;
+  deleting: boolean;
+  onDelete: () => void;
+}) {
+  const c = getCityColor(event.city);
+
+  return (
+    <div className={`rounded-xl border bg-white p-4 transition-all hover:shadow-sm ${c.border}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${c.bg} ${c.text} ${c.border}`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
+              {event.city}
+            </span>
+            <span className="rounded-md bg-surface px-2 py-0.5 text-[10px] font-medium text-muted">
+              {TYPE_LABELS[event.type] ?? event.type}
+            </span>
+          </div>
+          <h4 className="mt-2 text-sm font-bold leading-snug">{event.title}</h4>
+          {event.description && (
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              {event.description}
+            </p>
+          )}
+        </div>
+        {isAdmin && (
+          <button
+            onClick={onDelete}
+            disabled={deleting}
+            className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-danger disabled:opacity-50"
+            title="Удалить"
+          >
+            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
+        <span className="inline-flex items-center gap-1">
+          <CalendarDays className="h-3.5 w-3.5" />
+          {formatDateRange(event.startDate, event.endDate)}
+        </span>
+        {event.venue && (
+          event.venueMapUrl ? (
+            <a
+              href={event.venueMapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 underline decoration-muted/30 underline-offset-2 transition-colors hover:text-foreground"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              {event.venue}
+            </a>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <MapPin className="h-3.5 w-3.5" />
+              {event.venue}
+            </span>
+          )
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {event.registrationLink && (
+          <a
+            href={event.registrationLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-surface ${c.text} ${c.border}`}
+          >
+            Регистрация
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+        {event.mediaLink && (
+          <a
+            href={event.mediaLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+          >
+            <Megaphone className="h-3 w-3" />
+            {event.mediaLinkLabel || "Медиа"}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -12,6 +12,7 @@ const navItems = [
   { href: "/warsaw", label: "Чемпионат Варшавы" },
   { href: "/calendar", label: "Календарь" },
   { href: "/games", label: "Другие игры" },
+  { href: "/online-games", label: "Онлайн-игры" },
 ];
 
 export function Header() {

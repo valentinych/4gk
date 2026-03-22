@@ -56,6 +56,20 @@ export default function DzikiSopotPage() {
         </div>
       </div>
 
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <a
+          href="https://forms.gle/oyfmJnro1q9S2Ydj8"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+        >
+          <span className="text-2xl leading-none shrink-0 mt-0.5">📝</span>
+          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+            Регистрация
+          </span>
+        </a>
+      </div>
+
       <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
         <p className="text-base font-medium text-muted/60">Результаты и турнирная таблица</p>
         <p className="mt-2 text-sm text-muted/40">Данные появятся после начала сезона</p>

@@ -162,7 +162,7 @@ export default function StormResults() {
                     </div>
                   </td>
                   <td className="px-2 py-1.5 text-center font-mono text-sm font-bold tabular-nums bg-surface/50">
-                    {team.sum}
+                    {Number.isInteger(team.sum) ? team.sum : team.sum.toFixed(1)}
                   </td>
                   {team.tours.map((s, ti) => (
                     <td
@@ -170,7 +170,7 @@ export default function StormResults() {
                       className="px-2 py-1.5 text-center font-mono text-xs tabular-nums"
                     >
                       {s !== null ? (
-                        s > 0 ? s : <span className="text-muted/40">0</span>
+                        s > 0 ? (Number.isInteger(s) ? s : s.toFixed(1)) : <span className="text-muted/40">0</span>
                       ) : (
                         <span className="text-muted/30">—</span>
                       )}

@@ -58,11 +58,11 @@ export async function GET() {
       const name = (cells[0] ?? "").trim();
       if (!name) continue;
       const isPL = (cells[1] ?? "").trim() === "PL";
-      const sum = parseInt(cells[2] ?? "0") || 0;
+      const sum = parseFloat(cells[2] ?? "0") || 0;
       const tours: (number | null)[] = [];
       for (let t = 0; t < tourCount; t++) {
         const v = cells[3 + t]?.trim();
-        tours.push(v && v !== "" ? parseInt(v) || 0 : null);
+        tours.push(v && v !== "" ? parseFloat(v) || 0 : null);
       }
       teams.push({ name, isPL, sum, tours });
     }

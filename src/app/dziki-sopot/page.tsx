@@ -1,9 +1,9 @@
-import { Calendar, MapPin, Users, Trophy } from "lucide-react";
+import { Calendar, MapPin, Trophy } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Dziki Sopot",
-  description: "Лига интеллектуальных игр Dziki Sopot",
+  description: "Турнир по интеллектуальным играм Dziki Sopot",
 };
 
 export default function DzikiSopotPage() {
@@ -12,23 +12,30 @@ export default function DzikiSopotPage() {
       <div className="mb-10">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
           <Trophy className="h-3.5 w-3.5" />
-          Лига
+          Турнир
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dziki Sopot</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">
-          Международный турнир по интеллектуальным играм. 05–06 сентября 2026 года.
+          Международный турнир по интеллектуальным играм. 4–6 сентября 2026 года.
         </p>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
               <MapPin className="h-4 w-4 text-muted" />
             </div>
             <div>
-              <p className="text-xs text-muted">Город</p>
-              <p className="text-sm font-bold">Сопот</p>
+              <p className="text-xs text-muted">МПИ</p>
+              <a
+                href="https://maps.app.goo.gl/VcCgeraDBsJ1La7R6"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-bold text-accent hover:underline"
+              >
+                Aquapark Sopot
+              </a>
             </div>
           </div>
         </div>
@@ -38,19 +45,8 @@ export default function DzikiSopotPage() {
               <Calendar className="h-4 w-4 text-muted" />
             </div>
             <div>
-              <p className="text-xs text-muted">Сезон</p>
-              <p className="text-sm font-bold">2025/2026</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-white p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
-              <Users className="h-4 w-4 text-muted" />
-            </div>
-            <div>
-              <p className="text-xs text-muted">Команды</p>
-              <p className="text-sm font-bold">Скоро</p>
+              <p className="text-xs text-muted">Дата</p>
+              <p className="text-sm font-bold">4–6 сентября 2026</p>
             </div>
           </div>
         </div>

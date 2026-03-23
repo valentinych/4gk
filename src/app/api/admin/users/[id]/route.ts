@@ -16,7 +16,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const data: Record<string, unknown> = {};
 
   if ("role" in body) {
-    if (body.role !== "PLAYER" && body.role !== "MODERATOR" && body.role !== "ADMIN") {
+    if (!["PLAYER", "MODERATOR", "ORGANIZER", "ADMIN"].includes(body.role)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
     if (id === admin.id && body.role !== "ADMIN") {

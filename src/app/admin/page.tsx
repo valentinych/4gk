@@ -22,7 +22,7 @@ interface UserRow {
   email: string | null;
   image: string | null;
   chgkId: number | null;
-  role: "PLAYER" | "MODERATOR" | "ADMIN";
+  role: "PLAYER" | "MODERATOR" | "ORGANIZER" | "ADMIN";
   createdAt: string;
 }
 
@@ -244,16 +244,18 @@ export default function AdminPage() {
                   <td className="px-4 py-3">
                     <button
                       onClick={() => {
-                        const next = u.role === "PLAYER" ? "MODERATOR" : u.role === "MODERATOR" ? "ADMIN" : "PLAYER";
-                        updateUser(u.id, { role: next });
+                        const cycle: Record<string, string> = { PLAYER: "MODERATOR", MODERATOR: "ORGANIZER", ORGANIZER: "ADMIN", ADMIN: "PLAYER" };
+                        updateUser(u.id, { role: cycle[u.role] ?? "PLAYER" });
                       }}
                       disabled={saving === u.id || u.id === session.user.id}
                       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                         u.role === "ADMIN"
                           ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                          : u.role === "MODERATOR"
-                            ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          : u.role === "ORGANIZER"
+                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : u.role === "MODERATOR"
+                              ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                       title={u.id === session.user.id ? "Нельзя изменить свою роль" : `Сменить роль (${u.role})`}
                     >
@@ -264,7 +266,7 @@ export default function AdminPage() {
                       ) : (
                         <ShieldOff className="h-3 w-3" />
                       )}
-                      {u.role === "ADMIN" ? "Admin" : u.role === "MODERATOR" ? "Moderator" : "Player"}
+                      {{ ADMIN: "Admin", ORGANIZER: "Organizer", MODERATOR: "Moderator", PLAYER: "Player" }[u.role] ?? u.role}
                     </button>
                   </td>
 

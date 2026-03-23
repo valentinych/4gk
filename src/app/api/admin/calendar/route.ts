@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAdmin } from "@/lib/admin";
+import { requireOrganizer } from "@/lib/admin";
 
 export async function GET() {
   const events = await db.calendarEvent.findMany({
@@ -10,8 +10,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = await requireOrganizer();
+  if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();
 
@@ -28,9 +28,11 @@ export async function POST(req: Request) {
   const event = await db.calendarEvent.create({
     data: {
       title: body.title.trim(),
-      type: body.type || "tournament",
+      type: body.type || "one-day",
       startDate: new Date(body.startDate),
       endDate: body.endDate ? new Date(body.endDate) : null,
+      startTime: body.startTime?.trim() || null,
+      endTime: body.endTime?.trim() || null,
       city: body.city.trim(),
       venue: body.venue?.trim() || null,
       venueMapUrl: body.venueMapUrl?.trim() || null,

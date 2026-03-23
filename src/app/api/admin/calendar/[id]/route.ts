@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireAdmin } from "@/lib/admin";
+import { requireOrganizer } from "@/lib/admin";
 
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = await requireOrganizer();
+  if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
 
@@ -24,8 +24,8 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = await requireOrganizer();
+  if (!user) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const body = await req.json();
@@ -40,6 +40,8 @@ export async function PATCH(
   if (body.type !== undefined) data.type = body.type;
   if (body.startDate !== undefined) data.startDate = new Date(body.startDate);
   if (body.endDate !== undefined) data.endDate = body.endDate ? new Date(body.endDate) : null;
+  if (body.startTime !== undefined) data.startTime = body.startTime?.trim() || null;
+  if (body.endTime !== undefined) data.endTime = body.endTime?.trim() || null;
   if (body.city !== undefined) data.city = body.city.trim();
   if (body.venue !== undefined) data.venue = body.venue?.trim() || null;
   if (body.venueMapUrl !== undefined) data.venueMapUrl = body.venueMapUrl?.trim() || null;

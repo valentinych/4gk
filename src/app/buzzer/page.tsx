@@ -26,7 +26,8 @@ interface RoomInfo {
 export default function BuzzerPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const canCreateGames = session?.user?.role === "ADMIN" || session?.user?.role === "MODERATOR";
+  const role = session?.user?.role;
+  const canCreateGames = role === "ADMIN" || role === "MODERATOR" || role === "ORGANIZER";
   const isLoading = status === "loading";
 
   const [joinCode, setJoinCode] = useState("");

@@ -74,6 +74,8 @@ model CalendarEvent {
   type             String   @default("tournament")
   startDate        DateTime
   endDate          DateTime?
+  startTime        String?
+  endTime          String?
   city             String
   venue            String?
   venueMapUrl      String?
@@ -88,5 +90,6 @@ model CalendarEvent {
 enum Role {
   PLAYER
   MODERATOR
+  ORGANIZER
   ADMIN
 }

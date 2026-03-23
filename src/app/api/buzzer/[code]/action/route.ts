@@ -35,6 +35,7 @@ export async function POST(
   if (body.questionIndex !== undefined) payload.questionIndex = body.questionIndex;
   if (body.playerId !== undefined) payload.playerId = body.playerId;
   if (body.result !== undefined) payload.result = body.result;
+  if (body.enabled !== undefined) payload.enabled = body.enabled;
 
   const ok = adminAction(code, adminToken, action, payload);
   if (!ok) {

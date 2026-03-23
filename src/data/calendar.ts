@@ -1,4 +1,4 @@
-export type EventType = "tournament" | "sync" | "league" | "other";
+export type EventType = "multi-day" | "one-day" | "sync-chgk" | "si" | "brain-ring" | "other";
 
 export interface CalendarEvent {
   id: string;
@@ -6,6 +6,8 @@ export interface CalendarEvent {
   type: string;
   startDate: string;
   endDate?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
   city: string;
   venue?: string | null;
   venueMapUrl?: string | null;
@@ -34,10 +36,12 @@ export function getCityColor(city: string) {
 }
 
 export const EVENT_TYPES = [
-  { value: "tournament", label: "Турнир" },
-  { value: "sync", label: "Синхрон" },
-  { value: "league", label: "Лига" },
-  { value: "other", label: "Другое" },
+  { value: "multi-day", label: "Многодневный турнир" },
+  { value: "one-day", label: "Однодневный турнир" },
+  { value: "sync-chgk", label: "Синхрон ЧГК" },
+  { value: "si", label: "Турнир ИСИ" },
+  { value: "brain-ring", label: "Турнир Брейн-Ринга" },
+  { value: "other", label: "Другой турнир" },
 ] as const;
 
 export const CITY_OPTIONS = [

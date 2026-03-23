@@ -56,6 +56,7 @@ interface Game {
   countdownStartedAt: number | null;
   readingTimeMs: number | null;
   timerSettings: Record<number, number>;
+  halfMinus: boolean;
   players: Map<string, Player>;
   buzzes: BuzzEntry[];
   buzzedPlayerIds: Set<string>;
@@ -82,6 +83,7 @@ export interface GameStateDTO {
   countdownDuration: number;
   readingTimeMs: number | null;
   timerSettings: Record<number, number>;
+  halfMinus: boolean;
   themeNames: string[];
   questionValues: number[][];
   players: { id: string; name: string }[];
@@ -177,6 +179,7 @@ function toDTO(game: Game): GameStateDTO {
     countdownDuration: getCountdownDuration(game),
     readingTimeMs: game.readingTimeMs,
     timerSettings: game.timerSettings,
+    halfMinus: game.halfMinus ?? false,
     themeNames: game.pkg?.themes?.map((t) => t.name) ?? [],
     questionValues: game.pkg?.themes?.map((t) => t.questions.map((q) => q.value)) ?? [],
     players: Array.from(game.players.values()),
@@ -236,6 +239,7 @@ export function createGame(): { code: string; adminToken: string } {
     countdownStartedAt: null,
     readingTimeMs: null,
     timerSettings: { ...DEFAULT_TIMER },
+    halfMinus: false,
     players: new Map(),
     buzzes: [],
     buzzedPlayerIds: new Set(),
@@ -396,6 +400,10 @@ export function adminAction(
       }
       break;
     }
+    case "set-half-minus": {
+      game.halfMinus = !!payload?.enabled;
+      break;
+    }
     case "plus": {
       if (game.phase !== "buzzed" || game.buzzes.length === 0) return false;
       const lastBuzz = game.buzzes[game.buzzes.length - 1];
@@ -419,13 +427,14 @@ export function adminAction(
       const lastBuzz = game.buzzes[game.buzzes.length - 1];
       const q = getCurrentQuestion(game);
       if (q) {
+        const penaltyValue = game.halfMinus ? q.value / 2 : q.value;
         game.scoreLog.push({
           themeIndex: game.currentTheme,
           questionIndex: game.currentQuestion,
           playerId: lastBuzz.playerId,
           playerName: lastBuzz.playerName,
           result: "-",
-          value: q.value,
+          value: penaltyValue,
         });
         recalcScores(game);
       }

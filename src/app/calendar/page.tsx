@@ -13,6 +13,7 @@ import {
   Loader2,
   Trash2,
   Megaphone,
+  Pencil,
 } from "lucide-react";
 import {
   getCityColor,
@@ -29,10 +30,15 @@ const MONTHS_RU = [
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 const TYPE_LABELS: Record<string, string> = {
+  "multi-day": "Многодневный",
+  "one-day": "Однодневный",
+  "sync-chgk": "Синхрон ЧГК",
+  "si": "ИСИ",
+  "brain-ring": "Брейн-Ринг",
+  "other": "Другое",
   tournament: "Турнир",
   sync: "Синхрон",
   league: "Лига",
-  other: "Другое",
 };
 
 function dateKey(d: Date) {
@@ -111,9 +117,11 @@ function formatDateRange(start: string, end?: string | null) {
 
 const emptyForm = {
   title: "",
-  type: "tournament",
+  type: "one-day",
   startDate: "",
   endDate: "",
+  startTime: "",
+  endTime: "",
   city: "Варшава",
   venue: "",
   venueMapUrl: "",
@@ -125,7 +133,9 @@ const emptyForm = {
 
 export default function CalendarPage() {
   const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "ADMIN";
+  const role = session?.user?.role;
+  const canManageEvents = role === "ADMIN" || role === "ORGANIZER";
+  const isAdmin = role === "ADMIN";
 
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
@@ -136,6 +146,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -192,13 +203,38 @@ export default function CalendarPage() {
     setSelectedDay(null);
   }
 
+  function handleEdit(ev: CalendarEvent) {
+    setEditingId(ev.id);
+    setForm({
+      title: ev.title,
+      type: ev.type,
+      startDate: ev.startDate.slice(0, 10),
+      endDate: ev.endDate?.slice(0, 10) ?? "",
+      startTime: ev.startTime ?? "",
+      endTime: ev.endTime ?? "",
+      city: ev.city,
+      venue: ev.venue ?? "",
+      venueMapUrl: ev.venueMapUrl ?? "",
+      description: ev.description ?? "",
+      registrationLink: ev.registrationLink ?? "",
+      mediaLink: ev.mediaLink ?? "",
+      mediaLinkLabel: ev.mediaLinkLabel ?? "",
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/calendar", {
-        method: "POST",
+      const url = editingId
+        ? `/api/admin/calendar/${editingId}`
+        : "/api/admin/calendar";
+      const method = editingId ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
@@ -208,6 +244,7 @@ export default function CalendarPage() {
         return;
       }
       setForm(emptyForm);
+      setEditingId(null);
       setShowForm(false);
       await fetchEvents();
     } catch {
@@ -247,9 +284,9 @@ export default function CalendarPage() {
             Расписание интеллектуальных игр и турниров в Польше
           </p>
         </div>
-        {isAdmin && (
+        {canManageEvents && (
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => { if (showForm) { setEditingId(null); setForm(emptyForm); } setShowForm(!showForm); }}
             className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
           >
             {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -258,10 +295,10 @@ export default function CalendarPage() {
         )}
       </div>
 
-      {/* Admin form */}
-      {isAdmin && showForm && (
+      {/* Event form */}
+      {canManageEvents && showForm && (
         <div className="mb-8 rounded-xl border border-border bg-white p-5">
-          <h3 className="text-sm font-bold">Новое мероприятие</h3>
+          <h3 className="text-sm font-bold">{editingId ? "Редактирование мероприятия" : "Новое мероприятие"}</h3>
 
           {error && (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-danger">
@@ -314,6 +351,27 @@ export default function CalendarPage() {
                   type="date"
                   value={form.endDate}
                   onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Время начала</label>
+                <input
+                  type="time"
+                  value={form.startTime}
+                  onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Время окончания</label>
+                <input
+                  type="time"
+                  value={form.endTime}
+                  onChange={(e) => setForm({ ...form, endTime: e.target.value })}
                   className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
               </div>
@@ -400,14 +458,23 @@ export default function CalendarPage() {
               />
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end gap-3 pt-2">
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => { setEditingId(null); setForm(emptyForm); setShowForm(false); }}
+                  className="rounded-xl border border-border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-surface"
+                >
+                  Отмена
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={saving}
                 className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                Создать мероприятие
+                {editingId ? "Сохранить" : "Создать мероприятие"}
               </button>
             </div>
           </form>
@@ -542,9 +609,10 @@ export default function CalendarPage() {
                 <EventCard
                   key={ev.id}
                   event={ev}
-                  isAdmin={isAdmin}
+                  canManage={canManageEvents}
                   deleting={deleting === ev.id}
                   onDelete={() => handleDelete(ev.id)}
+                  onEdit={() => handleEdit(ev)}
                 />
               ))
             )}
@@ -566,14 +634,16 @@ export default function CalendarPage() {
 
 function EventCard({
   event,
-  isAdmin,
+  canManage,
   deleting,
   onDelete,
+  onEdit,
 }: {
   event: CalendarEvent;
-  isAdmin: boolean;
+  canManage: boolean;
   deleting: boolean;
   onDelete: () => void;
+  onEdit: () => void;
 }) {
   const c = getCityColor(event.city);
 
@@ -599,15 +669,24 @@ function EventCard({
             </p>
           )}
         </div>
-        {isAdmin && (
-          <button
-            onClick={onDelete}
-            disabled={deleting}
-            className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-danger disabled:opacity-50"
-            title="Удалить"
-          >
-            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-          </button>
+        {canManage && (
+          <div className="flex shrink-0 gap-1">
+            <button
+              onClick={onEdit}
+              className="rounded-lg p-1.5 text-muted transition-colors hover:bg-accent/10 hover:text-accent"
+              title="Редактировать"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onDelete}
+              disabled={deleting}
+              className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-danger disabled:opacity-50"
+              title="Удалить"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </button>
+          </div>
         )}
       </div>
 
@@ -615,6 +694,11 @@ function EventCard({
         <span className="inline-flex items-center gap-1">
           <CalendarDays className="h-3.5 w-3.5" />
           {formatDateRange(event.startDate, event.endDate)}
+          {event.startTime && (
+            <span className="ml-1 font-medium">
+              {event.startTime}{event.endTime ? `–${event.endTime}` : ""}
+            </span>
+          )}
         </span>
         {event.venue && (
           event.venueMapUrl ? (

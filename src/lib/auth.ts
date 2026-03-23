@@ -23,7 +23,7 @@ export const authOptions: NextAuthOptions = {
         });
         session.user.id = user.id;
         session.user.chgkId = dbUser?.chgkId ?? null;
-        session.user.role = (dbUser?.role as "PLAYER" | "MODERATOR" | "ADMIN") ?? "PLAYER";
+        session.user.role = (dbUser?.role as "PLAYER" | "MODERATOR" | "ORGANIZER" | "ADMIN") ?? "PLAYER";
       }
       return session;
     },

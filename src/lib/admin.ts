@@ -14,3 +14,16 @@ export async function requireAdmin() {
   if (user?.role !== "ADMIN") return null;
   return user;
 }
+
+export async function requireOrganizer() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, role: true },
+  });
+
+  if (user?.role !== "ADMIN" && user?.role !== "ORGANIZER") return null;
+  return user;
+}

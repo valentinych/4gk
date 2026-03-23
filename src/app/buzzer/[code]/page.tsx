@@ -47,6 +47,7 @@ interface GameState {
   countdownDuration: number;
   readingTimeMs: number | null;
   timerSettings: Record<number, number>;
+  halfMinus: boolean;
   themeNames: string[];
   questionValues: number[][];
   players: { id: string; name: string }[];
@@ -448,7 +449,7 @@ function AdminView({
                 ✓ Верно {gs.currentValue ? `(+${gs.currentValue})` : ""}
               </button>
               <button onClick={() => onAction("minus")} className="flex-1 rounded-lg bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-500 transition-colors">
-                ✗ Неверно {gs.currentValue ? `(−${gs.currentValue})` : ""}
+                ✗ Неверно {gs.currentValue ? `(−${gs.halfMinus ? gs.currentValue / 2 : gs.currentValue})` : ""}
               </button>
               <button onClick={() => onAction("dismiss")} className="rounded-lg border border-border bg-white px-4 py-3 text-sm font-medium hover:bg-surface transition-colors">
                 Сброс
@@ -491,19 +492,34 @@ function AdminView({
       {hasPkg && (
         <div className="rounded-xl border border-border bg-white mb-4">
           <button onClick={() => setShowSettings(!showSettings)} className="flex items-center justify-between w-full px-5 py-3 text-sm font-medium hover:bg-surface/50 transition-colors">
-            <span className="flex items-center gap-2"><Settings className="h-4 w-4 text-muted" /> Настройки таймера</span>
+            <span className="flex items-center gap-2"><Settings className="h-4 w-4 text-muted" /> Настройки</span>
             <ChevronRight className={`h-4 w-4 text-muted transition-transform ${showSettings ? "rotate-90" : ""}`} />
           </button>
           {showSettings && (
-            <div className="px-5 pb-4 border-t border-border pt-3 space-y-2">
-              {Object.entries(localTimer).sort(([a], [b]) => Number(a) - Number(b)).map(([val, sec]) => (
-                <div key={val} className="flex items-center gap-3">
-                  <span className="text-sm font-mono w-8 text-right">{val}</span>
-                  <input type="number" min={1} max={120} value={sec} onChange={(e) => setLocalTimer((p) => ({ ...p, [Number(val)]: Number(e.target.value) || 1 }))} className="w-20 rounded-lg border border-border px-2 py-1.5 text-sm text-center font-mono focus:border-accent focus:outline-none" />
-                  <span className="text-xs text-muted">сек</span>
+            <div className="px-5 pb-4 border-t border-border pt-3 space-y-3">
+              <div
+                onClick={() => onAction("set-half-minus", { enabled: !gs.halfMinus })}
+                className="flex items-center justify-between cursor-pointer rounded-lg px-3 py-2.5 hover:bg-surface/50 transition-colors -mx-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">Половинные минусы</p>
+                  <p className="text-xs text-muted">При неправильном ответе −½ номинала</p>
                 </div>
-              ))}
-              <button onClick={saveTimer} className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent/90 mt-2">Сохранить</button>
+                <div className={`relative w-10 h-6 rounded-full transition-colors ${gs.halfMinus ? "bg-accent" : "bg-gray-300"}`}>
+                  <div className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${gs.halfMinus ? "left-5" : "left-1"}`} />
+                </div>
+              </div>
+              <div className="border-t border-border pt-3">
+                <p className="text-xs font-medium text-muted mb-2">Таймер (сек)</p>
+                {Object.entries(localTimer).sort(([a], [b]) => Number(a) - Number(b)).map(([val, sec]) => (
+                  <div key={val} className="flex items-center gap-3 mb-1.5">
+                    <span className="text-sm font-mono w-8 text-right">{val}</span>
+                    <input type="number" min={1} max={120} value={sec} onChange={(e) => setLocalTimer((p) => ({ ...p, [Number(val)]: Number(e.target.value) || 1 }))} className="w-20 rounded-lg border border-border px-2 py-1.5 text-sm text-center font-mono focus:border-accent focus:outline-none" />
+                    <span className="text-xs text-muted">сек</span>
+                  </div>
+                ))}
+                <button onClick={saveTimer} className="rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white hover:bg-accent/90 mt-1">Сохранить</button>
+              </div>
             </div>
           )}
         </div>

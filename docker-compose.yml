@@ -32,6 +32,16 @@ services:
       db:
         condition: service_healthy
 
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/umami
+      BASE_PATH: /umami
+    depends_on:
+      db:
+        condition: service_healthy
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -45,6 +55,7 @@ services:
       - caddy_config:/config
     depends_on:
       - app
+      - umami
 
 volumes:
   pgdata:

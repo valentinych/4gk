@@ -47,11 +47,25 @@ export async function POST(
       return NextResponse.json({ error: "Folder URL required" }, { status: 400 });
     try {
       const round = await loadRoundFromDrive(folderUrl);
+      const trackCounts = round.themes.map((t) => t.tracks.length);
+      const totalTracks = trackCounts.reduce((a, b) => a + b, 0);
+      if (totalTracks === 0) {
+        return NextResponse.json({
+          error: `Найдено ${round.themes.length} тем, но 0 треков. Проверьте формат имён файлов.`,
+          skippedFiles: round.skippedFiles,
+        }, { status: 400 });
+      }
       const ok = musicAdminAction(code, adminToken, "load-round", {
         themes: round.themes,
       });
       if (!ok) return NextResponse.json({ error: "Failed" }, { status: 400 });
-      return NextResponse.json({ ok: true, themeCount: round.themes.length });
+      return NextResponse.json({
+        ok: true,
+        themeCount: round.themes.length,
+        totalTracks,
+        trackCounts,
+        skippedFiles: round.skippedFiles,
+      });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to load from Google Drive";
       return NextResponse.json({ error: msg }, { status: 400 });

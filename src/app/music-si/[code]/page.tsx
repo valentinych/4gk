@@ -156,6 +156,7 @@ function AdminView({
 }) {
   const [driveUrl, setDriveUrl] = useState("");
   const [loadingRound, setLoadingRound] = useState(false);
+  const [loadResult, setLoadResult] = useState("");
   const [newTeamName, setNewTeamName] = useState("");
   const [error, setError] = useState("");
   const [showScoreTable, setShowScoreTable] = useState(false);
@@ -207,7 +208,30 @@ function AdminView({
     if (!driveUrl.trim()) return;
     setLoadingRound(true);
     setError("");
-    await onAction("load-round", { folderUrl: driveUrl.trim() });
+    setLoadResult("");
+    try {
+      const res = await fetch(`/api/music-si/${code}/action`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminToken, action: "load-round", folderUrl: driveUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        let msg = data.error || "Ошибка загрузки";
+        if (data.skippedFiles?.length) {
+          msg += "\nНе распознаны: " + data.skippedFiles.join(", ");
+        }
+        setError(msg);
+      } else {
+        let msg = `Загружено ${data.themeCount} тем, ${data.totalTracks} треков`;
+        if (data.skippedFiles?.length) {
+          msg += ` (пропущено ${data.skippedFiles.length}: ${data.skippedFiles.join(", ")})`;
+        }
+        setLoadResult(msg);
+      }
+    } catch {
+      setError("Ошибка сети");
+    }
     setLoadingRound(false);
   }
 
@@ -364,6 +388,9 @@ function AdminView({
                   )}
                 </button>
               </div>
+              {loadResult && (
+                <p className="mt-2 text-xs text-green-600">{loadResult}</p>
+              )}
             </div>
           )}
 

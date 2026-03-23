@@ -59,21 +59,75 @@ export function parseTrackFilename(
   filename: string,
   fileId: string,
 ): ParsedTrack | null {
-  const match = filename.match(
-    /^(\d+)\.\s+(.+?)\s+[—–-]\s+(.+?)\s+[—–-]\s+(.+?)\s+[—–-]\s+(\d{4})\.\w+$/,
-  );
-  if (!match) return null;
+  const base = filename.replace(/\.\w+$/, "");
 
-  return {
-    value: parseInt(match[1], 10),
-    artists: match[2].trim(),
-    songName: match[3].trim(),
-    style: match[4].trim(),
-    year: parseInt(match[5], 10),
-    fileId,
-    audioUrl: getAudioUrl(fileId),
-    originalName: filename,
-  };
+  // Full format: "30. Mike Oldfield ft. Maggie Reilly — Moonlight Shadow — pop — 1983"
+  const full = base.match(
+    /^(\d+)[\.\s]+(.+?)\s*[—–\-]+\s*(.+?)\s*[—–\-]+\s*(.+?)\s*[—–\-]+\s*(\d{4})$/,
+  );
+  if (full) {
+    return {
+      value: parseInt(full[1], 10),
+      artists: full[2].trim(),
+      songName: full[3].trim(),
+      style: full[4].trim(),
+      year: parseInt(full[5], 10),
+      fileId,
+      audioUrl: getAudioUrl(fileId),
+      originalName: filename,
+    };
+  }
+
+  // 3-part: "30. Artist — Song — 1983" (no style)
+  const three = base.match(
+    /^(\d+)[\.\s]+(.+?)\s*[—–\-]+\s*(.+?)\s*[—–\-]+\s*(\d{4})$/,
+  );
+  if (three) {
+    return {
+      value: parseInt(three[1], 10),
+      artists: three[2].trim(),
+      songName: three[3].trim(),
+      style: "",
+      year: parseInt(three[4], 10),
+      fileId,
+      audioUrl: getAudioUrl(fileId),
+      originalName: filename,
+    };
+  }
+
+  // 2-part: "30. Artist — Song" (no style, no year)
+  const two = base.match(
+    /^(\d+)[\.\s]+(.+?)\s*[—–\-]+\s*(.+)$/,
+  );
+  if (two) {
+    return {
+      value: parseInt(two[1], 10),
+      artists: two[2].trim(),
+      songName: two[3].trim(),
+      style: "",
+      year: 0,
+      fileId,
+      audioUrl: getAudioUrl(fileId),
+      originalName: filename,
+    };
+  }
+
+  // Minimal fallback: just a number at the start — "30. anything" or "30 anything"
+  const minimal = base.match(/^(\d+)[\.\s]+(.+)$/);
+  if (minimal) {
+    return {
+      value: parseInt(minimal[1], 10),
+      artists: minimal[2].trim(),
+      songName: "",
+      style: "",
+      year: 0,
+      fileId,
+      audioUrl: getAudioUrl(fileId),
+      originalName: filename,
+    };
+  }
+
+  return null;
 }
 
 export interface MusicThemeData {
@@ -83,6 +137,7 @@ export interface MusicThemeData {
 
 export async function loadRoundFromDrive(folderUrl: string): Promise<{
   themes: MusicThemeData[];
+  skippedFiles: string[];
 }> {
   const folderId = extractFolderId(folderUrl);
   if (!folderId) throw new Error("Invalid Google Drive folder URL");
@@ -97,24 +152,31 @@ export async function loadRoundFromDrive(folderUrl: string): Promise<{
   }
 
   const themes: MusicThemeData[] = [];
+  const skippedFiles: string[] = [];
 
   for (const folder of themeFolders) {
     const files = await listFolder(folder.id);
     const audioFiles = files.filter(
       (f) =>
         f.mimeType.startsWith("audio/") ||
-        f.name.endsWith(".mp3") ||
-        f.name.endsWith(".m4a") ||
-        f.name.endsWith(".ogg"),
+        f.name.toLowerCase().endsWith(".mp3") ||
+        f.name.toLowerCase().endsWith(".m4a") ||
+        f.name.toLowerCase().endsWith(".ogg"),
     );
 
-    const tracks = audioFiles
-      .map((f) => parseTrackFilename(f.name, f.id))
-      .filter((t): t is ParsedTrack => t !== null)
-      .sort((a, b) => a.value - b.value);
+    const tracks: ParsedTrack[] = [];
+    for (const f of audioFiles) {
+      const parsed = parseTrackFilename(f.name, f.id);
+      if (parsed) {
+        tracks.push(parsed);
+      } else {
+        skippedFiles.push(`${folder.name}/${f.name}`);
+      }
+    }
+    tracks.sort((a, b) => a.value - b.value);
 
     themes.push({ name: folder.name, tracks });
   }
 
-  return { themes };
+  return { themes, skippedFiles };
 }

@@ -1,0 +1,55 @@
+{
+  "title": "Тестовый пакет СИ",
+  "themes": [
+    {
+      "name": "География",
+      "questions": [
+        { "value": 10, "form": "СТОЛИЦА" },
+        { "value": 20, "form": "РЕКА", "handout": { "type": "text", "content": "Эта река протекает через 4 столицы европейских государств." } },
+        { "value": 30, "form": "СТРАНА" },
+        { "value": 40, "form": "ПРОЛИВ", "handout": { "type": "image", "content": "https://pohcdn.com/sites/default/files/styles/paragraph__hero_banner__hb_image__1880bp/public/hero_banner/bosphorus.jpg" } },
+        { "value": 50, "form": "СТОЛИЦА" }
+      ]
+    },
+    {
+      "name": "История",
+      "questions": [
+        { "value": 10, "form": "В КАКОМ ГОДУ" },
+        { "value": 20, "form": "КТО" },
+        { "value": 30, "form": "В КАКОМ ГОДУ" },
+        { "value": 40, "form": "КОРАБЛЬ" },
+        { "value": 50, "form": "ДОГОВОР" }
+      ]
+    },
+    {
+      "name": "Наука",
+      "questions": [
+        { "value": 10, "form": "СИМВОЛ" },
+        { "value": 20, "form": "СКОЛЬКО" },
+        { "value": 30, "form": "КТО" },
+        { "value": 40, "form": "ЧАСТИЦА" },
+        { "value": 50, "form": "ЯВЛЕНИЕ" }
+      ]
+    },
+    {
+      "name": "Литература",
+      "questions": [
+        { "value": 10, "form": "КТО" },
+        { "value": 20, "form": "ИМЯ" },
+        { "value": 30, "form": "КТО" },
+        { "value": 40, "form": "РОМАН" },
+        { "value": 50, "form": "КТО" }
+      ]
+    },
+    {
+      "name": "Кино",
+      "questions": [
+        { "value": 10, "form": "КТО" },
+        { "value": 20, "form": "ФИЛЬМ" },
+        { "value": 30, "form": "ИМЯ" },
+        { "value": 40, "form": "В КАКОМ ГОДУ" },
+        { "value": 50, "form": "КТО" }
+      ]
+    }
+  ]
+}

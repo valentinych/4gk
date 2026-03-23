@@ -10,7 +10,7 @@ export async function POST(
   const adminToken = (body.adminToken ?? "").trim();
   const action = body.action as string;
 
-  if (!adminToken) {
+  if (!adminToken || !action) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
@@ -26,13 +26,19 @@ export async function POST(
     return NextResponse.json({ ok: true });
   }
 
-  if (!["open", "close", "clear"].includes(action)) {
-    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  }
+  const payload: Record<string, unknown> = {};
+  if (body.package) payload.package = body.package;
+  if (body.settings) payload.settings = body.settings;
+  if (body.theme !== undefined) payload.theme = body.theme;
+  if (body.question !== undefined) payload.question = body.question;
+  if (body.themeIndex !== undefined) payload.themeIndex = body.themeIndex;
+  if (body.questionIndex !== undefined) payload.questionIndex = body.questionIndex;
+  if (body.playerId !== undefined) payload.playerId = body.playerId;
+  if (body.result !== undefined) payload.result = body.result;
 
-  const ok = adminAction(code, adminToken, action as "open" | "close" | "clear");
+  const ok = adminAction(code, adminToken, action, payload);
   if (!ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    return NextResponse.json({ error: "Failed" }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

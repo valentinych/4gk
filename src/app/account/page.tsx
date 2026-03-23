@@ -80,6 +80,10 @@ export default function AccountPage() {
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
                   <Shield className="h-3 w-3" /> Администратор
                 </span>
+              ) : user.role === "MODERATOR" ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                  <Shield className="h-3 w-3" /> Модератор
+                </span>
               ) : (
                 "Игрок"
               )}

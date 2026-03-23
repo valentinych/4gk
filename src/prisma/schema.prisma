@@ -87,5 +87,6 @@ model CalendarEvent {
 
 enum Role {
   PLAYER
+  MODERATOR
   ADMIN
 }

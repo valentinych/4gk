@@ -5,7 +5,7 @@ declare module "next-auth" {
     user: {
       id: string;
       chgkId?: number | null;
-      role: "PLAYER" | "ADMIN";
+      role: "PLAYER" | "MODERATOR" | "ADMIN";
     } & DefaultSession["user"];
   }
 }

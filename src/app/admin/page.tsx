@@ -22,7 +22,7 @@ interface UserRow {
   email: string | null;
   image: string | null;
   chgkId: number | null;
-  role: "PLAYER" | "ADMIN";
+  role: "PLAYER" | "MODERATOR" | "ADMIN";
   createdAt: string;
 }
 
@@ -243,14 +243,19 @@ export default function AdminPage() {
 
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => updateUser(u.id, { role: u.role === "ADMIN" ? "PLAYER" : "ADMIN" })}
+                      onClick={() => {
+                        const next = u.role === "PLAYER" ? "MODERATOR" : u.role === "MODERATOR" ? "ADMIN" : "PLAYER";
+                        updateUser(u.id, { role: next });
+                      }}
                       disabled={saving === u.id || u.id === session.user.id}
                       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                         u.role === "ADMIN"
                           ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          : u.role === "MODERATOR"
+                            ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      title={u.id === session.user.id ? "Нельзя изменить свою роль" : u.role === "ADMIN" ? "Снять админа" : "Назначить админом"}
+                      title={u.id === session.user.id ? "Нельзя изменить свою роль" : `Сменить роль (${u.role})`}
                     >
                       {saving === u.id ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -259,7 +264,7 @@ export default function AdminPage() {
                       ) : (
                         <ShieldOff className="h-3 w-3" />
                       )}
-                      {u.role === "ADMIN" ? "Admin" : "Player"}
+                      {u.role === "ADMIN" ? "Admin" : u.role === "MODERATOR" ? "Moderator" : "Player"}
                     </button>
                   </td>
 

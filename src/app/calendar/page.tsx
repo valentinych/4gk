@@ -28,6 +28,11 @@ const MONTHS_RU = [
   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
 ];
 
+const MONTHS_GEN = [
+  "января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+
 const WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 const TYPE_LABELS: Record<string, string> = {
@@ -104,16 +109,37 @@ function getMonthDays(year: number, month: number) {
   return cells;
 }
 
-function formatDateRange(start: string, end?: string | null) {
+function formatEventDateTime(
+  start: string,
+  end?: string | null,
+  startTime?: string | null,
+  endTime?: string | null,
+) {
   const s = parseDate(start);
-  if (end) {
-    const e = parseDate(end);
-    if (e.getMonth() === s.getMonth()) {
-      return `${s.getDate()}–${e.getDate()} ${MONTHS_RU[s.getMonth()].toLowerCase()}`;
+  const e = end ? parseDate(end) : null;
+
+  const sameDay = !e || (s.getTime() === e.getTime());
+  const sameMonth = e && s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+
+  if (sameDay) {
+    let result = `${s.getDate()} ${MONTHS_GEN[s.getMonth()]}`;
+    if (startTime) {
+      result += ` ${startTime}`;
+      if (endTime) result += `–${endTime}`;
     }
-    return `${s.getDate()} ${MONTHS_RU[s.getMonth()].toLowerCase()} – ${e.getDate()} ${MONTHS_RU[e.getMonth()].toLowerCase()}`;
+    return result;
   }
-  return `${s.getDate()} ${MONTHS_RU[s.getMonth()].toLowerCase()}`;
+
+  if (startTime || endTime) {
+    const startStr = `${s.getDate()} ${MONTHS_GEN[s.getMonth()]}${startTime ? ` ${startTime}` : ""}`;
+    const endStr = `${e!.getDate()} ${MONTHS_GEN[e!.getMonth()]}${endTime ? ` ${endTime}` : ""}`;
+    return `${startStr} – ${endStr}`;
+  }
+
+  if (sameMonth) {
+    return `${s.getDate()}–${e!.getDate()} ${MONTHS_GEN[s.getMonth()]}`;
+  }
+  return `${s.getDate()} ${MONTHS_GEN[s.getMonth()]} – ${e!.getDate()} ${MONTHS_GEN[e!.getMonth()]}`;
 }
 
 const emptyForm = {
@@ -165,6 +191,7 @@ export default function CalendarPage() {
   const [showForm, setShowForm] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [templateForm, setTemplateForm] = useState({ ...emptyForm, name: "" });
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -317,13 +344,40 @@ export default function CalendarPage() {
     setShowTemplateForm(false);
   }
 
+  function handleEditTemplate(t: Template) {
+    setEditingTemplateId(t.id);
+    setTemplateForm({
+      name: t.name,
+      title: t.title ?? "",
+      type: t.type ?? "one-day",
+      startDate: "",
+      endDate: "",
+      startTime: t.startTime ?? "",
+      endTime: t.endTime ?? "",
+      city: t.city ?? "Варшава",
+      venue: t.venue ?? "",
+      venueMapUrl: t.venueMapUrl ?? "",
+      description: t.description ?? "",
+      registrationLink: t.registrationLink ?? "",
+      mediaLink: t.mediaLink ?? "",
+      mediaLinkLabel: t.mediaLinkLabel ?? "",
+    });
+    setShowTemplateForm(true);
+    setShowForm(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function handleSaveTemplate(e: React.FormEvent) {
     e.preventDefault();
     setSavingTemplate(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/calendar/templates", {
-        method: "POST",
+      const url = editingTemplateId
+        ? `/api/admin/calendar/templates/${editingTemplateId}`
+        : "/api/admin/calendar/templates";
+      const method = editingTemplateId ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(templateForm),
       });
@@ -333,6 +387,7 @@ export default function CalendarPage() {
         return;
       }
       setTemplateForm({ ...emptyForm, name: "" });
+      setEditingTemplateId(null);
       setShowTemplateForm(false);
       await fetchTemplates();
     } catch {
@@ -346,7 +401,14 @@ export default function CalendarPage() {
     if (!confirm("Удалить шаблон?")) return;
     try {
       const res = await fetch(`/api/admin/calendar/templates/${id}`, { method: "DELETE" });
-      if (res.ok) await fetchTemplates();
+      if (res.ok) {
+        if (editingTemplateId === id) {
+          setEditingTemplateId(null);
+          setTemplateForm({ ...emptyForm, name: "" });
+          setShowTemplateForm(false);
+        }
+        await fetchTemplates();
+      }
     } catch {}
   }
 
@@ -385,7 +447,7 @@ export default function CalendarPage() {
             <button
               onClick={() => {
                 setShowForm(false);
-                if (showTemplateForm) { setTemplateForm({ ...emptyForm, name: "" }); }
+                if (showTemplateForm) { setEditingTemplateId(null); setTemplateForm({ ...emptyForm, name: "" }); }
                 setShowTemplateForm(!showTemplateForm);
               }}
               className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
@@ -404,7 +466,7 @@ export default function CalendarPage() {
       {/* Template form */}
       {canManageEvents && showTemplateForm && (
         <div className="mb-8 rounded-xl border border-dashed border-accent/40 bg-accent/5 p-5">
-          <h3 className="text-sm font-bold">Новый шаблон</h3>
+          <h3 className="text-sm font-bold">{editingTemplateId ? "Редактирование шаблона" : "Новый шаблон"}</h3>
 
           {error && (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-danger">
@@ -558,7 +620,7 @@ export default function CalendarPage() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => { setTemplateForm({ ...emptyForm, name: "" }); setShowTemplateForm(false); }}
+                onClick={() => { setEditingTemplateId(null); setTemplateForm({ ...emptyForm, name: "" }); setShowTemplateForm(false); }}
                 className="rounded-xl border border-border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-surface"
               >
                 Отмена
@@ -569,7 +631,7 @@ export default function CalendarPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
               >
                 {savingTemplate && <Loader2 className="h-4 w-4 animate-spin" />}
-                Сохранить шаблон
+                {editingTemplateId ? "Сохранить" : "Создать шаблон"}
               </button>
             </div>
           </form>
@@ -585,22 +647,37 @@ export default function CalendarPage() {
               <p className="mb-2 text-xs font-medium text-muted">Из шаблона:</p>
               <div className="flex flex-wrap gap-2">
                 {templates.map((t) => (
-                  <button
+                  <span
                     key={t.id}
-                    type="button"
-                    onClick={() => applyTemplate(t)}
-                    className="group relative inline-flex items-center gap-1 rounded-lg border border-accent/20 bg-accent/5 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+                    className="group relative inline-flex items-center gap-1 rounded-lg border border-accent/20 bg-accent/5 px-3 py-1.5 text-xs font-medium text-accent"
                   >
-                    <LayoutTemplate className="h-3 w-3" />
-                    {t.name}
                     <button
                       type="button"
-                      onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(t.id); }}
-                      className="ml-1 hidden rounded p-0.5 text-muted hover:text-danger group-hover:inline-flex"
+                      onClick={() => applyTemplate(t)}
+                      className="inline-flex items-center gap-1 transition-colors hover:text-accent-hover"
                     >
-                      <X className="h-3 w-3" />
+                      <LayoutTemplate className="h-3 w-3" />
+                      {t.name}
                     </button>
-                  </button>
+                    <span className="ml-1 hidden items-center gap-0.5 group-hover:inline-flex">
+                      <button
+                        type="button"
+                        onClick={() => handleEditTemplate(t)}
+                        className="rounded p-0.5 text-muted hover:text-accent"
+                        title="Редактировать"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTemplate(t.id)}
+                        className="rounded p-0.5 text-muted hover:text-danger"
+                        title="Удалить"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  </span>
                 ))}
               </div>
             </div>
@@ -1001,12 +1078,7 @@ function EventCard({
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
         <span className="inline-flex items-center gap-1">
           <CalendarDays className="h-3.5 w-3.5" />
-          {formatDateRange(event.startDate, event.endDate)}
-          {event.startTime && (
-            <span className="ml-1 font-medium">
-              {event.startTime}{event.endTime ? `–${event.endTime}` : ""}
-            </span>
-          )}
+          {formatEventDateTime(event.startDate, event.endDate, event.startTime, event.endTime)}
         </span>
         {event.venue && (
           event.venueMapUrl ? (

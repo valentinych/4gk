@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "@/components/SessionProvider";
 import { Header } from "@/components/layout/Header";
@@ -41,6 +42,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
+      <head>
+        {process.env.UMAMI_WEBSITE_ID && (
+          <Script
+            src={`${process.env.UMAMI_HOST || "https://analytics.4gk.pl"}/script.js`}
+            data-website-id={process.env.UMAMI_WEBSITE_ID}
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SessionProvider>
           <Header />

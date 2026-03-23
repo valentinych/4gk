@@ -87,6 +87,23 @@ model CalendarEvent {
   updatedAt        DateTime @updatedAt
 }
 
+model CalendarTemplate {
+  id               String   @id @default(cuid())
+  name             String
+  title            String?
+  type             String?
+  city             String?
+  venue            String?
+  venueMapUrl      String?
+  description      String?
+  registrationLink String?
+  mediaLink        String?
+  mediaLinkLabel   String?
+  startTime        String?
+  endTime          String?
+  createdAt        DateTime @default(now())
+}
+
 enum Role {
   PLAYER
   MODERATOR

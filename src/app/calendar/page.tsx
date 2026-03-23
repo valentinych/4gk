@@ -14,6 +14,7 @@ import {
   Trash2,
   Megaphone,
   Pencil,
+  LayoutTemplate,
 } from "lucide-react";
 import {
   getCityColor,
@@ -131,6 +132,22 @@ const emptyForm = {
   mediaLinkLabel: "",
 };
 
+interface Template {
+  id: string;
+  name: string;
+  title?: string | null;
+  type?: string | null;
+  city?: string | null;
+  venue?: string | null;
+  venueMapUrl?: string | null;
+  description?: string | null;
+  registrationLink?: string | null;
+  mediaLink?: string | null;
+  mediaLinkLabel?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+}
+
 export default function CalendarPage() {
   const { data: session } = useSession();
   const role = session?.user?.role;
@@ -146,9 +163,13 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [templateForm, setTemplateForm] = useState({ ...emptyForm, name: "" });
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [saving, setSaving] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -161,9 +182,20 @@ export default function CalendarPage() {
     }
   }, []);
 
+  const fetchTemplates = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/calendar/templates");
+      if (res.ok) setTemplates(await res.json());
+    } catch {}
+  }, []);
+
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
+
+  useEffect(() => {
+    if (canManageEvents) fetchTemplates();
+  }, [canManageEvents, fetchTemplates]);
 
   const eventMap = useMemo(() => buildEventMap(events), [events]);
   const cells = useMemo(() => getMonthDays(year, month), [year, month]);
@@ -265,6 +297,59 @@ export default function CalendarPage() {
     }
   }
 
+  function applyTemplate(t: Template) {
+    setForm({
+      ...emptyForm,
+      title: t.title ?? "",
+      type: t.type ?? "one-day",
+      city: t.city ?? "Варшава",
+      venue: t.venue ?? "",
+      venueMapUrl: t.venueMapUrl ?? "",
+      description: t.description ?? "",
+      registrationLink: t.registrationLink ?? "",
+      mediaLink: t.mediaLink ?? "",
+      mediaLinkLabel: t.mediaLinkLabel ?? "",
+      startTime: t.startTime ?? "",
+      endTime: t.endTime ?? "",
+    });
+    setEditingId(null);
+    setShowForm(true);
+    setShowTemplateForm(false);
+  }
+
+  async function handleSaveTemplate(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingTemplate(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/calendar/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(templateForm),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Ошибка при сохранении шаблона");
+        return;
+      }
+      setTemplateForm({ ...emptyForm, name: "" });
+      setShowTemplateForm(false);
+      await fetchTemplates();
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setSavingTemplate(false);
+    }
+  }
+
+  async function handleDeleteTemplate(id: string) {
+    if (!confirm("Удалить шаблон?")) return;
+    try {
+      const res = await fetch(`/api/admin/calendar/templates/${id}`, { method: "DELETE" });
+      if (res.ok) await fetchTemplates();
+    } catch {}
+  }
+
   const todayKey = dateKey(today);
 
   const usedCities = useMemo(() => {
@@ -285,19 +370,242 @@ export default function CalendarPage() {
           </p>
         </div>
         {canManageEvents && (
-          <button
-            onClick={() => { if (showForm) { setEditingId(null); setForm(emptyForm); } setShowForm(!showForm); }}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
-          >
-            {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-            {showForm ? "Закрыть" : "Добавить"}
-          </button>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => {
+                setShowTemplateForm(false);
+                if (showForm) { setEditingId(null); setForm(emptyForm); }
+                setShowForm(!showForm);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+            >
+              {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {showForm ? "Закрыть" : "Добавить"}
+            </button>
+            <button
+              onClick={() => {
+                setShowForm(false);
+                if (showTemplateForm) { setTemplateForm({ ...emptyForm, name: "" }); }
+                setShowTemplateForm(!showTemplateForm);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                showTemplateForm
+                  ? "border-accent bg-accent text-white hover:bg-accent-hover"
+                  : "border-border bg-white text-foreground hover:bg-surface"
+              }`}
+            >
+              {showTemplateForm ? <X className="h-4 w-4" /> : <LayoutTemplate className="h-4 w-4" />}
+              Шаблон
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Template form */}
+      {canManageEvents && showTemplateForm && (
+        <div className="mb-8 rounded-xl border border-dashed border-accent/40 bg-accent/5 p-5">
+          <h3 className="text-sm font-bold">Новый шаблон</h3>
+
+          {error && (
+            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-danger">
+              {error}
+              <button onClick={() => setError(null)} className="ml-2 font-medium hover:underline">✕</button>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveTemplate} className="mt-4 space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">Имя шаблона *</label>
+              <input
+                type="text"
+                required
+                value={templateForm.name}
+                onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                placeholder="Синхрон ЧГК Варшава"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <p className="text-xs text-muted">Заполните поля, которые будут предзаполняться при создании мероприятия из этого шаблона. Все поля ниже необязательны.</p>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Название</label>
+                <input
+                  type="text"
+                  value={templateForm.title}
+                  onChange={(e) => setTemplateForm({ ...templateForm, title: e.target.value })}
+                  placeholder="VII Открытый Чемпионат Польши"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Тип</label>
+                <select
+                  value={templateForm.type}
+                  onChange={(e) => setTemplateForm({ ...templateForm, type: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                >
+                  {EVENT_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Время начала</label>
+                <input
+                  type="time"
+                  value={templateForm.startTime}
+                  onChange={(e) => setTemplateForm({ ...templateForm, startTime: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Время окончания</label>
+                <input
+                  type="time"
+                  value={templateForm.endTime}
+                  onChange={(e) => setTemplateForm({ ...templateForm, endTime: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Город</label>
+                <select
+                  value={templateForm.city}
+                  onChange={(e) => setTemplateForm({ ...templateForm, city: e.target.value })}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                >
+                  {CITY_OPTIONS.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Место проведения</label>
+                <input
+                  type="text"
+                  value={templateForm.venue}
+                  onChange={(e) => setTemplateForm({ ...templateForm, venue: e.target.value })}
+                  placeholder="Название площадки"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">Ссылка на Google Maps</label>
+              <input
+                type="url"
+                value={templateForm.venueMapUrl}
+                onChange={(e) => setTemplateForm({ ...templateForm, venueMapUrl: e.target.value })}
+                placeholder="https://maps.google.com/..."
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">Описание</label>
+              <textarea
+                value={templateForm.description}
+                onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                rows={3}
+                placeholder="Краткое описание мероприятия"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent resize-none"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Ссылка на регистрацию</label>
+                <input
+                  type="url"
+                  value={templateForm.registrationLink}
+                  onChange={(e) => setTemplateForm({ ...templateForm, registrationLink: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Медиа-ссылка (Telegram и др.)</label>
+                <input
+                  type="url"
+                  value={templateForm.mediaLink}
+                  onChange={(e) => setTemplateForm({ ...templateForm, mediaLink: e.target.value })}
+                  placeholder="https://t.me/..."
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="sm:w-1/2">
+              <label className="mb-1 block text-xs font-medium text-muted">Название медиа-ссылки</label>
+              <input
+                type="text"
+                value={templateForm.mediaLinkLabel}
+                onChange={(e) => setTemplateForm({ ...templateForm, mediaLinkLabel: e.target.value })}
+                placeholder="Telegram-группа"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { setTemplateForm({ ...emptyForm, name: "" }); setShowTemplateForm(false); }}
+                className="rounded-xl border border-border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-surface"
+              >
+                Отмена
+              </button>
+              <button
+                type="submit"
+                disabled={savingTemplate}
+                className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+              >
+                {savingTemplate && <Loader2 className="h-4 w-4 animate-spin" />}
+                Сохранить шаблон
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Event form */}
       {canManageEvents && showForm && (
         <div className="mb-8 rounded-xl border border-border bg-white p-5">
+          {/* Template tiles */}
+          {templates.length > 0 && !editingId && (
+            <div className="mb-4">
+              <p className="mb-2 text-xs font-medium text-muted">Из шаблона:</p>
+              <div className="flex flex-wrap gap-2">
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => applyTemplate(t)}
+                    className="group relative inline-flex items-center gap-1 rounded-lg border border-accent/20 bg-accent/5 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+                  >
+                    <LayoutTemplate className="h-3 w-3" />
+                    {t.name}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleDeleteTemplate(t.id); }}
+                      className="ml-1 hidden rounded p-0.5 text-muted hover:text-danger group-hover:inline-flex"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <h3 className="text-sm font-bold">{editingId ? "Редактирование мероприятия" : "Новое мероприятие"}</h3>
 
           {error && (

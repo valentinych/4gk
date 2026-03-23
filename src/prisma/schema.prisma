@@ -53,6 +53,7 @@ model NewsArticle {
   id          String    @id @default(cuid())
   title       String
   slug        String    @unique
+  category    String    @default("news")
   content     String
   excerpt     String?
   coverImage  String?

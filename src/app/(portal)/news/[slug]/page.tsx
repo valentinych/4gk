@@ -1,59 +1,44 @@
 import { ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { db } from "@/lib/db";
+import { notFound } from "next/navigation";
 
-const articles: Record<string, { title: string; date: string; category: string; categoryColor: string; content: string }> = {
-  launch: {
-    title: "Запуск портала 4gk.pl",
-    date: "16.03.2026",
-    category: "Анонс",
-    categoryColor: "bg-blue-50 text-blue-700 border-blue-100",
-    content: `Портал 4gk.pl запущен в тестовом режиме!
-
-**Что это?**
-4gk.pl — информационный портал для сообщества интеллектуальных игр в Польше. Здесь мы собираем результаты турниров, расписания и полезную информацию для игроков.
-
-**Что уже работает:**
-- Страница Чемпионата Варшавы с результатами ЧГК, КСИ и ИСИ
-- Страница ОЧП'26 с расписанием, списком участников, регламентом и онлайн-результатами
-- Авторизация через Google и привязка профиля rating.chgk.info
-
-**Тестовый режим**
-Сайт находится в стадии активной разработки. Некоторые разделы могут быть недоступны или работать с ограничениями. Мы будем постепенно добавлять новые функции и наполнять портал содержимым.
-
-Если вы заметили ошибку или у вас есть предложения — пишите в Telegram-канал **@chgkpolska**.`,
-  },
+const CATEGORY_STYLES: Record<string, { label: string; color: string }> = {
+  news: { label: "Новость", color: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+  announcement: { label: "Анонс", color: "bg-blue-50 text-blue-700 border-blue-100" },
+  results: { label: "Результаты", color: "bg-amber-50 text-amber-700 border-amber-100" },
+  update: { label: "Обновление", color: "bg-violet-50 text-violet-700 border-violet-100" },
 };
 
-export async function generateStaticParams() {
-  return Object.keys(articles).map((slug) => ({ slug }));
+function getCategoryStyle(cat: string) {
+  return CATEGORY_STYLES[cat] ?? CATEGORY_STYLES.news;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+function formatDate(d: Date) {
+  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+type Params = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const article = articles[slug];
+  const article = await db.newsArticle.findUnique({ where: { slug } });
   if (!article) return { title: "Не найдено" };
   return {
     title: article.title,
-    description: article.content.slice(0, 160),
+    description: article.excerpt || article.content.slice(0, 160),
   };
 }
 
-export default async function NewsArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function NewsArticlePage({ params }: Params) {
   const { slug } = await params;
-  const article = articles[slug];
+  const article = await db.newsArticle.findUnique({ where: { slug } });
 
-  if (!article) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center">
-        <h1 className="text-xl font-bold">Статья не найдена</h1>
-        <Link href="/news" className="mt-3 text-sm font-medium text-muted hover:text-foreground">
-          Вернуться к новостям
-        </Link>
-      </div>
-    );
-  }
+  if (!article) notFound();
 
+  const cat = getCategoryStyle(article.category);
+  const dateStr = formatDate(article.publishedAt ?? article.createdAt);
   const paragraphs = article.content.split("\n\n");
 
   return (
@@ -68,12 +53,12 @@ export default async function NewsArticlePage({ params }: { params: Promise<{ sl
 
       <article>
         <div className="flex items-center gap-3">
-          <span className={`rounded-md border px-2.5 py-1 text-xs font-medium ${article.categoryColor}`}>
-            {article.category}
+          <span className={`rounded-md border px-2.5 py-1 text-xs font-medium ${cat.color}`}>
+            {cat.label}
           </span>
           <span className="flex items-center gap-1.5 text-xs text-muted">
             <Calendar className="h-3 w-3" />
-            {article.date}
+            {dateStr}
           </span>
         </div>
 

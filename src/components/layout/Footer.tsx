@@ -37,8 +37,9 @@ export function Footer() {
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted/60">Информация</h3>
             <ul className="mt-3 space-y-2">
-              <li><Link href="#" className="text-sm text-muted hover:text-foreground transition-colors">О проекте</Link></li>
-              <li><Link href="#" className="text-sm text-muted hover:text-foreground transition-colors">Контакты</Link></li>
+              <li><Link href="/privacy" className="text-sm text-muted hover:text-foreground transition-colors">Polityka prywatności</Link></li>
+              <li><Link href="/terms" className="text-sm text-muted hover:text-foreground transition-colors">Regulamin</Link></li>
+              <li><a href="mailto:admin@4gk.pl" className="text-sm text-muted hover:text-foreground transition-colors">Kontakt</a></li>
             </ul>
           </div>
         </div>

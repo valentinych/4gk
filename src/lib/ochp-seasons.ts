@@ -27,8 +27,19 @@ export const OCHP_RATING_TOURNAMENT_ID_CURRENT = 13180;
 
 /** ID турнира на rating.chgk.info по первому году сезона (архив) */
 export const OCHP_RATING_TOURNAMENT_BY_SEASON: Partial<Record<number, number>> = {
+  2017: 4853,
+  2018: 5484,
+  2021: 8178,
+  2022: 8661,
+  2023: 10468,
   2024: 11706,
 };
+
+/**
+ * Сезоны, где на странице участников для всех команд показываем зачёт ЧСт
+ * (например, когда все играли в польском зачёте — ОЧП 2023/2024).
+ */
+export const OCHP_SEASON_CHST_ALL_TEAMS: ReadonlySet<number> = new Set([2023]);
 
 export function resolveOchpRatingTournamentId(
   seasonStart: number | null,
@@ -82,6 +93,15 @@ export function ochpParticipantsFromRatingSeasons(): number[] {
     );
 }
 
+/** Архивный турнир в рейтинге есть, но трансляции haza нет — участники только из API рейтинга */
+export function ochpParticipantsFromRatingApiOnly(
+  seasonStart: number | null,
+): boolean {
+  if (seasonStart == null) return false;
+  if (OCHP_RATING_TOURNAMENT_BY_SEASON[seasonStart] == null) return false;
+  return !ochpParticipantsFromRatingSeasons().includes(seasonStart);
+}
+
 export function formatOchpSeasonRange(seasonStart: number): string {
   return `${seasonStart}/${seasonStart + 1}`;
 }
@@ -125,6 +145,106 @@ export interface OchpLandingTile {
 export const OCHP_ARCHIVE_TILES: Partial<
   Record<number, OchpLandingTile[]>
 > = {
+  2017: [
+    {
+      slug: "rating-page",
+      emoji: "🌐",
+      title: "Страница турнира на сайте рейтинга",
+      href: "/ochp/rating-page?season=2017",
+    },
+    {
+      slug: "results-chgk",
+      emoji: "❓",
+      title: "Результаты Что? Где? Когда?",
+      href: "/ochp/results-chgk?season=2017",
+    },
+    {
+      slug: "participants",
+      emoji: "👥",
+      title: "Список участников ОЧП'18",
+      href: "/ochp/participants?season=2017",
+    },
+  ],
+  2018: [
+    {
+      slug: "rating-page",
+      emoji: "🌐",
+      title: "Страница турнира на сайте рейтинга",
+      href: "/ochp/rating-page?season=2018",
+    },
+    {
+      slug: "results-chgk",
+      emoji: "❓",
+      title: "Результаты Что? Где? Когда?",
+      href: "/ochp/results-chgk?season=2018",
+    },
+    {
+      slug: "participants",
+      emoji: "👥",
+      title: "Список участников ОЧП'19",
+      href: "/ochp/participants?season=2018",
+    },
+  ],
+  2021: [
+    {
+      slug: "rating-page",
+      emoji: "🌐",
+      title: "Страница турнира на сайте рейтинга",
+      href: "/ochp/rating-page?season=2021",
+    },
+    {
+      slug: "results-chgk",
+      emoji: "❓",
+      title: "Результаты Что? Где? Когда?",
+      href: "/ochp/results-chgk?season=2021",
+    },
+    {
+      slug: "participants",
+      emoji: "👥",
+      title: "Список участников ОЧП'22",
+      href: "/ochp/participants?season=2021",
+    },
+  ],
+  2022: [
+    {
+      slug: "rating-page",
+      emoji: "🌐",
+      title: "Страница турнира на сайте рейтинга",
+      href: "/ochp/rating-page?season=2022",
+    },
+    {
+      slug: "results-chgk",
+      emoji: "❓",
+      title: "Результаты Что? Где? Когда?",
+      href: "/ochp/results-chgk?season=2022",
+    },
+    {
+      slug: "participants",
+      emoji: "👥",
+      title: "Список участников ОЧП'23",
+      href: "/ochp/participants?season=2022",
+    },
+  ],
+  2023: [
+    {
+      slug: "rating-page",
+      emoji: "🌐",
+      title: "Страница турнира на сайте рейтинга",
+      href: "/ochp/rating-page?season=2023",
+    },
+    {
+      slug: "results-chgk",
+      emoji: "❓",
+      title: "Результаты Что? Где? Когда?",
+      href: "/ochp/results-chgk?season=2023",
+    },
+    {
+      slug: "participants",
+      emoji: "👥",
+      title: "Список участников ОЧП'24",
+      href: "/ochp/participants?season=2023",
+    },
+  ],
   2024: [
     {
       slug: "rating-page",

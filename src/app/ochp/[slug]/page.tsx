@@ -1,10 +1,15 @@
 import { ArrowLeft, MapPin, Clock, ExternalLink, Navigation, Users, Pen, Gavel, Scale, Calendar, Hash } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { ratingChgkResultsQuery } from "@/lib/chgk-tournament-results";
+import {
+  ratingChgkResultsQuery,
+  resultHasChstFlag,
+} from "@/lib/chgk-tournament-results";
 import { fetchHazaBroadcastData } from "@/lib/ochp-haza";
 import {
+  OCHP_SEASON_CHST_ALL_TEAMS,
   OCHP_SEASON_START_MAX,
+  ochpParticipantsFromRatingApiOnly,
   ochpParticipantsFromRatingSeasons,
   ochpRatingPublicUrl,
   ochpYearSuffix,
@@ -350,6 +355,7 @@ interface RatingResultRow {
   current: { name: string; town: { name: string } };
   questionsTotal: number | null;
   position: number;
+  flags?: unknown;
 }
 
 function parseCsvLine(line: string): string[] {
@@ -461,6 +467,30 @@ async function fetchParticipantsFromRatingArchive(
   );
 }
 
+/**
+ * Участники только из rating API (без haza): алфавит, ЧСт из flags или все — для сезона.
+ */
+async function fetchParticipantsFromRatingOnly(
+  tournamentId: number,
+  allChst: boolean,
+): Promise<Participant[]> {
+  const res = await fetch(
+    `https://api.rating.chgk.info/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(0)}`,
+    { next: { revalidate: 3600 } },
+  );
+  if (!res.ok) return [];
+  const results = (await res.json()) as RatingResultRow[];
+  const mapped = results
+    .filter((a) => a.position !== 9999)
+    .map((a) => ({
+    pos: a.position,
+    name: a.current.name,
+    city: a.current.town.name,
+    isPL: allChst || resultHasChstFlag(a.flags),
+  }));
+  return sortParticipantsByNameRu(mapped);
+}
+
 function PolishFlag() {
   return (
     <span
@@ -478,15 +508,22 @@ async function ParticipantsPage({
 }: {
   seasonStart: number | null;
 }) {
-  const fromRating =
+  const fromRatingHaza =
     seasonStart != null &&
     ochpParticipantsFromRatingSeasons().includes(seasonStart);
+  const fromRatingApiOnly = ochpParticipantsFromRatingApiOnly(seasonStart);
+  const fromRating = fromRatingHaza || fromRatingApiOnly;
   const tournamentId = resolveOchpRatingTournamentId(seasonStart);
   const hazaId = resolveOchpChgkHazaBroadcastId(seasonStart);
 
-  const participants = fromRating
+  const participants = fromRatingHaza
     ? await fetchParticipantsFromRatingArchive(tournamentId, hazaId)
-    : await fetchParticipants();
+    : fromRatingApiOnly
+      ? await fetchParticipantsFromRatingOnly(
+          tournamentId,
+          seasonStart != null && OCHP_SEASON_CHST_ALL_TEAMS.has(seasonStart),
+        )
+      : await fetchParticipants();
   const plCount = participants.filter((p) => p.isPL).length;
 
   return (

@@ -12,6 +12,7 @@ import {
   resolveOchpRatingTournamentId,
 } from "@/lib/ochp-seasons";
 import TeamsTable from "./TeamsTable";
+import ChgkRatingApiResults from "./ChgkRatingApiResults";
 import ChgkResults from "./ChgkResults";
 import BrainResults from "./BrainResults";
 import StormResults from "./StormResults";
@@ -396,8 +397,16 @@ async function fetchParticipants(): Promise<Participant[]> {
   return rows;
 }
 
+function sortParticipantsByNameRu(participants: Participant[]): Participant[] {
+  const key = (s: string) => s.toLocaleLowerCase("ru");
+  return [...participants].sort((a, b) =>
+    key(a.name).localeCompare(key(b.name), "ru"),
+  );
+}
+
 /**
  * Список участников из rating.chgk.info + зачёт ЧСт из той же трансляции haza, что и таблица результатов.
+ * Перед отдачей — алфавит по названию команды (как на странице архива).
  */
 async function fetchParticipantsFromRatingArchive(
   tournamentId: number,
@@ -432,19 +441,23 @@ async function fetchParticipantsFromRatingArchive(
       (h, i) => apiSorted[i].questionsTotal !== h.score,
     )
   ) {
-    return apiSorted.map((a) => ({
+    return sortParticipantsByNameRu(
+      apiSorted.map((a) => ({
+        pos: a.position,
+        name: a.current.name,
+        city: a.current.town.name,
+        isPL: false,
+      })),
+    );
+  }
+  return sortParticipantsByNameRu(
+    apiSorted.map((a, i) => ({
       pos: a.position,
       name: a.current.name,
       city: a.current.town.name,
-      isPL: false,
-    }));
-  }
-  return apiSorted.map((a, i) => ({
-    pos: a.position,
-    name: a.current.name,
-    city: a.current.town.name,
-    isPL: hazaSorted[i].group === 0,
-  }));
+      isPL: hazaSorted[i].group === 0,
+    })),
+  );
 }
 
 function PolishFlag() {
@@ -516,12 +529,18 @@ async function ParticipantsPage({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {participants.map((p) => (
+            {participants.map((p, i) => (
               <tr
-                key={`${p.pos}-${p.name}`}
+                key={
+                  fromRating
+                    ? `${p.name}\0${p.city}`
+                    : `${p.pos}-${p.name}`
+                }
                 className="hover:bg-surface/50"
               >
-                <td className="px-3 py-2.5 text-muted font-mono">{p.pos}</td>
+                <td className="px-3 py-2.5 text-muted font-mono">
+                  {fromRating ? i + 1 : p.pos}
+                </td>
                 <td className="px-3 py-2.5 font-medium whitespace-nowrap">{p.name}</td>
                 <td className="px-3 py-2.5 text-muted whitespace-nowrap">{p.city}</td>
                 <td className="px-3 py-2.5 text-center">{p.isPL && <PolishFlag />}</td>
@@ -809,7 +828,12 @@ export default async function OchpSubPage({
       ) : slug === "rules" ? (
         <RulesPage />
       ) : slug === "results-chgk" ? (
-        <ChgkResults broadcastId={chgkHazaId} />
+        seasonForRating != null &&
+        seasonForRating < OCHP_SEASON_START_MAX ? (
+          <ChgkRatingApiResults tournamentId={ratingTournamentId} />
+        ) : (
+          <ChgkResults broadcastId={chgkHazaId} />
+        )
       ) : slug === "results-brain" ? (
         <BrainSubTiles />
       ) : slug === "results-brain-1-16" ? (

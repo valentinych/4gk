@@ -34,6 +34,14 @@ interface Payload {
   docsUrl: string;
 }
 
+/** Отображаемое имя команды: не длиннее `max` символов, при обрезке хвост — «...» (входит в лимит). */
+function teamNameDisplay(name: string, max = 30): string {
+  if (name.length <= max) return name;
+  const ellipsis = "...";
+  const take = max - ellipsis.length;
+  return `${name.slice(0, Math.max(0, take))}${ellipsis}`;
+}
+
 function cellDisplay(ch: string): { text: string; className: string } {
   if (ch === "1") return { text: "1", className: "text-foreground font-semibold" };
   if (ch === "0") return { text: "0", className: "text-muted/50" };
@@ -235,14 +243,15 @@ export default function ChgkRatingApiResults({
                 <td className="px-1.5 sm:px-2 py-1.5 text-right font-mono text-xs text-muted">
                   {team.teamId}
                 </td>
-                <td className="px-1.5 sm:px-2 py-1.5">
+                <td className="px-1.5 sm:px-2 py-1.5 align-top">
                   <a
                     href={`https://rating.chgk.info/teams/${team.teamId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-sm leading-tight break-words text-accent hover:underline min-w-0"
+                    title={team.name}
+                    className="font-medium text-sm leading-tight text-accent hover:underline min-w-0 break-words"
                   >
-                    {team.name}
+                    {teamNameDisplay(team.name)}
                   </a>
                 </td>
                 <td className="px-0.5 py-1.5 text-center">

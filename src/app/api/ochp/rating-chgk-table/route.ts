@@ -12,6 +12,40 @@ export const dynamic = "force-dynamic";
 
 const RATING = "https://api.rating.chgk.info";
 
+async function fetchTournamentAndResults(
+  tournamentId: number,
+  auth: string | undefined,
+): Promise<[Response, Response]> {
+  const authHeaders: Record<string, string> = auth
+    ? { Authorization: auth }
+    : {};
+  const tUrl = `${RATING}/tournaments/${tournamentId}`;
+  const rUrl = `${RATING}/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(0)}`;
+  const opts = (headers: Record<string, string>) =>
+    ({ headers, next: { revalidate: 300 } }) as const;
+
+  let tRes: Response;
+  let rRes: Response;
+  if (auth) {
+    [tRes, rRes] = await Promise.all([
+      fetch(tUrl, opts(authHeaders)),
+      fetch(rUrl, opts(authHeaders)),
+    ]);
+    if (tRes.status === 401 || rRes.status === 401) {
+      [tRes, rRes] = await Promise.all([
+        fetch(tUrl, opts({})),
+        fetch(rUrl, opts({})),
+      ]);
+    }
+  } else {
+    [tRes, rRes] = await Promise.all([
+      fetch(tUrl, opts({})),
+      fetch(rUrl, opts({})),
+    ]);
+  }
+  return [tRes, rRes];
+}
+
 interface ResultRow {
   team: { id: number; name: string; town: { id: number; name: string } };
   current: { name: string; town: { id: number; name: string } };
@@ -36,20 +70,9 @@ export async function GET(request: Request) {
   }
 
   const auth = process.env.RATING_CHGK_AUTHORIZATION?.trim();
-  const headers: Record<string, string> = {};
-  if (auth) headers.Authorization = auth;
 
   try {
-    const [tRes, rRes] = await Promise.all([
-      fetch(`${RATING}/tournaments/${tournamentId}`, {
-        headers: { ...headers },
-        next: { revalidate: 300 },
-      }),
-      fetch(
-        `${RATING}/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(0)}`,
-        { headers: { ...headers }, next: { revalidate: 300 } },
-      ),
-    ]);
+    const [tRes, rRes] = await fetchTournamentAndResults(tournamentId, auth);
 
     if (!tRes.ok) {
       return NextResponse.json(

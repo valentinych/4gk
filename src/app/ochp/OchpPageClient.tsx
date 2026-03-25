@@ -1,0 +1,243 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Calendar, ChevronDown, Trophy } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  formatOchpSeasonRange,
+  ochpSeasonOptions,
+  ochpYearSuffix,
+  parseOchpSeasonStart,
+  ochpMainDatesLabel,
+  OCHP_SEASON_START_MAX,
+} from "@/lib/ochp-seasons";
+
+type Tile = { slug: string; emoji: string; title: string; href?: string };
+
+function buildTiles(seasonStart: number): Tile[] {
+  const y = ochpYearSuffix(seasonStart);
+  const tiles: Tile[] = [
+    { slug: "schedule", emoji: "🗓️", title: `Расписание ОЧП'${y}` },
+    { slug: "rating-page", emoji: "🌐", title: "Страница турнира на сайте рейтинга" },
+    { slug: "participants", emoji: "👥", title: `Список участников ОЧП'${y}` },
+    { slug: "rules", emoji: "📜", title: `Положение ОЧП'${y}` },
+    { slug: "results-chgk", emoji: "❓", title: "Результаты Что? Где? Когда?" },
+    { slug: "results-brain", emoji: "🧠", title: "Результаты Брэйн-Ринга" },
+    { slug: "results-storm", emoji: "⚡", title: "Результаты Мозгового Штурма" },
+    {
+      slug: "appeals",
+      emoji: "⚖️",
+      title: "Апелляции на ЧГК",
+      href: "https://docs.google.com/forms/u/1/d/e/1FAIpQLSeAGwAPKBgtASfzkZGMQ_KocQNnnNahXuv_azY_hZ8cyV3Lbg/viewform?usp=send_form",
+    },
+  ];
+
+  if (seasonStart === OCHP_SEASON_START_MAX) {
+    tiles.push(
+      {
+        slug: "sync-signup",
+        emoji: "🎯",
+        title: "Заявка на синхрон в пятницу 20.03",
+        href: "https://forms.gle/1M2ACrutmUEeWgMt8",
+      },
+      {
+        slug: "rosters",
+        emoji: "📋",
+        title: `Подача составов на ОЧП'${y}`,
+        href: "https://forms.gle/aqzNpBBmYTYDWcfZ7",
+      },
+      {
+        slug: "legionnaires",
+        emoji: "🔍",
+        title: `Поиск легионеров на ОЧП'${y}`,
+        href: "https://t.me/chgkpolska/85",
+      },
+    );
+  }
+
+  tiles.push(
+    { slug: "food", emoji: "🍽️", title: "Где поесть рядом с МПИ" },
+    {
+      slug: "excursions",
+      emoji: "🏛️",
+      title: "Запись на экскурсии по Варшаве",
+      href: "https://t.me/chgkpolska/89",
+    },
+  );
+
+  if (seasonStart === OCHP_SEASON_START_MAX) {
+    tiles.push({
+      slug: "fantasy",
+      emoji: "🔮",
+      title: "Фэнтези ОЧП",
+      href: "https://fantasy.razumau.net/tournaments/pl-2026",
+    });
+  }
+
+  return tiles;
+}
+
+export function OchpPageClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const seasonParam = searchParams.get("season");
+  const seasonStart = parseOchpSeasonStart(seasonParam);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const setSeason = useCallback(
+    (y: number) => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (y === OCHP_SEASON_START_MAX) {
+        next.delete("season");
+      } else {
+        next.set("season", String(y));
+      }
+      const q = next.toString();
+      router.push(q ? `/ochp?${q}` : "/ochp", { scroll: false });
+      setMenuOpen(false);
+    },
+    [router, searchParams],
+  );
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  const ySuffix = ochpYearSuffix(seasonStart);
+  const tiles = buildTiles(seasonStart);
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div className="mb-10">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <Trophy className="h-3.5 w-3.5" />
+              Чемпионат
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              ОЧП&apos;{ySuffix}
+            </h1>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Открытый чемпионат Польши по интеллектуальным играм. Крупнейший
+              национальный турнир, объединяющий команды со всего мира.
+            </p>
+          </div>
+          <Image
+            src="/ochp-logo.png"
+            alt={`ОЧП'${ySuffix}`}
+            width={80}
+            height={100}
+            className="shrink-0 hidden sm:block"
+          />
+        </div>
+      </div>
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-2">
+        <div className="relative rounded-xl border border-border bg-white p-5" ref={menuRef}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen((o) => !o);
+            }}
+            className="flex w-full items-center gap-3 text-left rounded-lg -m-1 p-1 transition-colors hover:bg-surface/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
+              <Calendar className="h-4 w-4 text-muted" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted">Сезон</p>
+              <p className="text-sm font-bold">{formatOchpSeasonRange(seasonStart)}</p>
+            </div>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted transition-transform ${menuOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {menuOpen && (
+            <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-lg border border-border bg-white py-1 shadow-lg">
+              {ochpSeasonOptions().map((y) => (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setSeason(y)}
+                  className={`flex w-full items-center px-4 py-2.5 text-left text-sm transition-colors hover:bg-surface ${
+                    y === seasonStart ? "font-bold text-accent bg-accent/5" : ""
+                  }`}
+                >
+                  {formatOchpSeasonRange(y)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="rounded-xl border border-border bg-white p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
+              <Trophy className="h-4 w-4 text-muted" />
+            </div>
+            <div>
+              <p className="text-xs text-muted">Дата</p>
+              <p className="text-sm font-bold">{ochpMainDatesLabel(seasonStart)}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {seasonStart !== OCHP_SEASON_START_MAX && (
+        <p className="mb-4 text-xs text-muted leading-relaxed">
+          Расписание, результаты и отдельные ссылки на подстраницах относятся к
+          последнему опубликованному турниру (сезон {formatOchpSeasonRange(OCHP_SEASON_START_MAX)}).
+        </p>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {tiles.map((tile) =>
+          tile.href ? (
+            <a
+              key={tile.slug}
+              href={tile.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+              <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                {tile.title}
+              </span>
+            </a>
+          ) : (
+            <Link
+              key={tile.slug}
+              href={`/ochp/${tile.slug}`}
+              className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+              <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                {tile.title}
+              </span>
+            </Link>
+          ),
+        )}
+      </div>
+
+      <div className="mt-12 flex justify-center">
+        <Image
+          src="/ochp-sponsors.png"
+          alt={`Партнёры ОЧП'${ySuffix}`}
+          width={800}
+          height={60}
+          className="opacity-70 hover:opacity-100 transition-opacity"
+        />
+      </div>
+    </div>
+  );
+}

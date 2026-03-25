@@ -170,7 +170,10 @@ interface TournamentData {
   name: string;
   dateStart: string;
   dateEnd: string;
+  /** Прогноз сложности (целое на сайте рейтинга) */
   difficultyForecast: number;
+  /** Фактическая сложность по TrueDL; `null`, пока не рассчитана (см. API `tournaments/:id`) */
+  trueDL: number | null;
   questionQty: Record<string, number>;
   orgcommittee: Person[];
   editors: Person[];
@@ -236,6 +239,15 @@ function PersonList({ title, icon, people }: { title: string; icon: React.ReactN
   );
 }
 
+/** Как на rating.chgk.info — десятичная точка, до 5 знаков после запятой */
+function formatTrueDl(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 5,
+    useGrouping: false,
+  }).format(value);
+}
+
 async function RatingPage({ tournamentId }: { tournamentId: number }) {
   const { tournament: t, teams } = await fetchTournament(tournamentId);
 
@@ -243,10 +255,15 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
   const tourCount = Object.keys(t.questionQty).length;
   const questionsPerTour = Object.values(t.questionQty)[0] ?? 0;
 
-  const sortedTeams = [...teams].sort((a, b) => {
-    if (a.position !== b.position) return a.position - b.position;
-    return a.current.name.localeCompare(b.current.name, "ru");
-  });
+  const isPastTournament = new Date(t.dateEnd).getTime() < Date.now();
+  const teamCount = teams.length;
+  const teamsLabel = isPastTournament
+    ? `${teamCount}/${teamCount}`
+    : `${teamCount}/48`;
+
+  const alphabeticalTeams = [...teams].sort((a, b) =>
+    a.current.name.localeCompare(b.current.name, "ru"),
+  );
 
   const dateStart = new Date(t.dateStart);
   const dateEnd = new Date(t.dateEnd);
@@ -283,13 +300,20 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
             <Users className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Команды</span>
           </div>
-          <p className="text-sm font-bold">{teams.length}/48</p>
+          <p className="text-sm font-bold">{teamsLabel}</p>
         </div>
         <div className="rounded-xl border border-border bg-white p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs text-muted">Сложность</span>
           </div>
-          <p className="text-sm font-bold">{t.difficultyForecast}</p>
+          <p className="text-sm font-bold leading-snug">
+            <span className="block">Прогноз {t.difficultyForecast}</span>
+            {t.trueDL != null && (
+              <span className="mt-1 block text-xs font-semibold text-muted">
+                TrueDL {formatTrueDl(t.trueDL)}
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -300,7 +324,7 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
         <PersonList title="Апелляционное жюри" icon={<Scale className="h-4 w-4 text-muted" />} people={t.appealJury} />
       </div>
 
-      <TeamsTable teams={sortedTeams} />
+      <TeamsTable teams={alphabeticalTeams} />
     </div>
   );
 }

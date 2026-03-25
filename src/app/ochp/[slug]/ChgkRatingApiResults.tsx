@@ -48,10 +48,25 @@ function cellDisplay(ch: string): { text: string; className: string } {
   return { text: ch || "·", className: "text-amber-700 font-medium" };
 }
 
+/** Максимум очков по туру среди команд (для подсветки лидеров тура). */
+function tourColumnMaxima(teams: TeamRow[], tourCount: number): (number | null)[] {
+  return Array.from({ length: tourCount }, (_, ti) => {
+    let max = -Infinity;
+    for (const team of teams) {
+      const v = team.tourSums?.[ti];
+      if (typeof v === "number" && !Number.isNaN(v)) max = Math.max(max, v);
+    }
+    return Number.isFinite(max) ? max : null;
+  });
+}
+
 export default function ChgkRatingApiResults({
   tournamentId,
+  highlightTourMaxima = false,
 }: {
   tournamentId: number;
+  /** Подсвечивать лучший результат тура (тёмно-зелёный круг), напр. ОЧП 2023/2024 */
+  highlightTourMaxima?: boolean;
 }) {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,6 +141,10 @@ export default function ChgkRatingApiResults({
   if (!data) return null;
 
   const showExtraCol = data.extraRoundMaxLen > 0;
+  const tourMaxes =
+    highlightTourMaxima && data.masksAvailable
+      ? tourColumnMaxima(data.teams, data.tours.length)
+      : null;
 
   return (
     <div className="space-y-4">
@@ -164,6 +183,9 @@ export default function ChgkRatingApiResults({
         <p className="text-xs text-muted">
           В ячейках тура показано число взятых вопросов; клик — повопросно. Символ, отличный
           от 0/1, отображается как снятый/особый (как «X» на сайте рейтинга).
+          {highlightTourMaxima
+            ? " Лучший результат тура (или ничья за 1-е место в туре) — тёмно-зелёный круг с белой цифрой."
+            : null}
         </p>
       )}
 
@@ -267,12 +289,21 @@ export default function ChgkRatingApiResults({
                   const sum = team.tourSums?.[ti];
                   const clickable =
                     data.masksAvailable && team.mask && sum != null;
+                  const colMax = tourMaxes?.[ti];
+                  const isTourBest =
+                    sum != null &&
+                    colMax != null &&
+                    sum === colMax;
                   return (
                     <td
                       key={t.n}
                       className={`px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums ${
                         clickable
-                          ? "cursor-pointer hover:bg-accent/10 underline decoration-dotted"
+                          ? `cursor-pointer hover:bg-accent/10 ${
+                              isTourBest
+                                ? ""
+                                : "underline decoration-dotted"
+                            }`
                           : ""
                       }`}
                       onClick={() =>
@@ -287,7 +318,16 @@ export default function ChgkRatingApiResults({
                       }
                     >
                       {sum != null ? (
-                        sum
+                        isTourBest ? (
+                          <span
+                            className="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-emerald-900 px-1.5 font-bold text-white tabular-nums shadow-sm"
+                            title={`Максимум тура Т${t.n}: ${colMax}`}
+                          >
+                            {sum}
+                          </span>
+                        ) : (
+                          sum
+                        )
                       ) : (
                         <span className="text-muted/40">—</span>
                       )}

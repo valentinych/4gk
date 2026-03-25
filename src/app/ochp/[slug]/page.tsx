@@ -868,7 +868,10 @@ export default async function OchpSubPage({
       ) : slug === "results-chgk" ? (
         seasonForRating != null &&
         seasonForRating < OCHP_SEASON_START_MAX ? (
-          <ChgkRatingApiResults tournamentId={ratingTournamentId} />
+          <ChgkRatingApiResults
+            tournamentId={ratingTournamentId}
+            highlightTourMaxima={seasonForRating === 2023}
+          />
         ) : (
           <ChgkResults broadcastId={chgkHazaId} />
         )

@@ -62,11 +62,8 @@ function tourColumnMaxima(teams: TeamRow[], tourCount: number): (number | null)[
 
 export default function ChgkRatingApiResults({
   tournamentId,
-  highlightTourMaxima = false,
 }: {
   tournamentId: number;
-  /** Подсвечивать лучший результат тура (тёмно-зелёный круг), напр. ОЧП 2023/2024 */
-  highlightTourMaxima?: boolean;
 }) {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,10 +138,9 @@ export default function ChgkRatingApiResults({
   if (!data) return null;
 
   const showExtraCol = data.extraRoundMaxLen > 0;
-  const tourMaxes =
-    highlightTourMaxima && data.masksAvailable
-      ? tourColumnMaxima(data.teams, data.tours.length)
-      : null;
+  const tourMaxes = data.masksAvailable
+    ? tourColumnMaxima(data.teams, data.tours.length)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -183,9 +179,7 @@ export default function ChgkRatingApiResults({
         <p className="text-xs text-muted">
           В ячейках тура показано число взятых вопросов; клик — повопросно. Символ, отличный
           от 0/1, отображается как снятый/особый (как «X» на сайте рейтинга).
-          {highlightTourMaxima
-            ? " Лучший результат тура (или ничья за 1-е место в туре) — тёмно-зелёный круг с белой цифрой."
-            : null}
+          Лучший результат тура (или ничья за 1-е место в туре) — тёмно-зелёный круг с белой цифрой.
         </p>
       )}
 

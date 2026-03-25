@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { OCHP_CHGK_HAZA_BROADCAST_CURRENT } from "@/lib/ochp-seasons";
 
@@ -25,6 +25,35 @@ interface HazaData {
 }
 
 const REFRESH_INTERVAL = 60;
+
+function tourScoresFromAnswers(answers: string, tours: HazaTour[]): number[] {
+  const scores: number[] = [];
+  let offset = 0;
+  for (const tour of tours) {
+    let s = 0;
+    for (let i = 0; i < tour.q; i++) {
+      if (answers[offset + i] === "1") s++;
+    }
+    scores.push(s);
+    offset += tour.q;
+  }
+  return scores;
+}
+
+function hazaTourColumnMaxima(
+  teams: HazaTeam[],
+  tours: HazaTour[],
+): (number | null)[] {
+  const n = tours.length;
+  const maxes = Array.from({ length: n }, () => -Infinity);
+  for (const team of teams) {
+    const sc = tourScoresFromAnswers(team.answers, tours);
+    for (let ti = 0; ti < n; ti++) {
+      maxes[ti] = Math.max(maxes[ti], sc[ti] ?? 0);
+    }
+  }
+  return maxes.map((m) => (Number.isFinite(m) ? m : null));
+}
 
 export default function ChgkResults({
   broadcastId = OCHP_CHGK_HAZA_BROADCAST_CURRENT,
@@ -88,19 +117,10 @@ export default function ChgkResults({
     fetchData().then(scheduleNextRefresh);
   };
 
-  const tourScores = (answers: string, tours: HazaTour[]): number[] => {
-    const scores: number[] = [];
-    let offset = 0;
-    for (const tour of tours) {
-      let s = 0;
-      for (let i = 0; i < tour.q; i++) {
-        if (answers[offset + i] === "1") s++;
-      }
-      scores.push(s);
-      offset += tour.q;
-    }
-    return scores;
-  };
+  const tourMaxes = useMemo(
+    () => (data ? hazaTourColumnMaxima(data.teams, data.tours) : null),
+    [data],
+  );
 
   if (error && !data) {
     return (
@@ -157,6 +177,9 @@ export default function ChgkResults({
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-white">
+          <p className="text-xs text-muted px-3 pt-3 pb-1">
+            Лучший результат тура (или ничья за 1-е место в туре) — тёмно-зелёный круг с белой цифрой.
+          </p>
           <table className="text-sm border-collapse">
             <thead>
               <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
@@ -181,7 +204,7 @@ export default function ChgkResults({
             </thead>
             <tbody className="divide-y divide-border">
               {data.teams.map((team, i) => {
-                const scores = tourScores(team.answers, data.tours);
+                const scores = tourScoresFromAnswers(team.answers, data.tours);
                 return (
                   <tr
                     key={i}
@@ -210,14 +233,30 @@ export default function ChgkResults({
                     <td className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-sm font-bold tabular-nums bg-surface/50">
                       {team.score}
                     </td>
-                    {scores.map((s, ti) => (
-                      <td
-                        key={ti}
-                        className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums"
-                      >
-                        {s > 0 ? s : <span className="text-muted/40">0</span>}
-                      </td>
-                    ))}
+                    {scores.map((s, ti) => {
+                      const colMax = tourMaxes?.[ti];
+                      const isTourBest =
+                        colMax != null && s === colMax;
+                      return (
+                        <td
+                          key={ti}
+                          className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums"
+                        >
+                          {isTourBest ? (
+                            <span
+                              className="inline-flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-emerald-900 px-1.5 font-bold text-white tabular-nums shadow-sm"
+                              title={`Максимум тура Т${data.tours[ti]?.n ?? ti + 1}: ${colMax}`}
+                            >
+                              {s}
+                            </span>
+                          ) : s > 0 ? (
+                            s
+                          ) : (
+                            <span className="text-muted/40">0</span>
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}

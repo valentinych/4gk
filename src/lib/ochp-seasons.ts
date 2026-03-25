@@ -35,3 +35,22 @@ export function ochpMainDatesLabel(seasonStart: number): string {
   }
   return "—";
 }
+
+export interface OchpLandingTile {
+  slug: string;
+  emoji: string;
+  title: string;
+  /** Внешняя ссылка; без href — внутренний путь /ochp/[slug] */
+  href?: string;
+}
+
+/**
+ * Плитки на главной /ochp для архивных сезонов (всё кроме 2025/2026).
+ * Ключ — первый год сезона (как в ?season=2024). Добавляйте записи по одной плитке.
+ *
+ * Пример:
+ *   2024: [{ slug: "schedule", emoji: "🗓️", title: "Расписание ОЧП'25" }],
+ */
+export const OCHP_ARCHIVE_TILES: Partial<
+  Record<number, OchpLandingTile[]>
+> = {};

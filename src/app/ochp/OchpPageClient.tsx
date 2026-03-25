@@ -12,13 +12,13 @@ import {
   parseOchpSeasonStart,
   ochpMainDatesLabel,
   OCHP_SEASON_START_MAX,
+  OCHP_ARCHIVE_TILES,
+  type OchpLandingTile,
 } from "@/lib/ochp-seasons";
 
-type Tile = { slug: string; emoji: string; title: string; href?: string };
-
-function buildTiles(seasonStart: number): Tile[] {
-  const y = ochpYearSuffix(seasonStart);
-  const tiles: Tile[] = [
+function buildCurrentSeasonTiles(): OchpLandingTile[] {
+  const y = ochpYearSuffix(OCHP_SEASON_START_MAX);
+  return [
     { slug: "schedule", emoji: "🗓️", title: `Расписание ОЧП'${y}` },
     { slug: "rating-page", emoji: "🌐", title: "Страница турнира на сайте рейтинга" },
     { slug: "participants", emoji: "👥", title: `Список участников ОЧП'${y}` },
@@ -32,32 +32,24 @@ function buildTiles(seasonStart: number): Tile[] {
       title: "Апелляции на ЧГК",
       href: "https://docs.google.com/forms/u/1/d/e/1FAIpQLSeAGwAPKBgtASfzkZGMQ_KocQNnnNahXuv_azY_hZ8cyV3Lbg/viewform?usp=send_form",
     },
-  ];
-
-  if (seasonStart === OCHP_SEASON_START_MAX) {
-    tiles.push(
-      {
-        slug: "sync-signup",
-        emoji: "🎯",
-        title: "Заявка на синхрон в пятницу 20.03",
-        href: "https://forms.gle/1M2ACrutmUEeWgMt8",
-      },
-      {
-        slug: "rosters",
-        emoji: "📋",
-        title: `Подача составов на ОЧП'${y}`,
-        href: "https://forms.gle/aqzNpBBmYTYDWcfZ7",
-      },
-      {
-        slug: "legionnaires",
-        emoji: "🔍",
-        title: `Поиск легионеров на ОЧП'${y}`,
-        href: "https://t.me/chgkpolska/85",
-      },
-    );
-  }
-
-  tiles.push(
+    {
+      slug: "sync-signup",
+      emoji: "🎯",
+      title: "Заявка на синхрон в пятницу 20.03",
+      href: "https://forms.gle/1M2ACrutmUEeWgMt8",
+    },
+    {
+      slug: "rosters",
+      emoji: "📋",
+      title: `Подача составов на ОЧП'${y}`,
+      href: "https://forms.gle/aqzNpBBmYTYDWcfZ7",
+    },
+    {
+      slug: "legionnaires",
+      emoji: "🔍",
+      title: `Поиск легионеров на ОЧП'${y}`,
+      href: "https://t.me/chgkpolska/85",
+    },
     { slug: "food", emoji: "🍽️", title: "Где поесть рядом с МПИ" },
     {
       slug: "excursions",
@@ -65,18 +57,13 @@ function buildTiles(seasonStart: number): Tile[] {
       title: "Запись на экскурсии по Варшаве",
       href: "https://t.me/chgkpolska/89",
     },
-  );
-
-  if (seasonStart === OCHP_SEASON_START_MAX) {
-    tiles.push({
+    {
       slug: "fantasy",
       emoji: "🔮",
       title: "Фэнтези ОЧП",
       href: "https://fantasy.razumau.net/tournaments/pl-2026",
-    });
-  }
-
-  return tiles;
+    },
+  ];
 }
 
 export function OchpPageClient() {
@@ -112,7 +99,10 @@ export function OchpPageClient() {
   }, []);
 
   const ySuffix = ochpYearSuffix(seasonStart);
-  const tiles = buildTiles(seasonStart);
+  const isCurrentSeason = seasonStart === OCHP_SEASON_START_MAX;
+  const tiles: OchpLandingTile[] = isCurrentSeason
+    ? buildCurrentSeasonTiles()
+    : (OCHP_ARCHIVE_TILES[seasonStart] ?? []);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -192,44 +182,45 @@ export function OchpPageClient() {
         </div>
       </div>
 
-      {seasonStart !== OCHP_SEASON_START_MAX && (
-        <p className="mb-4 text-xs text-muted leading-relaxed">
-          Расписание, результаты и отдельные ссылки на подстраницах относятся к
-          последнему опубликованному турниру (сезон {formatOchpSeasonRange(OCHP_SEASON_START_MAX)}).
+      {!isCurrentSeason && tiles.length === 0 && (
+        <p className="mb-8 text-sm text-muted leading-relaxed">
+          Материалы этого сезона на портале появятся по мере добавления.
         </p>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {tiles.map((tile) =>
-          tile.href ? (
-            <a
-              key={tile.slug}
-              href={tile.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-            >
-              <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
-              <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-                {tile.title}
-              </span>
-            </a>
-          ) : (
-            <Link
-              key={tile.slug}
-              href={`/ochp/${tile.slug}`}
-              className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-            >
-              <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
-              <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-                {tile.title}
-              </span>
-            </Link>
-          ),
-        )}
-      </div>
+      {tiles.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {tiles.map((tile) =>
+            tile.href ? (
+              <a
+                key={tile.slug}
+                href={tile.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+              >
+                <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+                <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                  {tile.title}
+                </span>
+              </a>
+            ) : (
+              <Link
+                key={tile.slug}
+                href={`/ochp/${tile.slug}`}
+                className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+              >
+                <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+                <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                  {tile.title}
+                </span>
+              </Link>
+            ),
+          )}
+        </div>
+      )}
 
-      <div className="mt-12 flex justify-center">
+      <div className={`flex justify-center ${tiles.length > 0 ? "mt-12" : "mt-8"}`}>
         <Image
           src="/ochp-sponsors.png"
           alt={`Партнёры ОЧП'${ySuffix}`}

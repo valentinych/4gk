@@ -3,7 +3,7 @@
 Разовое получение JWT для api.rating.chgk.info и строки для RATING_CHGK_AUTHORIZATION.
 
 1) Выдача токена: POST /authentication_token (JSON: email, password)
-2) Проверка (Login-Check): GET /users/me с Authorization: Bearer <token>
+2) Проверка: GET /users/test с Authorization: Bearer <token> (в OpenAPI; эндпоинт помечен deprecated)
 
 Использование:
   python3 scripts/rating-chgk-token.py
@@ -102,14 +102,14 @@ def main() -> int:
         return 1
 
     me_status, me = get_json(
-        f"{BASE}/users/me",
+        f"{BASE}/users/test",
         {
             "Authorization": f"Bearer {token}",
             "Accept": "application/json",
         },
     )
 
-    print("— Проверка Login-Check: GET /users/me —")
+    print("— Проверка: GET /users/test —")
     if me_status == 200 and isinstance(me, dict):
         print(json.dumps(me, ensure_ascii=False, indent=2)[:2000])
         if len(json.dumps(me, ensure_ascii=False)) > 2000:

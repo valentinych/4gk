@@ -1,6 +1,7 @@
 import { ArrowLeft, MapPin, Clock, ExternalLink, Navigation, Users, Pen, Gavel, Scale, Calendar, Hash } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { ratingChgkResultsQuery } from "@/lib/chgk-tournament-results";
 import { fetchHazaBroadcastData } from "@/lib/ochp-haza";
 import {
   OCHP_SEASON_START_MAX,
@@ -208,7 +209,7 @@ async function fetchTournament(
       next: { revalidate: 3600 },
     }),
     fetch(
-      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?includeTeamMembers=1`,
+      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(1)}`,
       { next: { revalidate: 3600 } },
     ),
   ]);
@@ -414,7 +415,7 @@ async function fetchParticipantsFromRatingArchive(
 ): Promise<Participant[]> {
   const [res, hazaData] = await Promise.all([
     fetch(
-      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?includeTeamMembers=0`,
+      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(0)}`,
       { next: { revalidate: 3600 } },
     ),
     fetchHazaBroadcastData(hazaBroadcastId),

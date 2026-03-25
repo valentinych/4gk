@@ -3,6 +3,7 @@ import {
   cumulativeTourSums,
   expectedMaskLength,
   parseMaskIntoTours,
+  ratingChgkResultsQuery,
   resultHasChstFlag,
   tourSlicesFromQuestionQty,
 } from "@/lib/chgk-tournament-results";
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
         next: { revalidate: 300 },
       }),
       fetch(
-        `${RATING}/tournaments/${tournamentId}/results?includeTeamMembers=0`,
+        `${RATING}/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(0)}`,
         { headers: { ...headers }, next: { revalidate: 300 } },
       ),
     ]);

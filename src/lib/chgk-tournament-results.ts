@@ -1,7 +1,19 @@
 /**
- * Разбор повопросной маски результатов турнира rating.chgk.info
- * (поле mask у сущности Results — см. GET /tournaments/{id}/results при наличии доступа).
+ * Разбор повопросной маски результатов турнира rating.chgk.info.
+ * Поле `mask` приходит только если в запросе указать includeMasksAndControversials=1
+ * (по умолчанию в API — 0, поля mask и controversials отсутствуют).
+ *
+ * Документация: https://api.rating.chgk.info/?ui=re_doc — GET /tournaments/{id}/results
  */
+
+/** Query string для GET /tournaments/{id}/results с масками и флагами команд (ЧСт и др.). */
+export function ratingChgkResultsQuery(includeTeamMembers: 0 | 1): string {
+  return new URLSearchParams({
+    includeTeamMembers: String(includeTeamMembers),
+    includeMasksAndControversials: "1",
+    includeTeamFlags: "1",
+  }).toString();
+}
 
 export interface TourSlice {
   tourNum: number;

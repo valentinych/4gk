@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
+import { OCHP_CHGK_HAZA_BROADCAST_CURRENT } from "@/lib/ochp-seasons";
 
 interface HazaTour {
   n: number;
@@ -25,7 +26,11 @@ interface HazaData {
 
 const REFRESH_INTERVAL = 60;
 
-export default function ChgkResults() {
+export default function ChgkResults({
+  broadcastId = OCHP_CHGK_HAZA_BROADCAST_CURRENT,
+}: {
+  broadcastId?: number;
+}) {
   const [data, setData] = useState<HazaData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +41,9 @@ export default function ChgkResults() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/ochp/haza");
+      const res = await fetch(
+        `/api/ochp/haza?broadcastId=${encodeURIComponent(String(broadcastId))}`,
+      );
       if (!res.ok) throw new Error("Failed to fetch");
       const json: HazaData = await res.json();
       setData(json);
@@ -47,7 +54,7 @@ export default function ChgkResults() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [broadcastId]);
 
   const scheduleNextRefresh = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -134,7 +141,7 @@ export default function ChgkResults() {
           )}
         </div>
         <a
-          href="https://www.haza.online/broadcast/641"
+          href={`https://www.haza.online/broadcast/${broadcastId}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs text-accent hover:underline"
@@ -191,7 +198,7 @@ export default function ChgkResults() {
                         {team.group === 0 && (
                           <span
                             className="inline-block w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-border overflow-hidden shrink-0 mt-0.5"
-                            title="Польский зачёт"
+                            title="Зачёт ЧСт"
                           >
                             <span className="block w-full h-1/2 bg-white" />
                             <span className="block w-full h-1/2 bg-red-500" />

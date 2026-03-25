@@ -1,9 +1,14 @@
 import { ArrowLeft, MapPin, Clock, ExternalLink, Navigation, Users, Pen, Gavel, Scale, Calendar, Hash } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { fetchHazaBroadcastData } from "@/lib/ochp-haza";
 import {
+  OCHP_SEASON_START_MAX,
+  ochpParticipantsFromRatingSeasons,
   ochpRatingPublicUrl,
+  ochpYearSuffix,
   parseOchpSeasonStartOptional,
+  resolveOchpChgkHazaBroadcastId,
   resolveOchpRatingTournamentId,
 } from "@/lib/ochp-seasons";
 import TeamsTable from "./TeamsTable";
@@ -330,10 +335,19 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
 }
 
 interface Participant {
+  /** Номер в протоколе (может быть дробным при ничьих) */
   pos: number;
   name: string;
   city: string;
+  /** Зачёт ЧСт в трансляции haza (gr = 0) */
   isPL: boolean;
+}
+
+interface RatingResultRow {
+  team: { id: number };
+  current: { name: string; town: { name: string } };
+  questionsTotal: number | null;
+  position: number;
 }
 
 function parseCsvLine(line: string): string[] {
@@ -382,11 +396,62 @@ async function fetchParticipants(): Promise<Participant[]> {
   return rows;
 }
 
+/**
+ * Список участников из rating.chgk.info + зачёт ЧСт из той же трансляции haza, что и таблица результатов.
+ */
+async function fetchParticipantsFromRatingArchive(
+  tournamentId: number,
+  hazaBroadcastId: number,
+): Promise<Participant[]> {
+  const [res, hazaData] = await Promise.all([
+    fetch(
+      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?includeTeamMembers=0`,
+      { next: { revalidate: 3600 } },
+    ),
+    fetchHazaBroadcastData(hazaBroadcastId),
+  ]);
+  if (!res.ok) return [];
+  const results: RatingResultRow[] = await res.json();
+  const sortName = (s: string) => s.toLocaleLowerCase("ru");
+  const hazaSorted = [...hazaData.teams].sort((a, b) => {
+    if (a.pos !== b.pos) return a.pos - b.pos;
+    return sortName(a.name).localeCompare(sortName(b.name), "ru");
+  });
+  const apiSorted = [...results].sort((a, b) => {
+    if (a.position !== b.position) {
+      return a.position < b.position ? -1 : a.position > b.position ? 1 : 0;
+    }
+    return sortName(a.current.name).localeCompare(
+      sortName(b.current.name),
+      "ru",
+    );
+  });
+  if (
+    hazaSorted.length !== apiSorted.length ||
+    hazaSorted.some(
+      (h, i) => apiSorted[i].questionsTotal !== h.score,
+    )
+  ) {
+    return apiSorted.map((a) => ({
+      pos: a.position,
+      name: a.current.name,
+      city: a.current.town.name,
+      isPL: false,
+    }));
+  }
+  return apiSorted.map((a, i) => ({
+    pos: a.position,
+    name: a.current.name,
+    city: a.current.town.name,
+    isPL: hazaSorted[i].group === 0,
+  }));
+}
+
 function PolishFlag() {
   return (
     <span
       className="inline-block w-4 h-4 rounded-full border border-border overflow-hidden shrink-0"
-      title="Польский зачёт"
+      title="Зачёт ЧСт"
     >
       <span className="block w-full h-1/2 bg-white" />
       <span className="block w-full h-1/2 bg-red-500" />
@@ -394,24 +459,48 @@ function PolishFlag() {
   );
 }
 
-async function ParticipantsPage() {
-  const participants = await fetchParticipants();
+async function ParticipantsPage({
+  seasonStart,
+}: {
+  seasonStart: number | null;
+}) {
+  const fromRating =
+    seasonStart != null &&
+    ochpParticipantsFromRatingSeasons().includes(seasonStart);
+  const tournamentId = resolveOchpRatingTournamentId(seasonStart);
+  const hazaId = resolveOchpChgkHazaBroadcastId(seasonStart);
+
+  const participants = fromRating
+    ? await fetchParticipantsFromRatingArchive(tournamentId, hazaId)
+    : await fetchParticipants();
   const plCount = participants.filter((p) => p.isPL).length;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">
-          Всего команд: <strong>{participants.length}</strong>, польский зачёт: <strong>{plCount}</strong>
+          Всего команд: <strong>{participants.length}</strong>, зачёт ЧСт:{" "}
+          <strong>{plCount}</strong>
         </p>
-        <a
-          href="https://docs.google.com/spreadsheets/d/1xjvuOacGapp9zx0UQbaKijmoB5-w5pXCC31qMDl0few"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-accent hover:underline"
-        >
-          Google Sheets <ExternalLink className="h-3 w-3" />
-        </a>
+        {fromRating ? (
+          <a
+            href={ochpRatingPublicUrl(tournamentId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-accent hover:underline"
+          >
+            rating.chgk.info <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : (
+          <a
+            href="https://docs.google.com/spreadsheets/d/1xjvuOacGapp9zx0UQbaKijmoB5-w5pXCC31qMDl0few"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-accent hover:underline"
+          >
+            Google Sheets <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-white">
@@ -421,12 +510,17 @@ async function ParticipantsPage() {
               <th className="px-3 py-2.5 text-left font-medium w-10">№</th>
               <th className="px-3 py-2.5 text-left font-medium">Команда</th>
               <th className="px-3 py-2.5 text-left font-medium">Город</th>
-              <th className="px-3 py-2.5 text-center font-medium w-10" title="Польский зачёт">PL</th>
+              <th className="px-3 py-2.5 text-center font-medium w-10" title="Зачёт ЧСт">
+                PL
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {participants.map((p) => (
-              <tr key={p.pos} className="hover:bg-surface/50">
+              <tr
+                key={`${p.pos}-${p.name}`}
+                className="hover:bg-surface/50"
+              >
                 <td className="px-3 py-2.5 text-muted font-mono">{p.pos}</td>
                 <td className="px-3 py-2.5 font-medium whitespace-nowrap">{p.name}</td>
                 <td className="px-3 py-2.5 text-muted whitespace-nowrap">{p.city}</td>
@@ -631,6 +725,13 @@ const brainTiles = [
   { slug: "results-brain-33-48", title: "Турнир 33–48",  desc: "Команды, занявшие 33–48 места по итогам ЧГК" },
 ];
 
+function ochpSubpageHeading(slug: string, seasonStart: number | null): string {
+  if (seasonStart != null && slug === "participants") {
+    return `Список участников ОЧП'${ochpYearSuffix(seasonStart)}`;
+  }
+  return titles[slug] ?? slug;
+}
+
 function BrainSubTiles() {
   return (
     <div className="grid gap-4 sm:grid-cols-3">
@@ -662,12 +763,21 @@ export default async function OchpSubPage({
   const sp = await searchParams;
   const seasonForRating = parseOchpSeasonStartOptional(sp.season);
   const ratingTournamentId = resolveOchpRatingTournamentId(seasonForRating);
-  const title = titles[slug] ?? slug;
+  const chgkHazaId = resolveOchpChgkHazaBroadcastId(seasonForRating);
+  const title = ochpSubpageHeading(slug, seasonForRating);
+  const seasonForNav =
+    seasonForRating != null &&
+    (slug === "rating-page" ||
+      slug === "results-chgk" ||
+      slug === "participants")
+      ? seasonForRating
+      : null;
+  const logoYear = seasonForRating ?? OCHP_SEASON_START_MAX;
 
   const ochpBackHref = slug.startsWith("results-brain-")
     ? "/ochp/results-brain"
-    : slug === "rating-page" && seasonForRating != null
-      ? `/ochp?season=${seasonForRating}`
+    : seasonForNav != null
+      ? `/ochp?season=${seasonForNav}`
       : "/ochp";
 
   return (
@@ -683,7 +793,7 @@ export default async function OchpSubPage({
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         <Image
           src="/ochp-logo.png"
-          alt="ОЧП'26"
+          alt={`ОЧП'${ochpYearSuffix(logoYear)}`}
           width={56}
           height={70}
           className="shrink-0 hidden sm:block"
@@ -695,11 +805,11 @@ export default async function OchpSubPage({
       ) : slug === "rating-page" ? (
         <RatingPage tournamentId={ratingTournamentId} />
       ) : slug === "participants" ? (
-        <ParticipantsPage />
+        <ParticipantsPage seasonStart={seasonForRating} />
       ) : slug === "rules" ? (
         <RulesPage />
       ) : slug === "results-chgk" ? (
-        <ChgkResults />
+        <ChgkResults broadcastId={chgkHazaId} />
       ) : slug === "results-brain" ? (
         <BrainSubTiles />
       ) : slug === "results-brain-1-16" ? (

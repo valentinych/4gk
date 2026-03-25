@@ -44,6 +44,44 @@ export function ochpRatingPublicUrl(tournamentId: number): string {
   return `https://rating.chgk.info/tournament/${tournamentId}`;
 }
 
+/** Трансляция ЧГК на haza.online для текущего ОЧП на портале */
+export const OCHP_CHGK_HAZA_BROADCAST_CURRENT = 641;
+
+/** ID трансляции haza по первому году сезона (архив) — см. get_bcast_results.php */
+export const OCHP_CHGK_HAZA_BROADCAST_BY_SEASON: Partial<Record<number, number>> = {
+  2024: 583,
+};
+
+export function resolveOchpChgkHazaBroadcastId(
+  seasonStart: number | null,
+): number {
+  if (seasonStart != null) {
+    const b = OCHP_CHGK_HAZA_BROADCAST_BY_SEASON[seasonStart];
+    if (b != null) return b;
+  }
+  return OCHP_CHGK_HAZA_BROADCAST_CURRENT;
+}
+
+/** Разрешённые id для /api/ochp/haza (не пускаем произвольный proxy) */
+export function ochpChgkHazaBroadcastAllowlist(): number[] {
+  const s = new Set<number>([OCHP_CHGK_HAZA_BROADCAST_CURRENT]);
+  for (const id of Object.values(OCHP_CHGK_HAZA_BROADCAST_BY_SEASON)) {
+    if (typeof id === "number") s.add(id);
+  }
+  return [...s];
+}
+
+/** Участники из rating+haza (ЧСт), а не из Google Sheets */
+export function ochpParticipantsFromRatingSeasons(): number[] {
+  return Object.keys(OCHP_CHGK_HAZA_BROADCAST_BY_SEASON)
+    .map((k) => parseInt(k, 10))
+    .filter(
+      (y) =>
+        OCHP_RATING_TOURNAMENT_BY_SEASON[y] != null &&
+        OCHP_CHGK_HAZA_BROADCAST_BY_SEASON[y] != null,
+    );
+}
+
 export function formatOchpSeasonRange(seasonStart: number): string {
   return `${seasonStart}/${seasonStart + 1}`;
 }
@@ -93,6 +131,18 @@ export const OCHP_ARCHIVE_TILES: Partial<
       emoji: "🌐",
       title: "Страница турнира на сайте рейтинга",
       href: "/ochp/rating-page?season=2024",
+    },
+    {
+      slug: "results-chgk",
+      emoji: "❓",
+      title: "Результаты Что? Где? Когда?",
+      href: "/ochp/results-chgk?season=2024",
+    },
+    {
+      slug: "participants",
+      emoji: "👥",
+      title: "Список участников ОЧП'25",
+      href: "/ochp/participants?season=2024",
     },
   ],
 };

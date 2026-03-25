@@ -190,21 +190,39 @@ export function OchpPageClient() {
 
       {tiles.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tiles.map((tile) =>
-            tile.href ? (
-              <a
-                key={tile.slug}
-                href={tile.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-              >
-                <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
-                <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-                  {tile.title}
-                </span>
-              </a>
-            ) : (
+          {tiles.map((tile) => {
+            const ext = tile.href?.startsWith("http");
+            if (tile.href && !ext) {
+              return (
+                <Link
+                  key={`${tile.slug}-${tile.href}`}
+                  href={tile.href}
+                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+                  <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                    {tile.title}
+                  </span>
+                </Link>
+              );
+            }
+            if (ext) {
+              return (
+                <a
+                  key={tile.slug}
+                  href={tile.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+                >
+                  <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
+                  <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+                    {tile.title}
+                  </span>
+                </a>
+              );
+            }
+            return (
               <Link
                 key={tile.slug}
                 href={`/ochp/${tile.slug}`}
@@ -215,8 +233,8 @@ export function OchpPageClient() {
                   {tile.title}
                 </span>
               </Link>
-            ),
-          )}
+            );
+          })}
         </div>
       )}
 

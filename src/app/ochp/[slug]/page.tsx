@@ -1,6 +1,11 @@
 import { ArrowLeft, MapPin, Clock, ExternalLink, Navigation, Users, Pen, Gavel, Scale, Calendar, Hash } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  ochpRatingPublicUrl,
+  parseOchpSeasonStartOptional,
+  resolveOchpRatingTournamentId,
+} from "@/lib/ochp-seasons";
 import TeamsTable from "./TeamsTable";
 import ChgkResults from "./ChgkResults";
 import BrainResults from "./BrainResults";
@@ -186,10 +191,17 @@ interface TeamResult {
   teamMembers?: TeamMember[];
 }
 
-async function fetchTournament(): Promise<{ tournament: TournamentData; teams: TeamResult[] }> {
+async function fetchTournament(
+  tournamentId: number,
+): Promise<{ tournament: TournamentData; teams: TeamResult[] }> {
   const [tRes, rRes] = await Promise.all([
-    fetch("https://api.rating.chgk.info/tournaments/13180", { next: { revalidate: 3600 } }),
-    fetch("https://api.rating.chgk.info/tournaments/13180/results?includeTeamMembers=1", { next: { revalidate: 3600 } }),
+    fetch(`https://api.rating.chgk.info/tournaments/${tournamentId}`, {
+      next: { revalidate: 3600 },
+    }),
+    fetch(
+      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?includeTeamMembers=1`,
+      { next: { revalidate: 3600 } },
+    ),
   ]);
   const tournament = await tRes.json();
   const teams = await rRes.json();
@@ -224,8 +236,8 @@ function PersonList({ title, icon, people }: { title: string; icon: React.ReactN
   );
 }
 
-async function RatingPage() {
-  const { tournament: t, teams } = await fetchTournament();
+async function RatingPage({ tournamentId }: { tournamentId: number }) {
+  const { tournament: t, teams } = await fetchTournament(tournamentId);
 
   const totalQuestions = Object.values(t.questionQty).reduce((a, b) => a + b, 0);
   const tourCount = Object.keys(t.questionQty).length;
@@ -243,7 +255,7 @@ async function RatingPage() {
   return (
     <div className="space-y-6">
       <a
-        href="https://rating.chgk.info/tournament/13180"
+        href={ochpRatingPublicUrl(tournamentId)}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/5 px-4 py-2 text-sm font-semibold text-accent hover:bg-accent/10 transition-colors"
@@ -615,14 +627,29 @@ function BrainSubTiles() {
   );
 }
 
-export default async function OchpSubPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function OchpSubPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ season?: string }>;
+}) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const seasonForRating = parseOchpSeasonStartOptional(sp.season);
+  const ratingTournamentId = resolveOchpRatingTournamentId(seasonForRating);
   const title = titles[slug] ?? slug;
+
+  const ochpBackHref = slug.startsWith("results-brain-")
+    ? "/ochp/results-brain"
+    : slug === "rating-page" && seasonForRating != null
+      ? `/ochp?season=${seasonForRating}`
+      : "/ochp";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <Link
-        href={slug.startsWith("results-brain-") ? "/ochp/results-brain" : "/ochp"}
+        href={ochpBackHref}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -642,7 +669,7 @@ export default async function OchpSubPage({ params }: { params: Promise<{ slug: 
       {slug === "schedule" ? (
         <SchedulePage />
       ) : slug === "rating-page" ? (
-        <RatingPage />
+        <RatingPage tournamentId={ratingTournamentId} />
       ) : slug === "participants" ? (
         <ParticipantsPage />
       ) : slug === "rules" ? (

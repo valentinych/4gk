@@ -30,7 +30,6 @@ interface Payload {
   extraRoundMaxLen: number;
   teams: TeamRow[];
   masksAvailable: boolean;
-  authConfigured: boolean;
   docsUrl: string;
 }
 
@@ -142,28 +141,21 @@ export default function ChgkRatingApiResults({
           <ExternalLink className="h-3 w-3" />
         </a>
         . Повопросная строка — поле <span className="font-mono">mask</span>{" "}
-        (символы вопросов по турам задаются в{" "}
-        <span className="font-mono">questionQty</span> турнира). На публичном
-        доступе <span className="font-mono">mask</span> часто скрыт; в документации
-        API указана авторизация заголовком{" "}
-        <span className="font-mono">Authorization</span>.
+        (запрашивается с{" "}
+        <span className="font-mono">includeMasksAndControversials=1</span>); раскладка
+        по турам — <span className="font-mono">questionQty</span> турнира.
       </p>
 
       {!data.masksAvailable && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <p className="font-medium">Повопросная сетка недоступна</p>
           <p className="mt-1 text-amber-800/90">
-            В ответе нет поля <code className="text-xs bg-amber-100/80 px-1 rounded">mask</code>
-            . Чтобы получить суммы по турам (Т1…Тn) и детализацию в попапе, задайте на
-            сервере переменную окружения{" "}
-            <code className="text-xs bg-amber-100/80 px-1 rounded">
-              RATING_CHGK_AUTHORIZATION
-            </code>{" "}
-            (значение для заголовка Authorization, как в личном кабинете / ключе API
-            rating.chgk.info) и перезапустите приложение.
-            {data.authConfigured
-              ? " Сейчас ключ задан, но mask всё ещё не приходит — проверьте права токена."
-              : null}
+            В ответе API нет осмысленного поля{" "}
+            <code className="text-xs bg-amber-100/80 px-1 rounded">mask</code>
+            . Для идущих турниров рейтинг до наступления{" "}
+            <code className="text-xs bg-amber-100/80 px-1 rounded">hideResultsTo</code>{" "}
+            может не отдавать маску и часть полей даже с корректным запросом — см. описание
+            операции в документации API.
           </p>
         </div>
       )}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Разовое получение JWT для api.rating.chgk.info и строки для RATING_CHGK_AUTHORIZATION.
+Разовое получение JWT для ручных запросов к api.rating.chgk.info (сайт 4gk этот токен не использует).
 
 1) Выдача токена: POST /authentication_token (JSON: email, password)
 2) Проверка: GET /users/test с Authorization: Bearer <token> (в OpenAPI; эндпоинт помечен deprecated)
@@ -118,10 +118,10 @@ def main() -> int:
         print(f"HTTP {me_status}:", me)
 
     print()
-    print("Добавьте на сервер в .env (одна строка, без переносов):")
-    print(f'RATING_CHGK_AUTHORIZATION="Bearer {token}"')
+    print("Заголовок для своих curl/скриптов (одна строка, без переносов):")
+    print(f'Authorization: Bearer {token}')
     print()
-    print("Локально для next dev — то же в .env в корне проекта.")
+    print("В .env проекта это поле не требуется для таблицы ОЧП на 4gk.pl.")
     return 0
 
 

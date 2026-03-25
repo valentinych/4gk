@@ -17,7 +17,11 @@ services:
       retries: 5
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
+        UMAMI_HOST: ${UMAMI_HOST:-https://analytics.4gk.pl}
     restart: unless-stopped
     ports:
       - "3000:3000"

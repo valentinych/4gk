@@ -11,6 +11,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG UMAMI_WEBSITE_ID
+ARG UMAMI_HOST=https://analytics.4gk.pl
+ENV UMAMI_WEBSITE_ID=$UMAMI_WEBSITE_ID
+ENV UMAMI_HOST=$UMAMI_HOST
 RUN npx prisma generate --schema=src/prisma/schema.prisma
 RUN npm run build
 

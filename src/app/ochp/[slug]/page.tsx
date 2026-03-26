@@ -12,6 +12,7 @@ import {
   ochpParticipantsFromRatingApiOnly,
   ochpParticipantsFromRatingSeasons,
   ochpRatingPublicUrl,
+  ochpSeasonHadNoChampionship,
   ochpYearSuffix,
   parseOchpSeasonStartOptional,
   resolveOchpChgkHazaBroadcastId,
@@ -819,6 +820,7 @@ export default async function OchpSubPage({
   const { slug } = await params;
   const sp = await searchParams;
   const seasonForRating = parseOchpSeasonStartOptional(sp.season);
+  const noChampionshipSeason = ochpSeasonHadNoChampionship(seasonForRating);
   const ratingTournamentId = resolveOchpRatingTournamentId(seasonForRating);
   const chgkHazaId = resolveOchpChgkHazaBroadcastId(seasonForRating);
   const title = ochpSubpageHeading(slug, seasonForRating);
@@ -857,7 +859,13 @@ export default async function OchpSubPage({
         />
       </div>
 
-      {slug === "schedule" ? (
+      {noChampionshipSeason ? (
+        <div className="rounded-xl border border-border bg-white px-6 py-14 text-center">
+          <p className="text-base font-medium text-foreground">
+            Чемпионат Польши в этот сезон не проводился
+          </p>
+        </div>
+      ) : slug === "schedule" ? (
         <SchedulePage />
       ) : slug === "rating-page" ? (
         <RatingPage tournamentId={ratingTournamentId} />

@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   formatOchpSeasonRange,
+  ochpSeasonHadNoChampionship,
   ochpSeasonOptions,
   ochpYearSuffix,
   parseOchpSeasonStart,
@@ -100,9 +101,13 @@ export function OchpPageClient() {
 
   const ySuffix = ochpYearSuffix(seasonStart);
   const isCurrentSeason = seasonStart === OCHP_SEASON_START_MAX;
-  const tiles: OchpLandingTile[] = isCurrentSeason
-    ? buildCurrentSeasonTiles()
-    : (OCHP_ARCHIVE_TILES[seasonStart] ?? []);
+  const noChampionship = ochpSeasonHadNoChampionship(seasonStart);
+  const tiles: OchpLandingTile[] =
+    noChampionship
+      ? []
+      : isCurrentSeason
+        ? buildCurrentSeasonTiles()
+        : (OCHP_ARCHIVE_TILES[seasonStart] ?? []);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -182,7 +187,13 @@ export function OchpPageClient() {
         </div>
       </div>
 
-      {!isCurrentSeason && tiles.length === 0 && (
+      {noChampionship && (
+        <p className="mb-8 rounded-xl border border-border bg-surface/80 px-5 py-4 text-center text-sm font-medium text-foreground">
+          Чемпионат Польши в этот сезон не проводился
+        </p>
+      )}
+
+      {!noChampionship && !isCurrentSeason && tiles.length === 0 && (
         <p className="mb-8 text-sm text-muted leading-relaxed">
           Материалы этого сезона на портале появятся по мере добавления.
         </p>

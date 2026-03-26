@@ -41,6 +41,17 @@ export const OCHP_RATING_TOURNAMENT_BY_SEASON: Partial<Record<number, number>> =
  */
 export const OCHP_SEASON_CHST_ALL_TEAMS: ReadonlySet<number> = new Set([2023]);
 
+/** Сезоны без ОЧП: 2019/2020, 2020/2021 — чемпионат не проводился */
+export const OCHP_SEASON_NO_CHAMPIONSHIP: ReadonlySet<number> = new Set([
+  2019,
+  2020,
+]);
+
+export function ochpSeasonHadNoChampionship(seasonStart: number | null): boolean {
+  if (seasonStart == null) return false;
+  return OCHP_SEASON_NO_CHAMPIONSHIP.has(seasonStart);
+}
+
 export function resolveOchpRatingTournamentId(
   seasonStart: number | null,
 ): number {

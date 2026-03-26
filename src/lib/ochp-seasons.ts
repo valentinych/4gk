@@ -117,6 +117,11 @@ export function formatOchpSeasonRange(seasonStart: number): string {
   return `${seasonStart}/${seasonStart + 1}`;
 }
 
+/** Календарный год чемпионата: для пары сезонов 2025/2026 → «2026». */
+export function formatOchpChampionshipYear(seasonStart: number): string {
+  return String(seasonStart + 1);
+}
+
 /** Двузначный год окончания сезона для «ОЧП'26» */
 export function ochpYearSuffix(seasonStart: number): string {
   return String(seasonStart + 1).slice(-2);

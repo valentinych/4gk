@@ -6,7 +6,7 @@ import { Calendar, ChevronDown, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  formatOchpSeasonRange,
+  formatOchpChampionshipYear,
   ochpSeasonHadNoChampionship,
   ochpSeasonOptions,
   ochpYearSuffix,
@@ -174,8 +174,8 @@ export function OchpPageClient() {
               <Calendar className="h-4 w-4 text-muted" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted">Сезон</p>
-              <p className="text-sm font-bold">{formatOchpSeasonRange(seasonStart)}</p>
+              <p className="text-xs text-muted">Год</p>
+              <p className="text-sm font-bold">{formatOchpChampionshipYear(seasonStart)}</p>
             </div>
             <ChevronDown
               className={`h-4 w-4 shrink-0 text-muted transition-transform ${menuOpen ? "rotate-180" : ""}`}
@@ -192,7 +192,7 @@ export function OchpPageClient() {
                     y === seasonStart ? "font-bold text-accent bg-accent/5" : ""
                   }`}
                 >
-                  {formatOchpSeasonRange(y)}
+                  {formatOchpChampionshipYear(y)}
                 </button>
               ))}
             </div>

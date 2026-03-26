@@ -130,12 +130,17 @@ export function ochpSeasonOptions(): number[] {
   return out.reverse();
 }
 
-/** Даты финала — только для актуального сезона на портале */
-export function ochpMainDatesLabel(seasonStart: number): string {
-  if (seasonStart === OCHP_SEASON_START_MAX) {
-    return "21–22 марта 2026";
-  }
-  return "—";
+/**
+ * Диапазон дат турнира как на странице рейтинга (ru-RU).
+ * `dateStart` / `dateEnd` — ISO-строки из api.rating.chgk.info.
+ */
+export function formatOchpTournamentDateRange(
+  dateStart: string,
+  dateEnd: string,
+): string {
+  const ds = new Date(dateStart);
+  const de = new Date(dateEnd);
+  return `${ds.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} – ${de.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}`;
 }
 
 export interface OchpLandingTile {

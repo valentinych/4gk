@@ -9,6 +9,7 @@ import { fetchHazaBroadcastData } from "@/lib/ochp-haza";
 import {
   OCHP_SEASON_CHST_ALL_TEAMS,
   OCHP_SEASON_START_MAX,
+  formatOchpTournamentDateRange,
   ochpParticipantsFromRatingApiOnly,
   ochpParticipantsFromRatingSeasons,
   ochpRatingPublicUrl,
@@ -278,9 +279,7 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
     a.current.name.localeCompare(b.current.name, "ru"),
   );
 
-  const dateStart = new Date(t.dateStart);
-  const dateEnd = new Date(t.dateEnd);
-  const dateStr = `${dateStart.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })} – ${dateEnd.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}`;
+  const dateStr = formatOchpTournamentDateRange(t.dateStart, t.dateEnd);
 
   return (
     <div className="space-y-6">

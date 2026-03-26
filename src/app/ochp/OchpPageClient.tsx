@@ -11,7 +11,6 @@ import {
   ochpSeasonOptions,
   ochpYearSuffix,
   parseOchpSeasonStart,
-  ochpMainDatesLabel,
   OCHP_SEASON_START_MAX,
   OCHP_ARCHIVE_TILES,
   type OchpLandingTile,
@@ -75,6 +74,9 @@ export function OchpPageClient() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [tournamentDateLabel, setTournamentDateLabel] = useState<
+    string | null
+  >(null);
 
   const setSeason = useCallback(
     (y: number) => {
@@ -91,14 +93,6 @@ export function OchpPageClient() {
     [router, searchParams],
   );
 
-  useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    }
-    document.addEventListener("click", onDocClick);
-    return () => document.removeEventListener("click", onDocClick);
-  }, []);
-
   const ySuffix = ochpYearSuffix(seasonStart);
   const isCurrentSeason = seasonStart === OCHP_SEASON_START_MAX;
   const noChampionship = ochpSeasonHadNoChampionship(seasonStart);
@@ -108,6 +102,36 @@ export function OchpPageClient() {
       : isCurrentSeason
         ? buildCurrentSeasonTiles()
         : (OCHP_ARCHIVE_TILES[seasonStart] ?? []);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  useEffect(() => {
+    if (noChampionship) {
+      setTournamentDateLabel("—");
+      return;
+    }
+    let cancelled = false;
+    setTournamentDateLabel(null);
+    fetch(
+      `/api/ochp/tournament-dates?season=${encodeURIComponent(String(seasonStart))}`,
+    )
+      .then((r) => r.json())
+      .then((j: { dateLabel?: string | null }) => {
+        if (!cancelled) setTournamentDateLabel(j.dateLabel ?? "—");
+      })
+      .catch(() => {
+        if (!cancelled) setTournamentDateLabel("—");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [seasonStart, noChampionship]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -181,7 +205,9 @@ export function OchpPageClient() {
             </div>
             <div>
               <p className="text-xs text-muted">Дата</p>
-              <p className="text-sm font-bold">{ochpMainDatesLabel(seasonStart)}</p>
+              <p className="text-sm font-bold">
+                {tournamentDateLabel === null ? "…" : tournamentDateLabel}
+              </p>
             </div>
           </div>
         </div>

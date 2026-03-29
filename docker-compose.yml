@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: 4gk
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init-umami.sql:/docker-entrypoint-initdb.d/02-init-umami.sql
     ports:
       - "5433:5432"
     healthcheck:
@@ -43,6 +44,8 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/umami
+      # Override in .env with: openssl rand -hex 32
+      APP_SECRET: ${UMAMI_APP_SECRET:-dev-only-set-UMAMI_APP_SECRET-in-production}
     depends_on:
       db:
         condition: service_healthy

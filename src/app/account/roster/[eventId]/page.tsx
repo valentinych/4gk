@@ -66,6 +66,10 @@ export default function RosterPage() {
   const [city, setCity] = useState("");
   const [players, setPlayers] = useState<RosterPlayer[]>([]);
 
+  // Base player IDs for the selected team (from rating.chgk.info seasons)
+  const [basePlayerIds, setBasePlayerIds] = useState<Set<number>>(new Set());
+  const [baseLoading, setBaseLoading] = useState(false);
+
   // Team search
   const [teamQuery, setTeamQuery] = useState("");
   const debouncedTeamQuery = useDebounce(teamQuery, 400);
@@ -84,6 +88,7 @@ export default function RosterPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [existing, setExisting] = useState(false);
+  const [rosterLoading, setRosterLoading] = useState(true);
 
   // Load event info
   useEffect(() => {
@@ -97,18 +102,26 @@ export default function RosterPage() {
       .catch(() => setEventLoading(false));
   }, [eventId]);
 
-  // Load existing roster
+  // Load existing roster — wait for session to be authenticated
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (status !== "authenticated") return;
     fetch(`/api/roster/${eventId}`)
       .then((r) => r.json())
-      .then((data) => {
-        if (!data) return;
-        setTeamName(data.teamName ?? "");
-        setTeamChgkId(data.teamChgkId ?? null);
-        setCity(data.city ?? "");
+      .then((data: unknown) => {
+        // Guard: must be a real roster object with an id field
+        if (!data || typeof data !== "object" || !("id" in (data as object))) return;
+        const d = data as {
+          id: string;
+          teamName: string;
+          teamChgkId: number | null;
+          city: string | null;
+          players: (RosterPlayer & { id: string })[];
+        };
+        setTeamName(d.teamName ?? "");
+        setTeamChgkId(d.teamChgkId ?? null);
+        setCity(d.city ?? "");
         setPlayers(
-          (data.players ?? []).map((p: RosterPlayer & { id: string }) => ({
+          (d.players ?? []).map((p) => ({
             id: p.id,
             chgkId: p.chgkId,
             lastName: p.lastName,
@@ -121,8 +134,30 @@ export default function RosterPage() {
         );
         setExisting(true);
       })
-      .catch(() => {});
-  }, [session?.user?.id, eventId]);
+      .catch(() => {})
+      .finally(() => setRosterLoading(false));
+  }, [status, eventId]);
+
+  // Fetch base player IDs whenever teamChgkId changes
+  useEffect(() => {
+    if (!teamChgkId) { setBasePlayerIds(new Set()); return; }
+    setBaseLoading(true);
+    fetch(`/api/chgk/team-players?teamId=${teamChgkId}`)
+      .then((r) => r.json())
+      .then((ids: number[]) => {
+        const s = new Set(ids);
+        setBasePlayerIds(s);
+        // Auto-update isBase for already-loaded players
+        setPlayers((prev) =>
+          prev.map((p) => ({
+            ...p,
+            isBase: p.chgkId != null ? s.has(p.chgkId) : p.isBase,
+          })),
+        );
+      })
+      .catch(() => setBasePlayerIds(new Set()))
+      .finally(() => setBaseLoading(false));
+  }, [teamChgkId]);
 
   // Team search
   useEffect(() => {
@@ -157,24 +192,28 @@ export default function RosterPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const addPlayerFromSearch = useCallback((p: ChgkPlayer) => {
-    if (players.some((pl) => pl.chgkId === p.id)) return;
-    setPlayers((prev) => [
-      ...prev,
-      {
-        chgkId: p.id,
-        lastName: p.surname,
-        firstName: p.name,
-        patronymic: p.patronymic || null,
-        isCaptain: false,
-        isBase: false,
-        sortOrder: prev.length,
-      },
-    ]);
-    setPlayerQuery("");
-    setPlayerResults([]);
-    setShowPlayerSearch(false);
-  }, [players]);
+  const addPlayerFromSearch = useCallback(
+    (p: ChgkPlayer) => {
+      if (players.some((pl) => pl.chgkId === p.id)) return;
+      setPlayers((prev) => [
+        ...prev,
+        {
+          chgkId: p.id,
+          lastName: p.surname,
+          firstName: p.name,
+          patronymic: p.patronymic || null,
+          isCaptain: false,
+          // Auto-detect: mark as base if player belongs to the selected team's roster
+          isBase: basePlayerIds.has(p.id),
+          sortOrder: prev.length,
+        },
+      ]);
+      setPlayerQuery("");
+      setPlayerResults([]);
+      setShowPlayerSearch(false);
+    },
+    [players, basePlayerIds],
+  );
 
   const addBlankPlayer = () => {
     setPlayers((prev) => [
@@ -241,7 +280,7 @@ export default function RosterPage() {
     router.push("/account");
   };
 
-  if (status === "loading" || eventLoading) {
+  if (status === "loading" || eventLoading || rosterLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
@@ -283,7 +322,11 @@ export default function RosterPage() {
         <div>
           <h1 className="text-2xl font-bold">Подача состава</h1>
           <p className="mt-0.5 text-sm text-muted">{event.title}</p>
-          <p className="text-xs text-muted">{new Date(event.startDate).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}, {event.city}</p>
+          <p className="text-xs text-muted">
+            {new Date(event.startDate).toLocaleDateString("ru-RU", {
+              day: "numeric", month: "long", year: "numeric",
+            })}, {event.city}
+          </p>
         </div>
       </div>
 
@@ -366,16 +409,24 @@ export default function RosterPage() {
           </div>
 
           {teamChgkId && (
-            <p className="text-xs text-muted">
-              ID команды в рейтинге: <span className="font-mono font-medium">{teamChgkId}</span>
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <span>
+                ID команды: <span className="font-mono font-medium">{teamChgkId}</span>
+              </span>
+              {baseLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+              {!baseLoading && basePlayerIds.size > 0 && (
+                <span className="text-emerald-600">
+                  · базовый состав: {basePlayerIds.size} игр.
+                </span>
+              )}
               <button
                 type="button"
-                onClick={() => { setTeamChgkId(null); }}
-                className="ml-2 text-danger hover:underline"
+                onClick={() => { setTeamChgkId(null); setBasePlayerIds(new Set()); }}
+                className="ml-auto text-danger hover:underline"
               >
                 сбросить
               </button>
-            </p>
+            </div>
           )}
         </div>
       </section>
@@ -412,6 +463,7 @@ export default function RosterPage() {
             <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border bg-white shadow-lg">
               {playerResults.map((p) => {
                 const alreadyAdded = players.some((pl) => pl.chgkId === p.id);
+                const isBase = basePlayerIds.has(p.id);
                 return (
                   <li key={p.id}>
                     <button
@@ -420,11 +472,20 @@ export default function RosterPage() {
                       onClick={() => addPlayerFromSearch(p)}
                       className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-surface disabled:opacity-40"
                     >
-                      <span>
-                        <span className="font-medium">{p.surname} {p.name}</span>
-                        {p.patronymic ? <span className="text-muted"> {p.patronymic}</span> : null}
+                      <span className="flex items-center gap-2">
+                        <span>
+                          <span className="font-medium">{p.surname} {p.name}</span>
+                          {p.patronymic ? <span className="text-muted"> {p.patronymic}</span> : null}
+                        </span>
+                        {isBase && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                            <Star className="h-2.5 w-2.5" /> база
+                          </span>
+                        )}
                       </span>
-                      <span className="text-xs text-muted">#{p.id}{alreadyAdded ? " · уже добавлен" : ""}</span>
+                      <span className="text-xs text-muted">
+                        #{p.id}{alreadyAdded ? " · уже добавлен" : ""}
+                      </span>
                     </button>
                   </li>
                 );

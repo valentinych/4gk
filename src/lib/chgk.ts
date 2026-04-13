@@ -66,3 +66,22 @@ export async function fetchPlayerTournaments(playerId: number): Promise<ChgkTour
     return [];
   }
 }
+
+/** Returns IDs of players in a team's registered season rosters (base roster members). */
+export async function fetchTeamBasePlayerIds(teamId: number): Promise<Set<number>> {
+  try {
+    const res = await fetch(`${BASE}/teams/${teamId}/seasons.json`, { cache: "no-store" });
+    if (!res.ok) return new Set();
+    const entries: ChgkSeasonEntry[] = await res.json();
+    // Keep players from the two most recent seasons to reflect current base roster
+    const seasons = [...new Set(entries.map((e) => e.idseason))].sort((a, b) => b - a);
+    const recentSeasons = new Set(seasons.slice(0, 2));
+    const ids = new Set<number>();
+    for (const e of entries) {
+      if (recentSeasons.has(e.idseason)) ids.add(e.idplayer);
+    }
+    return ids;
+  } catch {
+    return new Set();
+  }
+}

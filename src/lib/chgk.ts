@@ -49,9 +49,10 @@ export async function fetchTeam(id: number): Promise<ChgkTeam | null> {
 
 export async function fetchPlayerSeasons(playerId: number): Promise<ChgkSeasonEntry[]> {
   try {
-    const res = await fetch(`${BASE}/players/${playerId}/seasons.json`, { cache: "no-store" });
+    const res = await fetch(`${BASE}/players/${playerId}/seasons.json?limit=500`, { cache: "no-store" });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.items ?? []);
   } catch {
     return [];
   }
@@ -61,7 +62,8 @@ export async function fetchPlayerTournaments(playerId: number): Promise<ChgkTour
   try {
     const res = await fetch(`${BASE}/players/${playerId}/tournaments.json`, { cache: "no-store" });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.items ?? []);
   } catch {
     return [];
   }
@@ -74,9 +76,10 @@ export interface TeamRosterInfo {
 
 export async function fetchTeamSeasons(teamId: number): Promise<ChgkSeasonEntry[]> {
   try {
-    const res = await fetch(`${BASE}/teams/${teamId}/seasons.json`, { cache: "no-store" });
+    const res = await fetch(`${BASE}/teams/${teamId}/seasons.json?limit=500`, { cache: "no-store" });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : (data.items ?? []);
   } catch {
     return [];
   }

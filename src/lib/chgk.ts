@@ -67,21 +67,79 @@ export async function fetchPlayerTournaments(playerId: number): Promise<ChgkTour
   }
 }
 
-/** Returns IDs of players in a team's registered season rosters (base roster members). */
-export async function fetchTeamBasePlayerIds(teamId: number): Promise<Set<number>> {
+export interface TeamRosterInfo {
+  basePlayers: ChgkPlayer[];
+  recentPlayers: ChgkPlayer[];
+}
+
+export async function fetchTeamSeasons(teamId: number): Promise<ChgkSeasonEntry[]> {
   try {
     const res = await fetch(`${BASE}/teams/${teamId}/seasons.json`, { cache: "no-store" });
-    if (!res.ok) return new Set();
-    const entries: ChgkSeasonEntry[] = await res.json();
-    // Keep players from the two most recent seasons to reflect current base roster
-    const seasons = [...new Set(entries.map((e) => e.idseason))].sort((a, b) => b - a);
-    const recentSeasons = new Set(seasons.slice(0, 2));
-    const ids = new Set<number>();
-    for (const e of entries) {
-      if (recentSeasons.has(e.idseason)) ids.add(e.idplayer);
-    }
-    return ids;
+    if (!res.ok) return [];
+    return res.json();
   } catch {
-    return new Set();
+    return [];
   }
+}
+
+/** Returns IDs of players in a team's registered season rosters (base roster members). */
+export async function fetchTeamBasePlayerIds(teamId: number): Promise<Set<number>> {
+  const entries = await fetchTeamSeasons(teamId);
+  const seasons = [...new Set(entries.map((e) => e.idseason))].sort((a, b) => b - a);
+  const recentSeasons = new Set(seasons.slice(0, 2));
+  const ids = new Set<number>();
+  for (const e of entries) {
+    if (recentSeasons.has(e.idseason)) ids.add(e.idplayer);
+  }
+  return ids;
+}
+
+/**
+ * Returns base roster players (most recent 2 seasons) and recent non-base players
+ * (seasons 3–5), all with full name data fetched from the rating API.
+ */
+export async function fetchTeamRosterInfo(teamId: number): Promise<TeamRosterInfo> {
+  const entries = await fetchTeamSeasons(teamId);
+  if (!entries.length) return { basePlayers: [], recentPlayers: [] };
+
+  const seasons = [...new Set(entries.map((e) => e.idseason))].sort((a, b) => b - a);
+  const baseSeasonsSet = new Set(seasons.slice(0, 2));
+  const recentSeasonsSet = new Set(seasons.slice(2, 5));
+
+  const basePlayerIds = new Set<number>();
+  const recentPlayerIds = new Set<number>();
+
+  for (const e of entries) {
+    if (baseSeasonsSet.has(e.idseason)) basePlayerIds.add(e.idplayer);
+    else if (recentSeasonsSet.has(e.idseason)) recentPlayerIds.add(e.idplayer);
+  }
+  // Remove from recent if already in base
+  for (const id of basePlayerIds) recentPlayerIds.delete(id);
+
+  const baseIds = [...basePlayerIds].slice(0, 25);
+  const recentIds = [...recentPlayerIds].slice(0, 25);
+  const allIds = [...new Set([...baseIds, ...recentIds])];
+
+  const playerResults = await Promise.all(allIds.map((id) => fetchPlayer(id)));
+  const playerMap = new Map<number, ChgkPlayer>();
+  for (const p of playerResults) {
+    if (p) playerMap.set(p.id, p);
+  }
+
+  return {
+    basePlayers: baseIds.map((id) => playerMap.get(id)).filter((p): p is ChgkPlayer => !!p),
+    recentPlayers: recentIds.map((id) => playerMap.get(id)).filter((p): p is ChgkPlayer => !!p),
+  };
+}
+
+/** Finds the player's most recent base team from their season history. */
+export async function fetchPlayerCurrentTeam(
+  playerId: number,
+): Promise<{ teamId: number; teamName: string; city?: string | null } | null> {
+  const seasons = await fetchPlayerSeasons(playerId);
+  if (!seasons.length) return null;
+  const sorted = [...seasons].sort((a, b) => b.idseason - a.idseason);
+  const team = await fetchTeam(sorted[0].idteam);
+  if (!team) return null;
+  return { teamId: team.id, teamName: team.name, city: team.town?.name };
 }

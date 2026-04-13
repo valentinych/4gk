@@ -2,9 +2,22 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  fetchPlayerCurrentTeam,
+  fetchTeamRosterInfo,
+  type ChgkPlayer,
+} from "@/lib/chgk";
 import RosterForm from "./RosterForm";
 
 type Props = { params: Promise<{ eventId: string }> };
+
+export interface SuggestedTeamData {
+  teamId: number;
+  teamName: string;
+  city: string | null;
+  basePlayers: ChgkPlayer[];
+  recentPlayers: ChgkPlayer[];
+}
 
 export default async function RosterPage({ params }: Props) {
   const { eventId } = await params;
@@ -21,6 +34,26 @@ export default async function RosterPage({ params }: Props) {
       include: { players: { orderBy: { sortOrder: "asc" } } },
     }),
   ]);
+
+  // If no existing roster and user has a rating chgkId → pre-suggest their team
+  let suggestedTeamData: SuggestedTeamData | null = null;
+  if (!existingRoster && session.user.chgkId) {
+    try {
+      const currentTeam = await fetchPlayerCurrentTeam(session.user.chgkId);
+      if (currentTeam) {
+        const rosterInfo = await fetchTeamRosterInfo(currentTeam.teamId);
+        suggestedTeamData = {
+          teamId: currentTeam.teamId,
+          teamName: currentTeam.teamName,
+          city: currentTeam.city ?? null,
+          basePlayers: rosterInfo.basePlayers,
+          recentPlayers: rosterInfo.recentPlayers,
+        };
+      }
+    } catch {
+      // Suggestion is optional — ignore errors from the rating API
+    }
+  }
 
   return (
     <RosterForm
@@ -54,6 +87,7 @@ export default async function RosterPage({ params }: Props) {
             }
           : null
       }
+      suggestedTeamData={suggestedTeamData}
     />
   );
 }

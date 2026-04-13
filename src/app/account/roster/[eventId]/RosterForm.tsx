@@ -12,10 +12,11 @@ import {
   CheckCircle2,
   Loader2,
   ArrowLeft,
-  Crown,
   Star,
   Users,
+  UserPlus,
 } from "lucide-react";
+import type { SuggestedTeamData } from "./page";
 
 interface ChgkPlayer {
   id: number;
@@ -58,24 +59,56 @@ function useDebounce<T>(value: T, delay: number) {
   return debounced;
 }
 
+function chgkPlayerToRoster(p: ChgkPlayer, isBase: boolean, sortOrder: number): RosterPlayer {
+  return {
+    chgkId: p.id,
+    lastName: p.surname,
+    firstName: p.name,
+    patronymic: p.patronymic || null,
+    isCaptain: false,
+    isBase,
+    sortOrder,
+  };
+}
+
 export default function RosterForm({
   eventId,
   event,
   initialRoster,
+  suggestedTeamData,
 }: {
   eventId: string;
   event: RosterEvent | null;
   initialRoster: InitialRoster | null;
+  suggestedTeamData: SuggestedTeamData | null;
 }) {
   const router = useRouter();
 
-  const [teamName, setTeamName] = useState(initialRoster?.teamName ?? "");
-  const [teamChgkId, setTeamChgkId] = useState<number | null>(initialRoster?.teamChgkId ?? null);
-  const [city, setCity] = useState(initialRoster?.city ?? "");
-  const [players, setPlayers] = useState<RosterPlayer[]>(initialRoster?.players ?? []);
+  // Determine initial state from existing roster or suggestion
+  const suggestion = !initialRoster ? suggestedTeamData : null;
+
+  const [teamName, setTeamName] = useState(
+    initialRoster?.teamName ?? suggestion?.teamName ?? "",
+  );
+  const [teamChgkId, setTeamChgkId] = useState<number | null>(
+    initialRoster?.teamChgkId ?? suggestion?.teamId ?? null,
+  );
+  const [city, setCity] = useState(
+    initialRoster?.city ?? suggestion?.city ?? "",
+  );
+  const [players, setPlayers] = useState<RosterPlayer[]>(() => {
+    if (initialRoster) return initialRoster.players;
+    if (suggestion) {
+      return suggestion.basePlayers.map((p, i) => chgkPlayerToRoster(p, true, i));
+    }
+    return [];
+  });
   const [existing, setExisting] = useState(initialRoster != null);
 
-  // Base player IDs for the selected team
+  // Recent players suggestion (shown below base roster, not yet added)
+  const recentSuggestions: ChgkPlayer[] = suggestion?.recentPlayers ?? [];
+
+  // Base player IDs for the selected team (for auto-detect when searching)
   const [basePlayerIds, setBasePlayerIds] = useState<Set<number>>(new Set());
   const [baseLoading, setBaseLoading] = useState(false);
 
@@ -97,7 +130,7 @@ export default function RosterForm({
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch base player IDs whenever teamChgkId changes
+  // When team changes (via search), fetch base player IDs for auto-detect
   useEffect(() => {
     if (!teamChgkId) { setBasePlayerIds(new Set()); return; }
     setBaseLoading(true);
@@ -115,6 +148,8 @@ export default function RosterForm({
       })
       .catch(() => setBasePlayerIds(new Set()))
       .finally(() => setBaseLoading(false));
+  // Only run when team changes explicitly (not on initial render with suggestion)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamChgkId]);
 
   // Team search
@@ -139,7 +174,6 @@ export default function RosterForm({
       .finally(() => setPlayerSearching(false));
   }, [debouncedPlayerQuery]);
 
-  // Close player search dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (playerSearchRef.current && !playerSearchRef.current.contains(e.target as Node)) {
@@ -172,6 +206,14 @@ export default function RosterForm({
     [players, basePlayerIds],
   );
 
+  const addSuggestedPlayer = (p: ChgkPlayer) => {
+    if (players.some((pl) => pl.chgkId === p.id)) return;
+    setPlayers((prev) => [
+      ...prev,
+      chgkPlayerToRoster(p, false, prev.length),
+    ]);
+  };
+
   const addBlankPlayer = () => {
     setPlayers((prev) => [
       ...prev,
@@ -195,12 +237,6 @@ export default function RosterForm({
       [arr[idx], arr[next]] = [arr[next], arr[idx]];
       return arr.map((p, i) => ({ ...p, sortOrder: i }));
     });
-  };
-
-  const setCaptain = (idx: number) => {
-    setPlayers((prev) =>
-      prev.map((p, i) => ({ ...p, isCaptain: i === idx ? !p.isCaptain : false })),
-    );
   };
 
   const handleSave = async () => {
@@ -246,6 +282,12 @@ export default function RosterForm({
     );
   }
 
+  // Players added in the roster (by chgkId)
+  const addedChgkIds = new Set(players.map((p) => p.chgkId).filter(Boolean) as number[]);
+
+  // Recent suggestions not yet in the roster
+  const pendingSuggestions = recentSuggestions.filter((p) => !addedChgkIds.has(p.id));
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <Link
@@ -272,6 +314,13 @@ export default function RosterForm({
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           Состав уже подан — вы можете обновить его
+        </div>
+      )}
+
+      {!existing && suggestion && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+          <Star className="h-4 w-4 shrink-0 text-blue-500" />
+          Состав предзаполнен по данным рейтинга ЧГК — проверьте и сохраните
         </div>
       )}
 
@@ -347,14 +396,10 @@ export default function RosterForm({
 
           {teamChgkId && (
             <div className="flex items-center gap-2 text-xs text-muted">
-              <span>
-                ID команды: <span className="font-mono font-medium">{teamChgkId}</span>
-              </span>
+              <span>ID команды: <span className="font-mono font-medium">{teamChgkId}</span></span>
               {baseLoading && <Loader2 className="h-3 w-3 animate-spin" />}
               {!baseLoading && basePlayerIds.size > 0 && (
-                <span className="text-emerald-600">
-                  · базовый состав: {basePlayerIds.size} игр.
-                </span>
+                <span className="text-emerald-600">· базовый состав: {basePlayerIds.size} игр.</span>
               )}
               <button
                 type="button"
@@ -368,18 +413,18 @@ export default function RosterForm({
         </div>
       </section>
 
-      {/* Players section */}
+      {/* Players list */}
       <section className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
             Игроки ({players.length})
           </h2>
           <span className="text-xs text-muted">
-            <Crown className="mr-0.5 inline h-3 w-3 text-amber-500" /> — капитан&ensp;
             <Star className="mr-0.5 inline h-3 w-3 text-blue-500" /> — базовый состав
           </span>
         </div>
 
+        {/* Player search */}
         <div ref={playerSearchRef} className="relative mb-3">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
@@ -398,7 +443,7 @@ export default function RosterForm({
           {showPlayerSearch && playerResults.length > 0 && (
             <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border bg-white shadow-lg">
               {playerResults.map((p) => {
-                const alreadyAdded = players.some((pl) => pl.chgkId === p.id);
+                const alreadyAdded = addedChgkIds.has(p.id);
                 const isBase = basePlayerIds.has(p.id);
                 return (
                   <li key={p.id}>
@@ -419,9 +464,7 @@ export default function RosterForm({
                           </span>
                         )}
                       </span>
-                      <span className="text-xs text-muted">
-                        #{p.id}{alreadyAdded ? " · уже добавлен" : ""}
-                      </span>
+                      <span className="text-xs text-muted">#{p.id}{alreadyAdded ? " · уже добавлен" : ""}</span>
                     </button>
                   </li>
                 );
@@ -430,27 +473,22 @@ export default function RosterForm({
           )}
         </div>
 
+        {/* Player rows */}
         <div className="space-y-2">
           {players.map((p, idx) => (
-            <div
-              key={idx}
-              className="group rounded-xl border border-border bg-white p-3 transition-shadow hover:shadow-sm"
-            >
+            <div key={idx} className="rounded-xl border border-border bg-white p-3 transition-shadow hover:shadow-sm">
               <div className="flex items-start gap-2">
+                {/* Order controls */}
                 <div className="flex flex-col gap-0.5 pt-0.5">
                   <button
-                    type="button"
-                    onClick={() => movePlayer(idx, -1)}
-                    disabled={idx === 0}
+                    type="button" onClick={() => movePlayer(idx, -1)} disabled={idx === 0}
                     className="rounded p-0.5 text-muted transition-colors hover:text-foreground disabled:opacity-20"
                   >
                     <ChevronUp className="h-3.5 w-3.5" />
                   </button>
                   <span className="text-center text-xs font-mono text-muted">{idx + 1}</span>
                   <button
-                    type="button"
-                    onClick={() => movePlayer(idx, 1)}
-                    disabled={idx === players.length - 1}
+                    type="button" onClick={() => movePlayer(idx, 1)} disabled={idx === players.length - 1}
                     className="rounded p-0.5 text-muted transition-colors hover:text-foreground disabled:opacity-20"
                   >
                     <ChevronDown className="h-3.5 w-3.5" />
@@ -460,46 +498,26 @@ export default function RosterForm({
                 <div className="flex-1 min-w-0">
                   <div className="grid grid-cols-3 gap-2">
                     <input
-                      type="text"
-                      placeholder="Фамилия *"
-                      value={p.lastName}
+                      type="text" placeholder="Фамилия *" value={p.lastName}
                       onChange={(e) => updatePlayer(idx, { lastName: e.target.value })}
                       className="rounded-lg border border-border px-2.5 py-1.5 text-sm focus:border-accent focus:outline-none"
                     />
                     <input
-                      type="text"
-                      placeholder="Имя *"
-                      value={p.firstName}
+                      type="text" placeholder="Имя *" value={p.firstName}
                       onChange={(e) => updatePlayer(idx, { firstName: e.target.value })}
                       className="rounded-lg border border-border px-2.5 py-1.5 text-sm focus:border-accent focus:outline-none"
                     />
                     <input
-                      type="text"
-                      placeholder="Отчество"
-                      value={p.patronymic ?? ""}
+                      type="text" placeholder="Отчество" value={p.patronymic ?? ""}
                       onChange={(e) => updatePlayer(idx, { patronymic: e.target.value || null })}
                       className="rounded-lg border border-border px-2.5 py-1.5 text-sm focus:border-accent focus:outline-none"
                     />
                   </div>
-
                   <div className="mt-2 flex flex-wrap items-center gap-3">
-                    {p.chgkId && (
-                      <span className="text-xs font-mono text-muted">ID: {p.chgkId}</span>
-                    )}
+                    {p.chgkId && <span className="text-xs font-mono text-muted">ID: {p.chgkId}</span>}
                     <label className="flex cursor-pointer items-center gap-1.5 text-xs">
                       <input
-                        type="checkbox"
-                        checked={p.isCaptain}
-                        onChange={() => setCaptain(idx)}
-                        className="h-3.5 w-3.5 accent-amber-500"
-                      />
-                      <Crown className="h-3 w-3 text-amber-500" />
-                      Капитан
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-1.5 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={p.isBase}
+                        type="checkbox" checked={p.isBase}
                         onChange={() => updatePlayer(idx, { isBase: !p.isBase })}
                         className="h-3.5 w-3.5 accent-blue-500"
                       />
@@ -510,8 +528,7 @@ export default function RosterForm({
                 </div>
 
                 <button
-                  type="button"
-                  onClick={() => removePlayer(idx)}
+                  type="button" onClick={() => removePlayer(idx)}
                   className="shrink-0 rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -522,14 +539,46 @@ export default function RosterForm({
         </div>
 
         <button
-          type="button"
-          onClick={addBlankPlayer}
+          type="button" onClick={addBlankPlayer}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm text-muted transition-colors hover:border-accent hover:text-accent"
         >
-          <Plus className="h-4 w-4" />
-          Добавить игрока вручную
+          <Plus className="h-4 w-4" /> Добавить игрока вручную
         </button>
       </section>
+
+      {/* Recent non-base players suggestion */}
+      {pendingSuggestions.length > 0 && (
+        <section className="mt-6">
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted">
+            Недавние игроки команды
+          </h2>
+          <p className="mb-3 text-xs text-muted">
+            Играли за команду в прошлых сезонах, не в базовом составе. Нажмите «+» чтобы добавить в заявку.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {pendingSuggestions.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between rounded-xl border border-border bg-white px-4 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{p.surname} {p.name}</p>
+                  {p.patronymic && <p className="text-xs text-muted truncate">{p.patronymic}</p>}
+                  <p className="text-xs font-mono text-muted">#{p.id}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => addSuggestedPlayer(p)}
+                  className="ml-3 shrink-0 rounded-lg border border-border p-1.5 text-muted transition-colors hover:border-accent hover:text-accent"
+                  title="Добавить в состав"
+                >
+                  <UserPlus className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {error && (
         <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">{error}</p>
@@ -544,9 +593,7 @@ export default function RosterForm({
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
+          type="button" onClick={handleSave} disabled={saving}
           className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
@@ -555,12 +602,10 @@ export default function RosterForm({
 
         {existing && (
           <button
-            type="button"
-            onClick={handleDelete}
+            type="button" onClick={handleDelete}
             className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-red-50"
           >
-            <Trash2 className="h-4 w-4" />
-            Отозвать заявку
+            <Trash2 className="h-4 w-4" /> Отозвать заявку
           </button>
         )}
       </div>

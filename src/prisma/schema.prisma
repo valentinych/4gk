@@ -20,6 +20,7 @@ model User {
 
   accounts Account[]
   sessions Session[]
+  rosters  TeamRoster[]
 }
 
 model Account {
@@ -86,6 +87,39 @@ model CalendarEvent {
   mediaLinkLabel   String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  rosters TeamRoster[]
+}
+
+model TeamRoster {
+  id          String         @id @default(cuid())
+  eventId     String
+  userId      String
+  teamName    String
+  teamChgkId  Int?
+  city        String?
+  players     RosterPlayer[]
+  submittedAt DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model RosterPlayer {
+  id         String     @id @default(cuid())
+  rosterId   String
+  chgkId     Int?
+  lastName   String
+  firstName  String
+  patronymic String?
+  isCaptain  Boolean    @default(false)
+  isBase     Boolean    @default(false)
+  sortOrder  Int        @default(0)
+
+  roster TeamRoster @relation(fields: [rosterId], references: [id], onDelete: Cascade)
 }
 
 model CalendarTemplate {

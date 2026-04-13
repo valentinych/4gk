@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import {
   ChevronLeft,
   ChevronRight,
@@ -15,6 +16,9 @@ import {
   Megaphone,
   Pencil,
   LayoutTemplate,
+  Users,
+  CheckCircle2,
+  Download,
 } from "lucide-react";
 import {
   getCityColor,
@@ -187,6 +191,8 @@ export default function CalendarPage() {
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rosterCounts, setRosterCounts] = useState<Record<string, number>>({});
+  const [myRosterEventIds, setMyRosterEventIds] = useState<string[]>([]);
 
   const [showForm, setShowForm] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
@@ -209,6 +215,17 @@ export default function CalendarPage() {
     }
   }, []);
 
+  const fetchRosterCounts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/roster/counts");
+      if (res.ok) {
+        const data = await res.json();
+        setRosterCounts(data.counts ?? {});
+        setMyRosterEventIds(data.mine ?? []);
+      }
+    } catch {}
+  }, []);
+
   const fetchTemplates = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/calendar/templates");
@@ -223,6 +240,10 @@ export default function CalendarPage() {
   useEffect(() => {
     if (canManageEvents) fetchTemplates();
   }, [canManageEvents, fetchTemplates]);
+
+  useEffect(() => {
+    if (role) fetchRosterCounts();
+  }, [role, fetchRosterCounts]);
 
   const eventMap = useMemo(() => buildEventMap(events), [events]);
   const cells = useMemo(() => getMonthDays(year, month), [year, month]);
@@ -998,6 +1019,9 @@ export default function CalendarPage() {
                   deleting={deleting === ev.id}
                   onDelete={() => handleDelete(ev.id)}
                   onEdit={() => handleEdit(ev)}
+                  isLoggedIn={!!role}
+                  hasMyRoster={myRosterEventIds.includes(ev.id)}
+                  rosterCount={rosterCounts[ev.id] ?? 0}
                 />
               ))
             )}
@@ -1023,12 +1047,18 @@ function EventCard({
   deleting,
   onDelete,
   onEdit,
+  isLoggedIn,
+  hasMyRoster,
+  rosterCount,
 }: {
   event: CalendarEvent;
   canManage: boolean;
   deleting: boolean;
   onDelete: () => void;
   onEdit: () => void;
+  isLoggedIn?: boolean;
+  hasMyRoster?: boolean;
+  rosterCount?: number;
 }) {
   const c = getCityColor(event.city);
 
@@ -1124,7 +1154,46 @@ function EventCard({
             <ExternalLink className="h-3 w-3" />
           </a>
         )}
+        {isLoggedIn && (
+          <Link
+            href={`/account/roster/${event.id}`}
+            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+              hasMyRoster
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                : "border-border text-muted hover:bg-surface hover:text-foreground"
+            }`}
+          >
+            {hasMyRoster ? (
+              <>
+                <CheckCircle2 className="h-3 w-3" />
+                Состав подан
+              </>
+            ) : (
+              <>
+                <Users className="h-3 w-3" />
+                Подать состав
+              </>
+            )}
+          </Link>
+        )}
       </div>
+
+      {canManage && (rosterCount ?? 0) > 0 && (
+        <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+          <span className="inline-flex items-center gap-1 text-xs text-muted">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            {rosterCount} {rosterCount === 1 ? "команда" : rosterCount! < 5 ? "команды" : "команд"}
+          </span>
+          <a
+            href={`/api/roster/${event.id}/csv`}
+            download
+            className="ml-auto inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+          >
+            <Download className="h-3 w-3" />
+            CSV
+          </a>
+        </div>
+      )}
     </div>
   );
 }

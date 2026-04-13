@@ -1,10 +1,21 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { LogOut, Mail, Shield, Settings2 } from "lucide-react";
+import { LogOut, Mail, Shield, Settings2, Users, CheckCircle2, CalendarDays } from "lucide-react";
 import ChgkProfile from "@/components/ChgkProfile";
+
+interface MyRosterEntry {
+  id: string;
+  eventId: string;
+  teamName: string;
+  submittedAt: string;
+  updatedAt: string;
+  event: { title: string; startDate: string; city: string };
+  players: { id: string }[];
+}
 
 export default function AccountPage() {
   const { data: session, status } = useSession();
@@ -33,6 +44,16 @@ export default function AccountPage() {
   }
 
   const user = session.user;
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [myRosters, setMyRosters] = useState<MyRosterEntry[]>([]);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    fetch("/api/roster/mine")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setMyRosters(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
@@ -112,6 +133,51 @@ export default function AccountPage() {
       {/* CHGK Profile */}
       <div className="mt-4">
         <ChgkProfile />
+      </div>
+
+      {/* My submitted rosters */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Мои заявки</h2>
+          <Link
+            href="/calendar"
+            className="text-xs text-accent hover:underline"
+          >
+            Перейти в календарь
+          </Link>
+        </div>
+        {myRosters.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-surface/50 px-5 py-6 text-center">
+            <Users className="mx-auto h-7 w-7 text-muted/30" />
+            <p className="mt-2 text-xs text-muted">Вы ещё не подавали составов</p>
+            <Link
+              href="/calendar"
+              className="mt-3 inline-block text-xs text-accent hover:underline"
+            >
+              Открыть календарь турниров
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {myRosters.map((r) => (
+              <Link
+                key={r.id}
+                href={`/account/roster/${r.eventId}`}
+                className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 transition-colors hover:bg-surface"
+              >
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{r.teamName}</p>
+                  <p className="text-xs text-muted flex items-center gap-1">
+                    <CalendarDays className="h-3 w-3" />
+                    {r.event.title} · {r.event.city}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs text-muted">{r.players.length} иг.</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Actions */}

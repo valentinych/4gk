@@ -106,11 +106,13 @@ export default function RosterForm({
   const [existing, setExisting] = useState(initialRoster != null);
 
   // Recent players suggestion (shown below base roster, not yet added)
-  const recentSuggestions: ChgkPlayer[] = suggestion?.recentPlayers ?? [];
+  const [recentSuggestions, setRecentSuggestions] = useState<ChgkPlayer[]>(
+    suggestion?.recentPlayers ?? [],
+  );
 
   // Base player IDs for the selected team (for auto-detect when searching)
   const [basePlayerIds, setBasePlayerIds] = useState<Set<number>>(new Set());
-  const [baseLoading, setBaseLoading] = useState(false);
+  const [rosterLoading, setRosterLoading] = useState(false);
 
   // Team search
   const [teamQuery, setTeamQuery] = useState("");
@@ -130,25 +132,40 @@ export default function RosterForm({
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // When team changes (via search), fetch base player IDs for auto-detect
+  // Track whether the team was set from the initial suggestion (skip auto-fill on mount)
+  const isInitialTeam = useRef(true);
+
+  // When team changes via search, fetch full roster and pre-fill players
   useEffect(() => {
-    if (!teamChgkId) { setBasePlayerIds(new Set()); return; }
-    setBaseLoading(true);
-    fetch(`/api/chgk/team-players?teamId=${teamChgkId}`)
+    if (!teamChgkId) {
+      setBasePlayerIds(new Set());
+      return;
+    }
+    // On the very first render the team comes from suggestedTeamData which already
+    // pre-filled the players — don't overwrite them.
+    if (isInitialTeam.current) {
+      isInitialTeam.current = false;
+      // Still build the basePlayerIds set from the suggestion data
+      if (suggestion) {
+        const ids = new Set(suggestion.basePlayers.map((p) => p.id));
+        setBasePlayerIds(ids);
+      }
+      return;
+    }
+
+    setRosterLoading(true);
+    fetch(`/api/chgk/team-roster?teamId=${teamChgkId}`)
       .then((r) => r.json())
-      .then((ids: number[]) => {
-        const s = new Set(ids);
-        setBasePlayerIds(s);
-        setPlayers((prev) =>
-          prev.map((p) => ({
-            ...p,
-            isBase: p.chgkId != null ? s.has(p.chgkId) : p.isBase,
-          })),
-        );
+      .then((data: { basePlayers: ChgkPlayer[]; recentPlayers: ChgkPlayer[] }) => {
+        const base = data.basePlayers ?? [];
+        const recent = data.recentPlayers ?? [];
+        const ids = new Set(base.map((p) => p.id));
+        setBasePlayerIds(ids);
+        setPlayers(base.map((p, i) => chgkPlayerToRoster(p, true, i)));
+        setRecentSuggestions(recent);
       })
       .catch(() => setBasePlayerIds(new Set()))
-      .finally(() => setBaseLoading(false));
-  // Only run when team changes explicitly (not on initial render with suggestion)
+      .finally(() => setRosterLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamChgkId]);
 
@@ -397,13 +414,23 @@ export default function RosterForm({
           {teamChgkId && (
             <div className="flex items-center gap-2 text-xs text-muted">
               <span>ID команды: <span className="font-mono font-medium">{teamChgkId}</span></span>
-              {baseLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-              {!baseLoading && basePlayerIds.size > 0 && (
+              {rosterLoading && (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>загружаю состав…</span>
+                </>
+              )}
+              {!rosterLoading && basePlayerIds.size > 0 && (
                 <span className="text-emerald-600">· базовый состав: {basePlayerIds.size} игр.</span>
               )}
               <button
                 type="button"
-                onClick={() => { setTeamChgkId(null); setBasePlayerIds(new Set()); }}
+                onClick={() => {
+                  setTeamChgkId(null);
+                  setBasePlayerIds(new Set());
+                  setPlayers([]);
+                  setRecentSuggestions([]);
+                }}
                 className="ml-auto text-danger hover:underline"
               >
                 сбросить

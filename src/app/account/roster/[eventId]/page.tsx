@@ -88,7 +88,7 @@ export default function RosterPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [existing, setExisting] = useState(false);
-  const [rosterLoading, setRosterLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
 
   // Load event info
   useEffect(() => {
@@ -102,9 +102,10 @@ export default function RosterPage() {
       .catch(() => setEventLoading(false));
   }, [eventId]);
 
-  // Load existing roster — wait for session to be authenticated
+  // Load existing roster — triggers as soon as session.user.id is available
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (!session?.user?.id) return;
+    setDataLoading(true);
     fetch(`/api/roster/${eventId}`)
       .then((r) => r.json())
       .then((data: unknown) => {
@@ -135,8 +136,8 @@ export default function RosterPage() {
         setExisting(true);
       })
       .catch(() => {})
-      .finally(() => setRosterLoading(false));
-  }, [status, eventId]);
+      .finally(() => setDataLoading(false));
+  }, [session?.user?.id, eventId]);
 
   // Fetch base player IDs whenever teamChgkId changes
   useEffect(() => {
@@ -280,7 +281,7 @@ export default function RosterPage() {
     router.push("/account");
   };
 
-  if (status === "loading" || eventLoading || rosterLoading) {
+  if (status === "loading" || eventLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-accent" />
@@ -330,7 +331,13 @@ export default function RosterPage() {
         </div>
       </div>
 
-      {existing && (
+      {dataLoading && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-muted">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+          Загрузка данных состава…
+        </div>
+      )}
+      {!dataLoading && existing && (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           Состав уже подан — вы можете обновить его

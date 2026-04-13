@@ -11,10 +11,11 @@ import {
   Users,
 } from "lucide-react";
 import {
-  DS_YEARS,
-  type DsYear,
+  DS_ARCHIVE_YEARS,
+  type DsArchiveYear,
   dsRatingPublicUrl,
   dsYearLabel,
+  isArchiveYear,
   parseDsYear,
   resolveDsTournamentId,
 } from "@/lib/dziki-sopot-seasons";
@@ -253,10 +254,10 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
 
 // ─── Year switcher ────────────────────────────────────────────────────────────
 
-function YearSwitcher({ slug, activeYear }: { slug: string; activeYear: DsYear }) {
+function YearSwitcher({ slug, activeYear }: { slug: string; activeYear: DsArchiveYear }) {
   return (
     <div className="flex gap-1.5">
-      {DS_YEARS.map((y) => (
+      {DS_ARCHIVE_YEARS.map((y) => (
         <Link
           key={y}
           href={`/dziki-sopot/${slug}?year=${y}`}
@@ -278,7 +279,8 @@ function YearSwitcher({ slug, activeYear }: { slug: string; activeYear: DsYear }
 export default async function DzikiSopotSlugPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sp = await searchParams;
-  const year = parseDsYear(sp.year) ?? DS_YEARS[0];
+  const parsedYear = parseDsYear(sp.year);
+  const year: DsArchiveYear = (parsedYear && isArchiveYear(parsedYear) ? parsedYear : DS_ARCHIVE_YEARS[0]);
   const tournamentId = resolveDsTournamentId(year);
   const title = PAGE_TITLES[slug] ?? slug;
 

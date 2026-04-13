@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import Link from "next/link";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
@@ -21,10 +22,26 @@ export interface SuggestedTeamData {
 
 export default async function RosterPage({ params }: Props) {
   const { eventId } = await params;
+
+  // Explicitly read cookies before getServerSession — required in Next.js 15+
+  // where cookies() is async and getServerSession may otherwise see an empty jar.
+  await cookies();
+
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    redirect(`/auth/signin?callbackUrl=/account/roster/${eventId}`);
+    const callbackUrl = encodeURIComponent(`/account/roster/${eventId}`);
+    return (
+      <main className="mx-auto max-w-lg px-4 py-16 text-center">
+        <p className="mb-6 text-lg">Войдите, чтобы подать состав команды.</p>
+        <Link
+          href={`/auth/signin?callbackUrl=${callbackUrl}`}
+          className="rounded-xl bg-accent px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        >
+          Войти через Google
+        </Link>
+      </main>
+    );
   }
 
   const [event, existingRoster] = await Promise.all([

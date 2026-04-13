@@ -1,10 +1,27 @@
 import { Calendar, MapPin, Trophy } from "lucide-react";
+import Link from "next/link";
 import type { Metadata } from "next";
+import { DS_YEARS, dsYearLabel } from "@/lib/dziki-sopot-seasons";
 
 export const metadata: Metadata = {
   title: "Dziki Sopot",
   description: "Турнир по интеллектуальным играм Dziki Sopot",
 };
+
+const archiveTiles = DS_YEARS.flatMap((year) => [
+  {
+    href: `/dziki-sopot/rating-page?year=${year}`,
+    emoji: "📋",
+    title: `Страница турнира на рейтинге`,
+    label: dsYearLabel(year),
+  },
+  {
+    href: `/dziki-sopot/results-chgk?year=${year}`,
+    emoji: "📊",
+    title: `Результаты ЧГК`,
+    label: dsYearLabel(year),
+  },
+]);
 
 export default function DzikiSopotPage() {
   return (
@@ -59,16 +76,33 @@ export default function DzikiSopotPage() {
           rel="noopener noreferrer"
           className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
         >
-          <span className="text-2xl leading-none shrink-0 mt-0.5">📝</span>
-          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+          <span className="mt-0.5 shrink-0 text-2xl leading-none">📝</span>
+          <span className="text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
             Регистрация
           </span>
         </a>
       </div>
 
-      <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
-        <p className="text-base font-medium text-muted/60">Результаты и турнирная таблица</p>
-        <p className="mt-2 text-sm text-muted/40">Данные появятся после начала сезона</p>
+      {/* Archive results by year */}
+      <div>
+        <h2 className="mb-4 text-base font-bold">Архив результатов</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {archiveTiles.map((tile) => (
+            <Link
+              key={tile.href}
+              href={tile.href}
+              className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <span className="mt-0.5 shrink-0 text-2xl leading-none">{tile.emoji}</span>
+              <div>
+                <p className="text-xs font-semibold text-accent">{tile.label}</p>
+                <p className="text-sm font-medium leading-snug transition-colors group-hover:text-accent">
+                  {tile.title}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );

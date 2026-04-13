@@ -22,6 +22,7 @@ import {
 import { formatOchpTournamentDateRange } from "@/lib/ochp-seasons";
 import { ratingChgkResultsQuery } from "@/lib/chgk-tournament-results";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
+import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -51,11 +52,17 @@ interface Person {
   surname: string;
 }
 
+interface TeamMember {
+  flag: string;
+  player: { id: number; name: string; patronymic: string; surname: string };
+}
+
 interface TeamResult {
   team: { id: number; name: string; town: { name: string } };
   current: { name: string; town: { name: string } };
   questionsTotal: number | null;
   position: number;
+  teamMembers?: TeamMember[];
 }
 
 interface TournamentData {
@@ -82,7 +89,7 @@ async function fetchTournament(
       next: { revalidate: 3600 },
     }),
     fetch(
-      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(0)}`,
+      `https://api.rating.chgk.info/tournaments/${tournamentId}/results?${ratingChgkResultsQuery(1)}`,
       { next: { revalidate: 3600 } },
     ),
   ]);
@@ -214,40 +221,7 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
         <PersonList title="Апелляционное жюри" icon={<Scale className="h-4 w-4 text-muted" />} people={t.appealJury} />
       </div>
 
-      <div>
-        <h3 className="mb-3 text-sm font-bold">Зарегистрированные команды ({teamCount})</h3>
-        <div className="overflow-x-auto rounded-xl border border-border bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
-                <th className="w-10 px-3 py-2.5 text-left font-medium">№</th>
-                <th className="px-3 py-2.5 text-left font-medium">Команда</th>
-                <th className="px-3 py-2.5 text-left font-medium">Город</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {alphabeticalTeams.map((r, i) => (
-                <tr key={r.team.id} className="hover:bg-surface/50">
-                  <td className="px-3 py-2.5 font-mono text-xs text-muted">{i + 1}</td>
-                  <td className="px-3 py-2.5">
-                    <a
-                      href={`https://rating.chgk.info/teams/${r.team.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium hover:text-accent hover:underline"
-                    >
-                      {r.current.name}
-                    </a>
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-muted">
-                    {r.current.town.name}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <TeamsTable teams={alphabeticalTeams} />
     </div>
   );
 }

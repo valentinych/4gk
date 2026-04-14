@@ -1,3 +1,5 @@
+import { fetchChgkGgRatings } from "./chgk-gg";
+
 const SHEET_ID = "1muLzibrQamNZxNk-fA7gCvrLLXqzVhJXMT_f1UCZ_nU";
 
 export type ParticipantCategory = "time" | "vk" | "rating" | "ds2" | "none";
@@ -6,7 +8,12 @@ export interface DsParticipant {
   team: string;
   city: string;
   teamId: number;
+  /** Rating position from Google Sheet (used as fallback) */
   rating: number | null;
+  /** Current rating position from rating.chgk.gg */
+  ratingPosition: number | null;
+  /** Current rating score (points) from rating.chgk.gg */
+  ratingScore: number | null;
   category: ParticipantCategory;
   categoryLabel: string;
   notes: string;
@@ -57,7 +64,7 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
   });
 
   const lines = text.split("\n").filter((l) => l.trim().length > 0);
-  const participants: DsParticipant[] = [];
+  const rawParticipants: Omit<DsParticipant, "ratingPosition" | "ratingScore">[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const cells = parseCsvLine(lines[i]);
@@ -69,7 +76,7 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
     const rating = rawRating === 0 || rawRating === 9999 ? null : rawRating;
     const { category, label } = parseCategory(cells[5] ?? "", cells[6] ?? "");
 
-    participants.push({
+    rawParticipants.push({
       team,
       city: cells[2]?.trim().replace(/^"|"$/g, "") ?? "",
       teamId,
@@ -81,5 +88,16 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
     });
   }
 
-  return participants;
+  // Fetch current ratings from rating.chgk.gg in parallel
+  const teamIds = rawParticipants.map((p) => p.teamId);
+  const ratingsMap = await fetchChgkGgRatings(teamIds);
+
+  return rawParticipants.map((p) => {
+    const live = ratingsMap.get(p.teamId) ?? null;
+    return {
+      ...p,
+      ratingPosition: live?.position ?? null,
+      ratingScore: live?.score ?? null,
+    };
+  });
 }

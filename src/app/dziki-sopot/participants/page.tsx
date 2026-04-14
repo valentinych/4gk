@@ -185,6 +185,7 @@ export default async function DsParticipantsPage() {
                 <th className="px-3 py-2.5 text-center w-8">#</th>
                 <th className="px-3 py-2.5 text-left">Команда</th>
                 <th className="px-3 py-2.5 text-left hidden sm:table-cell">Город</th>
+                <th className="px-3 py-2.5 text-right hidden sm:table-cell">Место</th>
                 <th className="px-3 py-2.5 text-right">Рейтинг</th>
                 <th className="px-3 py-2.5 text-left hidden lg:table-cell">Зарегистрировалась</th>
                 <th className="px-3 py-2.5 text-left">Категория</th>
@@ -212,7 +213,7 @@ export default async function DsParticipantsPage() {
                     <td className="px-3 py-2 font-medium">
                       {p.teamId > 0 ? (
                         <a
-                          href={`https://rating.chgk.info/teams/${p.teamId}`}
+                          href={`https://rating.chgk.gg/b/team/${p.teamId}/`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 hover:text-accent transition-colors"
@@ -231,9 +232,20 @@ export default async function DsParticipantsPage() {
                     </td>
 
                     {/* Rating position */}
-                    <td className="px-3 py-2 text-right font-mono text-sm">
-                      {p.rating !== null ? (
+                    <td className="px-3 py-2 text-right font-mono text-sm hidden sm:table-cell">
+                      {p.ratingPosition !== null ? (
+                        p.ratingPosition
+                      ) : p.rating !== null ? (
                         p.rating
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+
+                    {/* Rating score */}
+                    <td className="px-3 py-2 text-right font-mono text-sm">
+                      {p.ratingScore !== null ? (
+                        p.ratingScore.toLocaleString("ru-RU")
                       ) : (
                         <span className="text-muted">—</span>
                       )}
@@ -273,6 +285,15 @@ export default async function DsParticipantsPage() {
           className="underline underline-offset-2 hover:text-accent"
         >
           Google Sheets
+        </a>
+        .{" "}Рейтинг —{" "}
+        <a
+          href="https://rating.chgk.gg"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-accent"
+        >
+          rating.chgk.gg
         </a>
         .
       </p>

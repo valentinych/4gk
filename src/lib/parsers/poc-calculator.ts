@@ -197,17 +197,20 @@ export function computeFromTours(tours: Tour[]): PocResult {
   }
 
   const activePlayers = players.filter((p) => wdl[p].g > 0);
-  const maxStr = Math.max(...activePlayers.map((p) => str[p]), 0.001);
+  // Use the actual maximum strength without a floor so that scores with small margins
+  // (where all str values converge near zero) still normalize correctly to 0–1000.
+  const maxStr = activePlayers.reduce((m, p) => Math.max(m, str[p]), 0);
+  const scale = maxStr > 0 ? 1000 / maxStr : 0;
 
   const pocRows: PocRow[] = activePlayers
     .map((p) => ({
       pos: 0,
       name: p,
-      poc: Math.round((str[p] / maxStr) * 1000),
+      poc: Math.round(str[p] * scale),
       sos: Math.round(
         (gamesOf[p].length
           ? gamesOf[p].reduce((s, g) => s + str[g.a === p ? g.b : g.a], 0) / gamesOf[p].length
-          : 0) / maxStr * 1000,
+          : 0) * scale,
       ),
       w: wdl[p].w, d: wdl[p].d, l: wdl[p].l, g: wdl[p].g,
     }))

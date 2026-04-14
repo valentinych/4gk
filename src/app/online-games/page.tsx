@@ -1,4 +1,4 @@
-import { Zap, Gamepad2, Music } from "lucide-react";
+import { Zap, Gamepad2, Music, BarChart3 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -19,6 +19,13 @@ const games = [
     emoji: <Music className="h-6 w-6 text-violet-500" />,
     title: "Music SI",
     description: "Музыкальная «Своя игра» по командам",
+  },
+  {
+    href: "/poc",
+    emoji: <BarChart3 className="h-6 w-6 text-amber-500" />,
+    title: "Рассчитать POC",
+    description:
+      "Power-Ordered Classification — рейтинг с учётом силы соперников по ссылке на Google Sheets",
   },
 ];
 

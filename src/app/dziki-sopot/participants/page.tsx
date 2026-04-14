@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Users } from "lucide-react";
-import type { DsParticipant, ParticipantCategory } from "@/app/api/dziki-sopot/participants/route";
+import { fetchDsParticipants } from "@/lib/ds-participants";
+import type { DsParticipant, ParticipantCategory } from "@/lib/ds-participants";
 
 export const metadata: Metadata = {
   title: "Участники DS'26 | Dziki Sopot",
@@ -63,17 +64,7 @@ const CAT_CONFIG: Record<
 
 async function fetchParticipants(): Promise<DsParticipant[]> {
   try {
-    const base =
-      process.env.NEXT_PUBLIC_BASE_URL ??
-      (process.env.NODE_ENV === "production"
-        ? "https://4gk.pl"
-        : "http://localhost:3000");
-    const res = await fetch(`${base}/api/dziki-sopot/participants`, {
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { participants: DsParticipant[] };
-    return data.participants ?? [];
+    return await fetchDsParticipants();
   } catch {
     return [];
   }

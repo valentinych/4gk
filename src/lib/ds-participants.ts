@@ -10,6 +10,8 @@ export interface DsParticipant {
   category: ParticipantCategory;
   categoryLabel: string;
   notes: string;
+  /** Raw timestamp string from sheet, e.g. "22.03.2026 13:06:04" */
+  registeredAt: string;
 }
 
 function parseCsvLine(line: string): string[] {
@@ -75,6 +77,7 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
       category,
       categoryLabel: label,
       notes: cells[7]?.trim() ?? "",
+      registeredAt: cells[0]?.trim() ?? "",
     });
   }
 

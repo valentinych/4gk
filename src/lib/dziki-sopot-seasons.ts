@@ -49,6 +49,12 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     title: "Регистрация",
     href: "https://forms.gle/oyfmJnro1q9S2Ydj8",
   },
+  {
+    slug: "participants",
+    emoji: "👥",
+    title: "Участники",
+    href: "/dziki-sopot/participants",
+  },
 ];
 
 /** Tiles for archive seasons */

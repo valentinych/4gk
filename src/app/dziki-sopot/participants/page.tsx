@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { fetchDsParticipants } from "@/lib/ds-participants";
@@ -102,6 +103,7 @@ async function fetchParticipants(): Promise<DsParticipant[]> {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DsParticipantsPage() {
+  await headers(); // opt out of static caching — render on every request
   const participants = await fetchParticipants();
 
   const counts = {

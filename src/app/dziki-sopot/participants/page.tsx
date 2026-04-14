@@ -158,7 +158,7 @@ export default async function DsParticipantsPage() {
         {/* Category legend */}
         {(["time", "vk", "rating", "ds2", "none"] as ParticipantCategory[]).map((cat) => {
           const cfg = CAT_CONFIG[cat];
-          const count = counts[cat];
+          const count = cat === "ds2" ? counts.inBothDs : counts[cat];
           if (cat === "none" && count === 0) return null;
           return (
             <div

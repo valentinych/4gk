@@ -107,11 +107,13 @@ export default async function DsParticipantsPage() {
   const participants = await fetchParticipants();
 
   const counts = {
-    time:   participants.filter((p) => p.category === "time").length,
-    vk:     participants.filter((p) => p.category === "vk").length,
-    rating: participants.filter((p) => p.category === "rating").length,
-    ds2:    participants.filter((p) => p.category === "ds2").length,
-    none:   participants.filter((p) => p.category === "none").length,
+    time:      participants.filter((p) => p.category === "time").length,
+    vk:        participants.filter((p) => p.category === "vk").length,
+    rating:    participants.filter((p) => p.category === "rating").length,
+    ds2:       participants.filter((p) => p.category === "ds2").length,
+    none:      participants.filter((p) => p.category === "none").length,
+    confirmed: participants.filter((p) => p.inBothDs || p.category === "time" || p.category === "vk" || p.category === "ds2").length,
+    inBothDs:  participants.filter((p) => p.inBothDs).length,
   };
 
   return (
@@ -141,10 +143,16 @@ export default async function DsParticipantsPage() {
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]" />
           <span>Участие подтверждено</span>
+          <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">
+            {counts.confirmed}
+          </span>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="animate-traffic-pulse inline-block h-3 w-3 rounded-full" />
           <span>Проходят по рейтингу</span>
+          <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+            {counts.rating}
+          </span>
         </div>
 
         {/* Category legend */}
@@ -260,16 +268,16 @@ export default async function DsParticipantsPage() {
                     {/* Category badge */}
                     <td className="px-3 py-2">
                       <div className="flex flex-col gap-0.5 items-start">
-                        {p.inBothDs && (
-                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-green-100 text-green-800">
-                            Участие в 2 ДС
-                          </span>
-                        )}
                         {p.category !== "none" && !(p.inBothDs && p.category === "ds2") && (
                           <span
                             className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${cfg.badgeCls}`}
                           >
                             {p.categoryLabel}
+                          </span>
+                        )}
+                        {p.inBothDs && (
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-amber-100 text-amber-700">
+                            Участие в 2 ДС
                           </span>
                         )}
                         {!p.inBothDs && p.category === "none" && (

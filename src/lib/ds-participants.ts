@@ -117,16 +117,16 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
   // Confirmed slots: "time" and "vk" keep their order and category
   const confirmed = withLive.filter((p) => p.category === "time" || p.category === "vk");
 
-  // Remaining teams sorted by current rating position (null → end), then by rating score desc
+  // Remaining teams sorted by current rating position (null → sheet position → end), then by score desc
   const rest = withLive
     .filter((p) => p.category !== "time" && p.category !== "vk")
     .sort((a, b) => {
-      const posA = a.ratingPosition ?? Infinity;
-      const posB = b.ratingPosition ?? Infinity;
+      const posA = a.ratingPosition ?? a.rating ?? Infinity;
+      const posB = b.ratingPosition ?? b.rating ?? Infinity;
       if (posA !== posB) return posA - posB;
-      // Fallback: higher score first
-      const scoreA = a.ratingScore ?? a.rating ?? 0;
-      const scoreB = b.ratingScore ?? b.rating ?? 0;
+      // Fallback: higher live score first, then sheet rating as proxy
+      const scoreA = a.ratingScore ?? 0;
+      const scoreB = b.ratingScore ?? 0;
       return scoreB - scoreA;
     });
 

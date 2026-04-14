@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: "Список команд-участников Dziki Sopot 2026",
 };
 
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 // ─── Category config ──────────────────────────────────────────────────────────
 

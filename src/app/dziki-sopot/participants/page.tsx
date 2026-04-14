@@ -213,7 +213,7 @@ export default async function DsParticipantsPage() {
                     <td className="px-3 py-2 font-medium">
                       {p.teamId > 0 ? (
                         <a
-                          href={`https://rating.chgk.gg/b/team/${p.teamId}/`}
+                          href={`https://rating.chgk.info/teams/${p.teamId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 hover:text-accent transition-colors"

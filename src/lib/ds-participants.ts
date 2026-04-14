@@ -11,6 +11,7 @@ const SHEET_ID = "1muLzibrQamNZxNk-fA7gCvrLLXqzVhJXMT_f1UCZ_nU";
 const DS_BOTH_TEAMS = new Set([
   10, 56078, 56405, 60717, 63220, 77174, 85064, 86769, 87467, 87688,
   87884, 89616, 89632, 90063, 90965, 91851, 91852, 98470, 98974, 100058, 100059,
+  101287, // hardfix: Цифра 3 — participated in both DS
 ]);
 
 export type ParticipantCategory = "time" | "vk" | "rating" | "ds2" | "none";

@@ -82,7 +82,7 @@ function TrafficLight({ cat }: { cat: ParticipantCategory }) {
   if (cat === "rating") {
     return (
       <span
-        className="inline-block h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_4px_1px_rgba(34,197,94,0.4)]"
+        className="animate-traffic-pulse inline-block h-3 w-3 rounded-full"
         title="Проходят по рейтингу"
       />
     );
@@ -142,7 +142,7 @@ export default async function DsParticipantsPage() {
           <span>Участие подтверждено</span>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
-          <span className="inline-block h-3 w-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_4px_1px_rgba(34,197,94,0.4)]" />
+          <span className="animate-traffic-pulse inline-block h-3 w-3 rounded-full" />
           <span>Проходят по рейтингу</span>
         </div>
 

@@ -235,13 +235,14 @@ export function computeFromTours(tours: Tour[]): PocResult {
         else dr++;
       }
 
-      crossTable[`${pA}|||${pB}`] = {
-        winsA: wA, winsB: wB, draws: dr, total: bouts.length,
-        bouts: bouts.map((b) => ({
-          tourName: b.tourName, boutIdx: b.boutIdx,
-          scoreA: isAFirst ? b.scoreA : b.scoreB,
-          scoreB: isAFirst ? b.scoreB : b.scoreA,
-        })),
+      // Store with alphabetical key (same as crossIndex) so page lookups are consistent.
+      // winsA = wins of alphabetically-first player.
+      crossTable[key] = {
+        winsA: isAFirst ? wA : wB,
+        winsB: isAFirst ? wB : wA,
+        draws: dr,
+        total: bouts.length,
+        bouts, // scoreA already = alphabetically-first player's score (from crossIndex)
       };
     }
   }

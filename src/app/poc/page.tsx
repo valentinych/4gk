@@ -1,39 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { BarChart3, ChevronRight, Loader2, ExternalLink } from "lucide-react";
+import { BarChart3, ChevronRight, Loader2, ExternalLink, X } from "lucide-react";
 import type { PocResult, PocCrossCell } from "@/lib/parsers/poc-calculator";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ApiResult = PocResult & { error?: string };
 
-// ─── Cross-table helpers ──────────────────────────────────────────────────────
-
-function getCell(
-  crossTable: Record<string, PocCrossCell>,
-  rowPlayer: string,
-  colPlayer: string,
-): { cell: PocCrossCell; rowIsA: boolean } | null {
-  const key =
-    rowPlayer < colPlayer
-      ? `${rowPlayer}|||${colPlayer}`
-      : `${colPlayer}|||${rowPlayer}`;
-  const cell = crossTable[key];
-  if (!cell) return null;
-  const rowIsA = key.startsWith(rowPlayer + "|||");
-  return { cell, rowIsA };
-}
-
-function cellWins(cell: PocCrossCell, rowIsA: boolean) {
-  return rowIsA
-    ? { row: cell.winsA, col: cell.winsB, draws: cell.draws }
-    : { row: cell.winsB, col: cell.winsA, draws: cell.draws };
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── POC Rating Table ─────────────────────────────────────────────────────────
 
 function PocTable({ poc }: { poc: PocResult["poc"] }) {
   return (
@@ -76,11 +53,12 @@ function PocTable({ poc }: { poc: PocResult["poc"] }) {
   );
 }
 
-interface TooltipCell {
-  bouts: PocCrossCell["bouts"];
-  rowIsA: boolean;
-  rowName: string;
-  colName: string;
+// ─── Cross-table ──────────────────────────────────────────────────────────────
+
+interface Popup {
+  pA: string;
+  pB: string;
+  cell: PocCrossCell;
   x: number;
   y: number;
 }
@@ -92,158 +70,171 @@ function CrossTable({
   crossPlayers: string[];
   crossTable: Record<string, PocCrossCell>;
 }) {
-  const [tooltip, setTooltip] = useState<TooltipCell | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [popup, setPopup] = useState<Popup | null>(null);
 
-  const handleMouseEnter = useCallback(
-    (
-      e: React.MouseEvent,
-      rowPlayer: string,
-      colPlayer: string,
-      cell: PocCrossCell,
-      rowIsA: boolean,
-    ) => {
-      if (!cell.total) return;
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
-      const containerRect = containerRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
-      setTooltip({
-        bouts: cell.bouts,
-        rowIsA,
-        rowName: rowPlayer,
-        colName: colPlayer,
-        x: rect.left - containerRect.left + rect.width / 2,
-        y: rect.top - containerRect.top,
-      });
-    },
-    [],
-  );
+  /** Returns the cell always from pA's perspective (winsA = pA's wins). */
+  function getCellFor(pA: string, pB: string): PocCrossCell | null {
+    const direct = crossTable[`${pA}|||${pB}`];
+    if (direct) return direct;
+    const rev = crossTable[`${pB}|||${pA}`];
+    if (rev)
+      return {
+        ...rev,
+        winsA: rev.winsB,
+        winsB: rev.winsA,
+        bouts: rev.bouts.map((b) => ({ ...b, scoreA: b.scoreB, scoreB: b.scoreA })),
+      };
+    return null;
+  }
+
+  function handleCellClick(e: React.MouseEvent, pA: string, pB: string) {
+    const cell = getCellFor(pA, pB);
+    if (!cell || !cell.total) return;
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.top;
+    if (x + 150 > window.innerWidth) x = window.innerWidth - 160;
+    if (x < 150) x = 160;
+    if (y < 250) y = rect.bottom + 8;
+
+    setPopup({ pA, pB, cell, x, y });
+  }
 
   if (!crossPlayers.length) return null;
 
-  const N = crossPlayers.length;
-  const colW = Math.max(36, Math.min(60, Math.floor(520 / N)));
-
   return (
-    <div
-      ref={containerRef}
-      className="relative overflow-x-auto rounded-xl border border-border bg-white"
-      onMouseLeave={() => setTooltip(null)}
-    >
-      <table className="text-xs border-collapse" style={{ minWidth: N * colW + 200 }}>
-        <thead>
-          <tr>
-            <th className="sticky left-0 z-10 bg-muted/20 px-3 py-2 text-left text-xs font-semibold text-muted min-w-[160px] border-b border-r border-border">
-              Игрок
-            </th>
-            {crossPlayers.map((name, j) => (
-              <th
-                key={name}
-                className="px-1 py-2 text-center font-bold border-b border-border text-[10px]"
-                style={{ width: colW, minWidth: colW }}
-                title={name}
-              >
-                {j + 1}
+    <div>
+      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+        <table className="text-xs whitespace-nowrap border-collapse">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="px-1.5 py-2 text-left font-medium text-muted sticky left-0 bg-white z-10 min-w-[28px]">
+                №
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {crossPlayers.map((rowPlayer, i) => (
-            <tr key={rowPlayer} className="border-b border-border last:border-0">
-              <td className="sticky left-0 z-10 bg-white px-3 py-1.5 font-medium border-r border-border whitespace-nowrap">
-                <span className="text-muted mr-1.5 font-bold">{i + 1}.</span>
-                {rowPlayer}
-              </td>
-              {crossPlayers.map((colPlayer, j) => {
-                if (i === j) {
-                  return (
-                    <td
-                      key={colPlayer}
-                      className="text-center bg-muted/20 select-none"
-                      style={{ width: colW }}
-                    >
-                      —
-                    </td>
-                  );
-                }
-
-                const data = getCell(crossTable, rowPlayer, colPlayer);
-                if (!data || !data.cell.total) {
-                  return (
-                    <td
-                      key={colPlayer}
-                      className="text-center text-muted/40 py-1.5"
-                      style={{ width: colW }}
-                    >
-                      ·
-                    </td>
-                  );
-                }
-
-                const { row: rowW, col: colW2, draws } = cellWins(data.cell, data.rowIsA);
-                const isRowWin = rowW > colW2;
-                const isRowLoss = rowW < colW2;
-                const isDraw = rowW === colW2;
-
-                const bg = isRowWin
-                  ? "bg-green-50 text-green-700"
-                  : isRowLoss
-                    ? "bg-red-50 text-red-600"
-                    : isDraw && draws > 0
-                      ? "bg-amber-50 text-amber-600"
-                      : "text-muted";
-
-                return (
-                  <td
-                    key={colPlayer}
-                    className={`text-center font-semibold py-1.5 cursor-default transition-colors hover:brightness-95 ${bg}`}
-                    style={{ width: colW }}
-                    onMouseEnter={(e) =>
-                      handleMouseEnter(e, rowPlayer, colPlayer, data.cell, data.rowIsA)
-                    }
-                  >
-                    {rowW}:{colW2}
-                    {draws > 0 && ` (${draws}н)`}
-                  </td>
-                );
-              })}
+              <th className="px-2 py-2 text-left font-medium text-muted sticky left-7 bg-white z-10 min-w-[120px]">
+                Игрок
+              </th>
+              {crossPlayers.map((_, i) => (
+                <th
+                  key={i}
+                  className="px-1 py-2 text-center font-medium text-muted w-10"
+                  title={crossPlayers[i]}
+                >
+                  {i + 1}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {crossPlayers.map((pA, i) => (
+              <tr key={pA} className="border-b border-border/50 hover:bg-surface/30">
+                <td className="px-1.5 py-1.5 font-bold text-muted sticky left-0 bg-white z-[5]">
+                  {i + 1}
+                </td>
+                <td
+                  className="px-2 py-1.5 font-medium sticky left-7 bg-white z-[5]"
+                  title={pA}
+                >
+                  {pA}
+                </td>
+                {crossPlayers.map((pB, j) => {
+                  if (i === j) return <td key={j} className="bg-gray-200" />;
 
-      {/* Tooltip */}
-      {tooltip && tooltip.bouts.length > 0 && (
-        <div
-          className="absolute z-50 rounded-lg border border-border bg-white shadow-lg p-3 pointer-events-none text-xs"
-          style={{
-            left: Math.min(tooltip.x, (containerRef.current?.clientWidth ?? 400) - 200),
-            top: tooltip.y - 8,
-            transform: "translate(-50%, -100%)",
-            minWidth: 180,
-          }}
-        >
-          <div className="font-semibold mb-1.5 text-center">
-            {tooltip.rowName} vs {tooltip.colName}
-          </div>
-          <div className="space-y-0.5">
-            {tooltip.bouts.map((b, idx) => {
-              const sRow = tooltip.rowIsA ? b.scoreA : b.scoreB;
-              const sCol = tooltip.rowIsA ? b.scoreB : b.scoreA;
-              const isWin = sRow > sCol;
-              const isLoss = sRow < sCol;
-              return (
-                <div key={idx} className="flex items-center justify-between gap-3">
-                  <span className="text-muted">{b.tourName}</span>
-                  <span
-                    className={`font-bold ${isWin ? "text-green-600" : isLoss ? "text-red-500" : "text-amber-500"}`}
-                  >
-                    {sRow}:{sCol}
-                  </span>
-                </div>
-              );
-            })}
+                  const cell = getCellFor(pA, pB);
+                  if (!cell || !cell.total)
+                    return (
+                      <td key={j} className="px-1 py-1.5 text-center text-gray-300">
+                        —
+                      </td>
+                    );
+
+                  const cls =
+                    cell.winsA > cell.winsB
+                      ? "text-green-600"
+                      : cell.winsA < cell.winsB
+                        ? "text-red-500"
+                        : "text-amber-600";
+
+                  return (
+                    <td
+                      key={j}
+                      className={`px-1 py-1.5 text-center font-semibold cursor-pointer hover:bg-accent/10 ${cls}`}
+                      onClick={(e) => handleCellClick(e, pA, pB)}
+                    >
+                      {cell.winsA}:{cell.winsB}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Click popup — fixed, same as Warsaw */}
+      {popup && (
+        <div className="fixed inset-0 z-50" onClick={() => setPopup(null)}>
+          <div
+            className="absolute bg-white rounded-xl shadow-2xl border border-border p-4 min-w-[280px] max-h-[70vh] overflow-y-auto"
+            style={{
+              left: popup.x,
+              top: popup.y,
+              transform: "translate(-50%, -100%)",
+              marginTop: "-8px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-sm">
+                {popup.pA} — {popup.pB}
+              </span>
+              <button
+                onClick={() => setPopup(null)}
+                className="text-muted hover:text-foreground ml-3"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="text-center text-xl font-bold text-foreground mb-3">
+              {popup.cell.winsA} : {popup.cell.winsB}
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted border-b border-border">
+                  <th className="py-1 text-left font-medium">Тур</th>
+                  <th className="py-1 text-center font-medium">Результат</th>
+                  <th className="py-1 text-right font-medium">Счёт</th>
+                </tr>
+              </thead>
+              <tbody>
+                {popup.cell.bouts.map((bout, idx) => {
+                  const isWin = bout.scoreA > bout.scoreB;
+                  const isLoss = bout.scoreA < bout.scoreB;
+                  return (
+                    <tr key={idx} className="border-b border-border/50 last:border-0">
+                      <td className="py-1.5 text-muted text-xs">
+                        {bout.tourName}, бой {bout.boutIdx}
+                      </td>
+                      <td
+                        className={`py-1.5 text-center font-medium ${
+                          isWin
+                            ? "text-green-600"
+                            : isLoss
+                              ? "text-red-500"
+                              : "text-amber-600"
+                        }`}
+                      >
+                        {isWin ? "победа" : isLoss ? "поражение" : "ничья"}
+                      </td>
+                      <td className="py-1.5 text-right font-mono">
+                        {bout.scoreA} : {bout.scoreB}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -289,7 +280,6 @@ function PocCalculatorInner() {
     [router],
   );
 
-  // Auto-calculate if URL param is present on load
   useEffect(() => {
     const url = searchParams.get("url");
     if (url) {
@@ -326,7 +316,7 @@ function PocCalculatorInner() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="mb-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-          <div className="flex-1 relative">
+          <div className="flex-1">
             <input
               type="text"
               value={inputUrl}
@@ -350,7 +340,6 @@ function PocCalculatorInner() {
           </button>
         </div>
 
-        {/* Example link */}
         <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
           <ExternalLink className="h-3 w-3" />
           <button
@@ -375,7 +364,7 @@ function PocCalculatorInner() {
         </div>
       )}
 
-      {/* Loading skeleton */}
+      {/* Loading */}
       {loading && (
         <div className="space-y-4">
           <div className="h-6 w-48 rounded-md bg-muted/20 animate-pulse" />
@@ -392,7 +381,6 @@ function PocCalculatorInner() {
             </div>
           ) : (
             <>
-              {/* POC Rating */}
               <section>
                 <h2 className="text-base font-bold mb-3 flex items-center gap-2">
                   <BarChart3 className="h-4 w-4 text-accent" />
@@ -405,14 +393,13 @@ function PocCalculatorInner() {
                 </p>
               </section>
 
-              {/* Cross-table */}
               <section>
                 <h2 className="text-base font-bold mb-3">
                   Кросс-таблица личных встреч
                 </h2>
                 <p className="mb-3 text-xs text-muted">
-                  Строки и столбцы упорядочены по рейтингу POC. В ячейке (строка vs столбец) —
-                  счёт побед игрока строки против игрока столбца. Наведите на ячейку, чтобы увидеть подробности.
+                  Строки и столбцы упорядочены по рейтингу POC.
+                  В ячейке — счёт побед строки против столбца. Нажмите на ячейку для деталей.
                 </p>
                 <CrossTable
                   crossPlayers={result.crossPlayers}
@@ -426,8 +413,6 @@ function PocCalculatorInner() {
     </div>
   );
 }
-
-// ─── Page export ──────────────────────────────────────────────────────────────
 
 export default function PocPage() {
   return (

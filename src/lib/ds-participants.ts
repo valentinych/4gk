@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { fetchChgkGgRatings } from "./chgk-gg";
 
 const SHEET_ID = "1muLzibrQamNZxNk-fA7gCvrLLXqzVhJXMT_f1UCZ_nU";
@@ -69,6 +70,7 @@ function parseCategory(
 }
 
 export async function fetchDsParticipants(): Promise<DsParticipant[]> {
+  noStore();
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
   const text = await fetch(url, { cache: "no-store" }).then((r) => {
     if (!r.ok) throw new Error(`Sheet fetch failed: ${r.status}`);

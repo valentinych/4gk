@@ -33,7 +33,7 @@ const CAT_CONFIG: Record<
   },
   rating: {
     label: "Рейтинг",
-    description: "Проходят по рейтингу",
+    description: "Предварительно проходят по рейтингу",
     rowCls: "bg-emerald-50/60",
     badgeCls: "bg-emerald-100 text-emerald-700",
     dotCls: "bg-emerald-400",
@@ -83,7 +83,7 @@ function TrafficLight({ cat, inBothDs }: { cat: ParticipantCategory; inBothDs: b
     return (
       <span
         className="animate-traffic-pulse inline-block h-3 w-3 rounded-full"
-        title="Проходят по рейтингу"
+        title="Предварительно проходят по рейтингу"
       />
     );
   }
@@ -149,7 +149,7 @@ export default async function DsParticipantsPage() {
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="animate-traffic-pulse inline-block h-3 w-3 rounded-full" />
-          <span>Проходят по рейтингу</span>
+          <span>Предварительно проходят по рейтингу</span>
           <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
             {counts.rating}
           </span>

@@ -61,10 +61,10 @@ function parseCategory(
   const f5 = col5.trim();
   const f6 = col6.trim();
 
-  if (f5.startsWith("Время"))       return { category: "time",   label: f5 };
-  if (f5 === "ВК")                  return { category: "vk",     label: "ВК" };
-  if (f5 === "Участие в 2 ДС")      return { category: "ds2",    label: "Участие в 2 ДС" };
-  if (f6.startsWith("Рейтинг"))     return { category: "rating", label: f6 };
+  if (f5.startsWith("Время"))   return { category: "time", label: f5 };
+  if (f5 === "ВК")              return { category: "vk",   label: "ВК" };
+  // "Рейтинг" and "Участие в 2 ДС" are reassigned dynamically after live data arrives
+  void f6;
   return { category: "none", label: "" };
 }
 
@@ -104,7 +104,7 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
   const teamIds = rawParticipants.map((p) => p.teamId);
   const ratingsMap = await fetchChgkGgRatings(teamIds);
 
-  return rawParticipants.map((p) => {
+  const withLive = rawParticipants.map((p) => {
     const live = ratingsMap.get(p.teamId) ?? null;
     return {
       ...p,
@@ -113,4 +113,30 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
       inBothDs: DS_BOTH_TEAMS.has(p.teamId),
     };
   });
+
+  // Confirmed slots: "time" and "vk" keep their order and category
+  const confirmed = withLive.filter((p) => p.category === "time" || p.category === "vk");
+
+  // Remaining teams sorted by current rating position (null → end), then by rating score desc
+  const rest = withLive
+    .filter((p) => p.category !== "time" && p.category !== "vk")
+    .sort((a, b) => {
+      const posA = a.ratingPosition ?? Infinity;
+      const posB = b.ratingPosition ?? Infinity;
+      if (posA !== posB) return posA - posB;
+      // Fallback: higher score first
+      const scoreA = a.ratingScore ?? a.rating ?? 0;
+      const scoreB = b.ratingScore ?? b.rating ?? 0;
+      return scoreB - scoreA;
+    });
+
+  // Top 15 of rest get "Рейтинг N" label; the rest get "none"
+  const ranked = rest.map((p, i) => {
+    if (i < 15) {
+      return { ...p, category: "rating" as ParticipantCategory, categoryLabel: `Рейтинг ${i + 1}` };
+    }
+    return { ...p, category: "none" as ParticipantCategory, categoryLabel: "" };
+  });
+
+  return [...confirmed, ...ranked];
 }

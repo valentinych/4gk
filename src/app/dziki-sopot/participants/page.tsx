@@ -109,7 +109,7 @@ export default async function DsParticipantsPage() {
   const counts = {
     time:      participants.filter((p) => p.category === "time").length,
     vk:        participants.filter((p) => p.category === "vk").length,
-    rating:    participants.filter((p) => p.category === "rating").length,
+    rating:    participants.filter((p) => p.category === "rating" && !p.inBothDs).length,
     ds2:       participants.filter((p) => p.category === "ds2").length,
     none:      participants.filter((p) => p.category === "none").length,
     confirmed: participants.filter((p) => p.inBothDs || p.category === "time" || p.category === "vk" || p.category === "ds2").length,

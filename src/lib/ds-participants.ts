@@ -2,6 +2,16 @@ import { fetchChgkGgRatings } from "./chgk-gg";
 
 const SHEET_ID = "1muLzibrQamNZxNk-fA7gCvrLLXqzVhJXMT_f1UCZ_nU";
 
+/**
+ * Team IDs that participated in BOTH previous Dziki Sopot tournaments:
+ * DS'24 (id=11247) and DS'25 (id=12462)
+ * Fetched via: https://api.rating.chgk.info/tournaments/{id}/results.json
+ */
+const DS_BOTH_TEAMS = new Set([
+  10, 56078, 56405, 60717, 63220, 77174, 85064, 86769, 87467, 87688,
+  87884, 89616, 89632, 90063, 90965, 91851, 91852, 98470, 98974, 100058, 100059,
+]);
+
 export type ParticipantCategory = "time" | "vk" | "rating" | "ds2" | "none";
 
 export interface DsParticipant {
@@ -19,6 +29,8 @@ export interface DsParticipant {
   notes: string;
   /** Raw timestamp string from sheet, e.g. "22.03.2026 13:06:04" */
   registeredAt: string;
+  /** True if team played in both previous Dziki Sopot tournaments */
+  inBothDs: boolean;
 }
 
 function parseCsvLine(line: string): string[] {
@@ -64,7 +76,7 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
   });
 
   const lines = text.split("\n").filter((l) => l.trim().length > 0);
-  const rawParticipants: Omit<DsParticipant, "ratingPosition" | "ratingScore">[] = [];
+  const rawParticipants: Omit<DsParticipant, "ratingPosition" | "ratingScore" | "inBothDs">[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const cells = parseCsvLine(lines[i]);
@@ -98,6 +110,7 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
       ...p,
       ratingPosition: live?.position ?? null,
       ratingScore: live?.score ?? null,
+      inBothDs: DS_BOTH_TEAMS.has(p.teamId),
     };
   });
 }

@@ -70,12 +70,12 @@ function fmtTimestamp(raw: string): string {
 }
 
 /** Returns the traffic-light indicator for a category */
-function TrafficLight({ cat }: { cat: ParticipantCategory }) {
-  if (cat === "time" || cat === "vk" || cat === "ds2") {
+function TrafficLight({ cat, inBothDs }: { cat: ParticipantCategory; inBothDs: boolean }) {
+  if (inBothDs || cat === "time" || cat === "vk" || cat === "ds2") {
     return (
       <span
         className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]"
-        title="Участие подтверждено"
+        title={inBothDs ? "Участвовали в двух предыдущих ДС" : "Участие подтверждено"}
       />
     );
   }
@@ -201,7 +201,7 @@ export default async function DsParticipantsPage() {
                   >
                     {/* Traffic light */}
                     <td className="px-3 py-2 text-center">
-                      <TrafficLight cat={p.category} />
+                      <TrafficLight cat={p.category} inBothDs={p.inBothDs} />
                     </td>
 
                     {/* # */}
@@ -258,15 +258,23 @@ export default async function DsParticipantsPage() {
 
                     {/* Category badge */}
                     <td className="px-3 py-2">
-                      {p.category !== "none" ? (
-                        <span
-                          className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${cfg.badgeCls}`}
-                        >
-                          {p.categoryLabel}
-                        </span>
-                      ) : (
-                        <span className="text-muted text-xs">—</span>
-                      )}
+                      <div className="flex flex-col gap-0.5 items-start">
+                        {p.inBothDs && (
+                          <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-green-100 text-green-800">
+                            Участие в 2 ДС
+                          </span>
+                        )}
+                        {p.category !== "none" && !(p.inBothDs && p.category === "ds2") && (
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${cfg.badgeCls}`}
+                          >
+                            {p.categoryLabel}
+                          </span>
+                        )}
+                        {!p.inBothDs && p.category === "none" && (
+                          <span className="text-muted text-xs">—</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

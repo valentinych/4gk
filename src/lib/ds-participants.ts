@@ -70,7 +70,7 @@ function parseCategory(
 
 export async function fetchDsParticipants(): Promise<DsParticipant[]> {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
-  const text = await fetch(url, { next: { revalidate: 300 } }).then((r) => {
+  const text = await fetch(url, { cache: "no-store" }).then((r) => {
     if (!r.ok) throw new Error(`Sheet fetch failed: ${r.status}`);
     return r.text();
   });

@@ -84,7 +84,26 @@ interface Tour {
 export default function WarsawPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
-  const [tab, setTab] = useState<Tab>("chgk");
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window === "undefined") return "chgk";
+    const h = window.location.hash.replace("#", "") as Tab;
+    return (["chgk", "ksi", "isi"] as Tab[]).includes(h) ? h : "chgk";
+  });
+
+  // Sync hash → tab on back/forward navigation
+  useEffect(() => {
+    function onHash() {
+      const h = window.location.hash.replace("#", "") as Tab;
+      if ((["chgk", "ksi", "isi"] as Tab[]).includes(h)) setTab(h);
+    }
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  function switchTab(t: Tab) {
+    window.location.hash = t;
+    setTab(t);
+  }
 
   const [leagueA, setLeagueA] = useState<CrossTableTeam[]>(fallbackA);
   const [leagueB, setLeagueB] = useState<CrossTableTeam[]>(fallbackB);
@@ -206,9 +225,9 @@ export default function WarsawPage() {
       </div>
 
       <div className="mb-6 flex gap-1 rounded-xl border border-border bg-surface p-1">
-        <TabButton active={tab === "chgk"} onClick={() => setTab("chgk")}>ЧГК</TabButton>
-        <TabButton active={tab === "ksi"} onClick={() => setTab("ksi")}>КСИ</TabButton>
-        <TabButton active={tab === "isi"} onClick={() => setTab("isi")}>ИСИ</TabButton>
+        <TabButton active={tab === "chgk"} onClick={() => switchTab("chgk")}>ЧГК</TabButton>
+        <TabButton active={tab === "ksi"} onClick={() => switchTab("ksi")}>КСИ</TabButton>
+        <TabButton active={tab === "isi"} onClick={() => switchTab("isi")}>ИСИ</TabButton>
       </div>
 
       {tab === "chgk" ? (

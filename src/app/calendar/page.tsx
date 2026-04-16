@@ -1077,7 +1077,12 @@ function EventCard({
               {TYPE_LABELS[event.type] ?? event.type}
             </span>
           </div>
-          <h4 className="mt-2 text-sm font-bold leading-snug">{event.title}</h4>
+          <Link
+            href={`/calendar/${event.id}`}
+            className="mt-2 block text-sm font-bold leading-snug hover:underline decoration-foreground/30 underline-offset-2"
+          >
+            {event.title}
+          </Link>
           {event.description && (
             <p className="mt-1 text-xs leading-relaxed text-muted">
               {event.description}

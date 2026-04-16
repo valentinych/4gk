@@ -18,9 +18,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  rosters  TeamRoster[]
+  accounts       Account[]
+  sessions       Session[]
+  rosters        TeamRoster[]
+  eventTeams     EventTeam[]
 }
 
 model Account {
@@ -88,7 +89,23 @@ model CalendarEvent {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  rosters TeamRoster[]
+  rosters    TeamRoster[]
+  eventTeams EventTeam[]
+}
+
+model EventTeam {
+  id          String   @id @default(cuid())
+  eventId     String
+  teamChgkId  Int
+  teamName    String
+  displayName String?
+  addedBy     String
+  addedAt     DateTime @default(now())
+
+  event       CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  addedByUser User          @relation(fields: [addedBy], references: [id])
+
+  @@unique([eventId, teamChgkId])
 }
 
 model TeamRoster {

@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 // Returns roster counts per event for organizers,
-// and the list of event IDs the current user submitted for.
+// the list of event IDs the current user submitted a roster for,
+// and event IDs where the user's team is registered (EventTeam).
 export async function GET() {
   const session = await getServerSession(authOptions);
   const isOrganizer =
@@ -13,7 +14,8 @@ export async function GET() {
   const result: {
     counts: Record<string, number>;
     mine: string[];
-  } = { counts: {}, mine: [] };
+    registered: string[];
+  } = { counts: {}, mine: [], registered: [] };
 
   if (isOrganizer) {
     const grouped = await db.teamRoster.groupBy({
@@ -26,11 +28,18 @@ export async function GET() {
   }
 
   if (session?.user?.id) {
-    const mine = await db.teamRoster.findMany({
-      where: { userId: session.user.id },
-      select: { eventId: true },
-    });
+    const [mine, registered] = await Promise.all([
+      db.teamRoster.findMany({
+        where: { userId: session.user.id },
+        select: { eventId: true },
+      }),
+      db.eventTeam.findMany({
+        where: { addedBy: session.user.id },
+        select: { eventId: true },
+      }),
+    ]);
     result.mine = mine.map((r) => r.eventId);
+    result.registered = registered.map((r) => r.eventId);
   }
 
   return NextResponse.json(result);

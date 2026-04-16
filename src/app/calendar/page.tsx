@@ -193,6 +193,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [rosterCounts, setRosterCounts] = useState<Record<string, number>>({});
   const [myRosterEventIds, setMyRosterEventIds] = useState<string[]>([]);
+  const [myRegisteredEventIds, setMyRegisteredEventIds] = useState<string[]>([]);
 
   const [showForm, setShowForm] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
@@ -222,6 +223,7 @@ export default function CalendarPage() {
         const data = await res.json();
         setRosterCounts(data.counts ?? {});
         setMyRosterEventIds(data.mine ?? []);
+        setMyRegisteredEventIds(data.registered ?? []);
       }
     } catch {}
   }, []);
@@ -1021,6 +1023,7 @@ export default function CalendarPage() {
                   onEdit={() => handleEdit(ev)}
                   isLoggedIn={!!role}
                   hasMyRoster={myRosterEventIds.includes(ev.id)}
+                  isRegistered={myRegisteredEventIds.includes(ev.id)}
                   rosterCount={rosterCounts[ev.id] ?? 0}
                 />
               ))
@@ -1049,6 +1052,7 @@ function EventCard({
   onEdit,
   isLoggedIn,
   hasMyRoster,
+  isRegistered,
   rosterCount,
 }: {
   event: CalendarEvent;
@@ -1058,9 +1062,20 @@ function EventCard({
   onEdit: () => void;
   isLoggedIn?: boolean;
   hasMyRoster?: boolean;
+  isRegistered?: boolean;
   rosterCount?: number;
 }) {
   const c = getCityColor(event.city);
+
+  // Three roster states:
+  // "submitted"   — roster has been submitted (hasMyRoster)
+  // "no-roster"   — team is registered via EventTeam but no roster yet
+  // "none"        — team not registered at all
+  const rosterState = hasMyRoster
+    ? "submitted"
+    : isRegistered
+      ? "no-roster"
+      : "none";
 
   return (
     <div className={`rounded-xl border bg-white p-4 transition-all hover:shadow-sm ${c.border}`}>
@@ -1163,15 +1178,22 @@ function EventCard({
           <Link
             href={`/account/roster/${event.id}`}
             className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-              hasMyRoster
+              rosterState === "submitted"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                : "border-border text-muted hover:bg-surface hover:text-foreground"
+                : rosterState === "no-roster"
+                  ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  : "border-border text-muted hover:bg-surface hover:text-foreground"
             }`}
           >
-            {hasMyRoster ? (
+            {rosterState === "submitted" ? (
               <>
                 <CheckCircle2 className="h-3 w-3" />
                 Состав подан
+              </>
+            ) : rosterState === "no-roster" ? (
+              <>
+                <Users className="h-3 w-3" />
+                Состав не подан
               </>
             ) : (
               <>

@@ -11,7 +11,6 @@ const navItems = [
   { href: "/dziki-sopot", label: "Dziki Sopot" },
   { href: "/warsaw", label: "Чемпионат Варшавы" },
   { href: "/calendar", label: "Календарь" },
-  { href: "/games", label: "Другие игры" },
   { href: "/online-games", label: "Онлайн-игры" },
 ];
 

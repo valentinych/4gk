@@ -30,8 +30,7 @@ export function dsRatingPublicUrl(tournamentId: number): string {
 }
 
 export function dsYearLabel(year: DsYear): string {
-  // DS'25 means the tournament happening in year 2025
-  return `DS'${String(year).slice(-2)}`;
+  return `Dziki Sopot 🐗 — ${year}`;
 }
 
 export interface DsLandingTile {

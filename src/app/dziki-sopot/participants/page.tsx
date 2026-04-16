@@ -6,7 +6,7 @@ import { fetchDsParticipants } from "@/lib/ds-participants";
 import type { DsParticipant, ParticipantCategory } from "@/lib/ds-participants";
 
 export const metadata: Metadata = {
-  title: "Участники DS'26 | Dziki Sopot",
+  title: "Участники | Dziki Sopot 🐗 2026",
   description: "Список команд-участников Dziki Sopot 2026",
 };
 
@@ -131,7 +131,7 @@ export default async function DsParticipantsPage() {
       <div className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
           <Users className="h-3.5 w-3.5" />
-          DS&apos;26
+          Dziki Sopot 🐗 — 2026
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Участники</h1>
         <p className="mt-1 text-sm text-muted">{participants.length} команд</p>

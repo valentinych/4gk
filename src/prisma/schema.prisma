@@ -100,6 +100,7 @@ model EventTeam {
   teamName    String
   displayName String?
   addedBy     String
+  selfJoined  Boolean  @default(false)
   addedAt     DateTime @default(now())
 
   event       CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)

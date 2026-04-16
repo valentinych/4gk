@@ -28,18 +28,20 @@ export async function GET() {
   }
 
   if (session?.user?.id) {
-    const [mine, registered] = await Promise.all([
+    const [mine, selfJoined] = await Promise.all([
       db.teamRoster.findMany({
         where: { userId: session.user.id },
         select: { eventId: true },
       }),
+      // "Состав не подан": events where user personally used "Присоединиться"
+      // (selfJoined = true means the player added their own team, not admin-added another team)
       db.eventTeam.findMany({
-        where: { addedBy: session.user.id },
+        where: { addedBy: session.user.id, selfJoined: true },
         select: { eventId: true },
       }),
     ]);
     result.mine = mine.map((r) => r.eventId);
-    result.registered = registered.map((r) => r.eventId);
+    result.registered = selfJoined.map((r) => r.eventId);
   }
 
   return NextResponse.json(result);

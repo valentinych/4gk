@@ -1181,7 +1181,7 @@ function EventCard({
               rosterState === "submitted"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                 : rosterState === "no-roster"
-                  ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
                   : "border-border text-muted hover:bg-surface hover:text-foreground"
             }`}
           >

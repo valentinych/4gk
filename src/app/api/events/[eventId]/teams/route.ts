@@ -109,6 +109,7 @@ export async function POST(req: Request, { params }: Params) {
         teamName,
         displayName,
         addedBy: session.user.id,
+        selfJoined: !isOrganizer,
       },
     });
     return NextResponse.json(entry, { status: 201 });

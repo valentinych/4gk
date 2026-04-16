@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useToast } from "@/components/Toaster";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -83,6 +84,7 @@ export default function RosterForm({
   suggestedTeamData: SuggestedTeamData | null;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
 
   // Determine initial state from existing roster or suggestion
   const suggestion = !initialRoster ? suggestedTeamData : null;
@@ -129,7 +131,6 @@ export default function RosterForm({
   const playerSearchRef = useRef<HTMLDivElement>(null);
 
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Track whether the team was set from the initial suggestion (skip auto-fill on mount)
@@ -274,9 +275,8 @@ export default function RosterForm({
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "Ошибка сохранения");
       }
-      setSaved(true);
       setExisting(true);
-      setTimeout(() => setSaved(false), 3000);
+      toast(existing ? "Состав обновлён" : "Состав подан!");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка сохранения");
     } finally {
@@ -609,13 +609,6 @@ export default function RosterForm({
 
       {error && (
         <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">{error}</p>
-      )}
-
-      {saved && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          <CheckCircle2 className="h-4 w-4" />
-          Состав сохранён!
-        </div>
       )}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">

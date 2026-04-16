@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useToast } from "@/components/Toaster";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -113,6 +114,7 @@ export default function EventDetailPage() {
   const role = session?.user?.role;
   const userId = session?.user?.id;
   const isOrganizer = role === "ADMIN" || role === "ORGANIZER";
+  const { toast } = useToast();
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [teams, setTeams] = useState<TeamEntry[]>([]);
@@ -226,6 +228,7 @@ export default function EventDetailPage() {
       if (!res.ok) { setAddError(data.error ?? "Ошибка"); return; }
       setTeams((prev) => [...prev, data]);
       clearSelected();
+      toast("Команда добавлена");
     } finally {
       setAdding(false);
     }
@@ -279,6 +282,7 @@ export default function EventDetailPage() {
       setTeams((prev) => [...prev, data]);
       setJoinPhase("idle");
       setMyTeam(null);
+      toast("Вы присоединились к событию");
     } catch {
       setJoinError("Ошибка сети");
       setJoinPhase("preview");
@@ -295,8 +299,11 @@ export default function EventDetailPage() {
   async function handleRemove(teamId: string) {
     setRemoving(teamId);
     try {
-      await fetch(`/api/events/${eventId}/teams/${teamId}`, { method: "DELETE" });
-      setTeams((prev) => prev.filter((t) => t.id !== teamId));
+      const res = await fetch(`/api/events/${eventId}/teams/${teamId}`, { method: "DELETE" });
+      if (res.ok) {
+        setTeams((prev) => prev.filter((t) => t.id !== teamId));
+        toast("Команда удалена из события");
+      }
     } finally {
       setRemoving(null);
     }

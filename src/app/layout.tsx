@@ -5,6 +5,7 @@ import { SessionProvider } from "@/components/SessionProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CookieConsent } from "@/components/CookieConsent";
+import { ToastProvider } from "@/components/Toaster";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -53,10 +54,12 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SessionProvider>
-          <Header />
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-          <CookieConsent />
+          <ToastProvider>
+            <Header />
+            <main className="min-h-screen">{children}</main>
+            <Footer />
+            <CookieConsent />
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

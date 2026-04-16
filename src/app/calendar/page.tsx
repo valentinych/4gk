@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useToast } from "@/components/Toaster";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -184,6 +185,8 @@ export default function CalendarPage() {
   const canManageEvents = role === "ADMIN" || role === "ORGANIZER";
   const isAdmin = role === "ADMIN";
 
+  const { toast } = useToast();
+
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -310,6 +313,7 @@ export default function CalendarPage() {
     e.preventDefault();
     setSaving(true);
     setError(null);
+    const isEditing = !!editingId;
     try {
       const url = editingId
         ? `/api/admin/calendar/${editingId}`
@@ -329,6 +333,7 @@ export default function CalendarPage() {
       setEditingId(null);
       setShowForm(false);
       await fetchEvents();
+      toast(isEditing ? "Мероприятие обновлено" : "Мероприятие создано");
     } catch {
       setError("Ошибка сети");
     } finally {
@@ -341,7 +346,7 @@ export default function CalendarPage() {
     setDeleting(id);
     try {
       const res = await fetch(`/api/admin/calendar/${id}`, { method: "DELETE" });
-      if (res.ok) await fetchEvents();
+      if (res.ok) { await fetchEvents(); toast("Мероприятие удалено"); }
     } finally {
       setDeleting(null);
     }
@@ -394,6 +399,7 @@ export default function CalendarPage() {
     e.preventDefault();
     setSavingTemplate(true);
     setError(null);
+    const isEditing = !!editingTemplateId;
     try {
       const url = editingTemplateId
         ? `/api/admin/calendar/templates/${editingTemplateId}`
@@ -413,6 +419,7 @@ export default function CalendarPage() {
       setEditingTemplateId(null);
       setShowTemplateForm(false);
       await fetchTemplates();
+      toast(isEditing ? "Шаблон обновлён" : "Шаблон сохранён");
     } catch {
       setError("Ошибка сети");
     } finally {
@@ -431,6 +438,7 @@ export default function CalendarPage() {
           setShowTemplateForm(false);
         }
         await fetchTemplates();
+        toast("Шаблон удалён");
       }
     } catch {}
   }

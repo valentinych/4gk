@@ -89,6 +89,8 @@ interface TeamEntry {
   id: string;
   teamChgkId: number;
   teamName: string;
+  hasRoster: boolean;
+  playersCount: number | null;
   displayName: string | null;
   addedBy: string;
   addedAt: string;
@@ -98,6 +100,71 @@ interface ChgkTeamResult {
   id: number;
   name: string;
   town?: { name: string };
+}
+
+/* ─── Inline editable players-count cell ─── */
+function PlayersCountInput({
+  eventId,
+  teamId,
+  value,
+  onChange,
+}: {
+  eventId: string;
+  teamId: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  const [local, setLocal] = useState(value != null ? String(value) : "");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSavedFlag] = useState(false);
+  const prevRef = useRef(value);
+
+  async function commit(raw: string) {
+    const num = raw.trim() === "" ? null : parseInt(raw, 10);
+    const next = num != null && !isNaN(num) && num >= 0 ? num : null;
+    if (next === prevRef.current) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/events/${eventId}/teams/${teamId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playersCount: next }),
+      });
+      if (res.ok) {
+        prevRef.current = next;
+        onChange(next);
+        setLocal(next != null ? String(next) : "");
+        setSavedFlag(true);
+        setTimeout(() => setSavedFlag(false), 1200);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="relative flex items-center">
+      <input
+        type="number"
+        min={0}
+        max={999}
+        value={local}
+        onChange={(e) => setLocal(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        }}
+        placeholder="—"
+        className="w-14 rounded-md border border-border bg-white px-2 py-1 text-center text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      {saving && (
+        <Loader2 className="absolute -right-5 h-3 w-3 animate-spin text-muted" />
+      )}
+      {saved && !saving && (
+        <CheckCircle2 className="absolute -right-5 h-3 w-3 text-emerald-500" />
+      )}
+    </div>
+  );
 }
 
 function teamCountWord(n: number) {
@@ -655,6 +722,12 @@ export default function EventDetailPage() {
                   <th className="px-5 py-2.5 font-medium w-10">#</th>
                   <th className="px-5 py-2.5 font-medium">Команда</th>
                   <th className="px-5 py-2.5 font-medium w-20 text-right">ID</th>
+                  {isOrganizer && (
+                    <>
+                      <th className="px-3 py-2.5 font-medium text-center w-14">Состав</th>
+                      <th className="px-3 py-2.5 font-medium text-center w-20">Сколько</th>
+                    </>
+                  )}
                   <th className="w-10" />
                 </tr>
               </thead>
@@ -682,6 +755,33 @@ export default function EventDetailPage() {
                           #{team.teamChgkId}
                         </a>
                       </td>
+                      {isOrganizer && (
+                        <>
+                          {/* Состав submitted? */}
+                          <td className="px-3 py-3 text-center text-base">
+                            {team.hasRoster ? (
+                              <span title="Состав подан">✅</span>
+                            ) : (
+                              <span title="Состав не подан" className="text-muted/40">—</span>
+                            )}
+                          </td>
+                          {/* Editable players count */}
+                          <td className="px-3 py-2">
+                            <PlayersCountInput
+                              eventId={eventId}
+                              teamId={team.id}
+                              value={team.playersCount}
+                              onChange={(v) =>
+                                setTeams((prev) =>
+                                  prev.map((t) =>
+                                    t.id === team.id ? { ...t, playersCount: v } : t,
+                                  ),
+                                )
+                              }
+                            />
+                          </td>
+                        </>
+                      )}
                       <td className="pr-3">
                         {canRemove && (
                           <button
@@ -709,6 +809,11 @@ export default function EventDetailPage() {
         {teams.length > 0 && (
           <div className="border-t border-border px-5 py-3 text-xs text-muted">
             {teams.length} {teamCountWord(teams.length)}
+            {isOrganizer && teams.some((t) => t.playersCount != null) && (
+              <span className="ml-3">
+                · {teams.reduce((s, t) => s + (t.playersCount ?? 0), 0)} игроков суммарно
+              </span>
+            )}
           </div>
         )}
       </div>

@@ -23,10 +23,21 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = (await req.json()) as { displayName?: string | null };
+  const body = (await req.json()) as {
+    displayName?: string | null;
+    playersCount?: number | null;
+  };
+
+  const data: { displayName?: string | null; playersCount?: number | null } = {};
+  if ("displayName" in body) data.displayName = body.displayName?.trim() || null;
+  if ("playersCount" in body) {
+    const n = body.playersCount;
+    data.playersCount = n != null && n >= 0 ? Math.floor(n) : null;
+  }
+
   const updated = await db.eventTeam.update({
     where: { id: teamId },
-    data: { displayName: body.displayName?.trim() || null },
+    data,
   });
 
   return NextResponse.json(updated);

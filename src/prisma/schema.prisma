@@ -98,9 +98,10 @@ model EventTeam {
   eventId     String
   teamChgkId  Int
   teamName    String
-  displayName String?
-  addedBy     String
-  selfJoined  Boolean  @default(false)
+  displayName  String?
+  playersCount Int?
+  addedBy      String
+  selfJoined   Boolean  @default(false)
   addedAt     DateTime @default(now())
 
   event       CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)

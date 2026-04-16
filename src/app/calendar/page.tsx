@@ -1196,7 +1196,7 @@ function EventCard({
             {rosterState === "submitted" ? (
               <>
                 <CheckCircle2 className="h-3 w-3" />
-                Состав подан
+                Изменить состав
               </>
             ) : rosterState === "no-roster" ? (
               <>

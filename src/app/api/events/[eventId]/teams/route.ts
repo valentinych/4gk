@@ -9,7 +9,7 @@ type Params = { params: Promise<{ eventId: string }> };
 export async function GET(_req: Request, { params }: Params) {
   const { eventId } = await params;
 
-  const [event, teams] = await Promise.all([
+  const [event, teams, rosters] = await Promise.all([
     db.calendarEvent.findUnique({ where: { id: eventId } }),
     db.eventTeam.findMany({
       where: { eventId },
@@ -19,13 +19,21 @@ export async function GET(_req: Request, { params }: Params) {
         teamChgkId: true,
         teamName: true,
         displayName: true,
+        playersCount: true,
         addedBy: true,
         addedAt: true,
       },
     }),
+    // TeamRoster submissions for this event – used to show "has roster" badge
+    db.teamRoster.findMany({
+      where: { eventId },
+      select: { teamChgkId: true },
+    }),
   ]);
 
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+
+  const rosterChgkIds = new Set(rosters.map((r) => r.teamChgkId).filter(Boolean));
 
   return NextResponse.json({
     event: {
@@ -44,7 +52,12 @@ export async function GET(_req: Request, { params }: Params) {
       mediaLink: event.mediaLink,
       mediaLinkLabel: event.mediaLinkLabel,
     },
-    teams,
+    teams: teams.map((t) => ({
+      ...t,
+      hasRoster: rosterChgkIds.has(t.teamChgkId),
+    })),
+    // How many rosters have been submitted total (useful for organizer)
+    rosterCount: rosters.length,
   });
 }
 

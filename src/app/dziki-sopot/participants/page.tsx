@@ -118,13 +118,18 @@ export default async function DsParticipantsPage() {
   const participants = await fetchParticipants();
 
   const counts = {
-    time:      participants.filter((p) => p.category === "time").length,
-    vk:        participants.filter((p) => p.category === "vk").length,
-    rating:    participants.filter((p) => p.category === "rating" && !p.inBothDs).length,
-    ds2:       participants.filter((p) => p.category === "ds2").length,
-    none:      participants.filter((p) => p.category === "none").length,
-    confirmed: participants.filter((p) => p.inBothDs || p.category === "time" || p.category === "vk" || p.category === "ds2").length,
-    inBothDs:  participants.filter((p) => p.inBothDs).length,
+    time:        participants.filter((p) => p.category === "time").length,
+    vk:          participants.filter((p) => p.category === "vk").length,
+    rating:      participants.filter((p) => p.category === "rating" && !p.inBothDs).length,
+    ds2:         participants.filter((p) => p.category === "ds2").length,
+    none:        participants.filter((p) => p.category === "none" && !p.inBothDs).length,
+    // Green dot: confirmed (Время or ВК, regardless of inBothDs)
+    confirmed:   participants.filter((p) => p.category === "time" || p.category === "vk").length,
+    // Orange dot: preliminary (rating any, or none+inBothDs)
+    preliminary: participants.filter(
+      (p) => (p.category === "rating" || p.inBothDs) && p.category !== "time" && p.category !== "vk"
+    ).length,
+    inBothDs:    participants.filter((p) => p.inBothDs).length,
   };
 
   return (
@@ -150,7 +155,7 @@ export default async function DsParticipantsPage() {
 
       {/* Legend */}
       <div className="mb-6 flex flex-wrap gap-3">
-        {/* Traffic light legend */}
+        {/* Traffic light summary */}
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]" />
           <span>Участие подтверждено</span>
@@ -161,28 +166,34 @@ export default async function DsParticipantsPage() {
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="animate-traffic-pulse inline-block h-3 w-3 rounded-full" />
           <span>Предварительно проходят по рейтингу</span>
-          <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
-            {counts.rating}
+          <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+            {counts.preliminary}
           </span>
         </div>
 
-        {/* Category legend */}
-        {(["time", "vk", "rating", "ds2", "none"] as ParticipantCategory[]).map((cat) => {
+        {/* Category legend — badge pill style matching the table */}
+        {(
+          [
+            { cat: "time",   count: counts.time },
+            { cat: "vk",     count: counts.vk },
+            { cat: "rating", count: counts.rating },
+            { cat: "ds2",    count: counts.inBothDs },
+            { cat: "none",   count: counts.none },
+          ] as { cat: ParticipantCategory; count: number }[]
+        ).map(({ cat, count }) => {
           const cfg = CAT_CONFIG[cat];
-          const count = cat === "ds2" ? counts.inBothDs : counts[cat];
-          if (cat === "none" && count === 0) return null;
+          if (count === 0) return null;
           return (
             <div
               key={cat}
               className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm"
             >
-              <span className={`h-2.5 w-2.5 rounded-full ${cfg.dotCls}`} />
-              <span>
-                {cfg.label}
-                {cat !== "none" && (
-                  <span className="ml-1 text-muted">— {cfg.description}</span>
-                )}
+              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cfg.badgeCls}`}>
+                {cat === "ds2" ? "Участие в 2 ДС" : cfg.label}
               </span>
+              {cat !== "none" && (
+                <span className="text-muted">— {cfg.description}</span>
+              )}
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${cfg.badgeCls}`}>
                 {count}
               </span>

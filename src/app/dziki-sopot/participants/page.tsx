@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { fetchDsParticipants } from "@/lib/ds-participants";
-import type { DsParticipant, ParticipantCategory } from "@/lib/ds-participants";
+import type { DsParticipant, DsParticipantsResult, ParticipantCategory } from "@/lib/ds-participants";
 
 export const metadata: Metadata = {
   title: "Участники | Dziki Sopot 🐗 2026",
@@ -103,11 +103,11 @@ function TrafficLight({ cat, inBothDs }: { cat: ParticipantCategory; inBothDs: b
 
 // ─── Data fetching ────────────────────────────────────────────────────────────
 
-async function fetchParticipants(): Promise<DsParticipant[]> {
+async function fetchParticipantsData(): Promise<DsParticipantsResult> {
   try {
     return await fetchDsParticipants();
   } catch {
-    return [];
+    return { participants: [], ratingReleaseDate: null };
   }
 }
 
@@ -115,7 +115,7 @@ async function fetchParticipants(): Promise<DsParticipant[]> {
 
 export default async function DsParticipantsPage() {
   await headers(); // opt out of static caching — render on every request
-  const participants = await fetchParticipants();
+  const { participants, ratingReleaseDate } = await fetchParticipantsData();
 
   const counts = {
     time:        participants.filter((p) => p.category === "time").length,
@@ -150,7 +150,15 @@ export default async function DsParticipantsPage() {
           Dziki Sopot 🐗 — 2026
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Участники</h1>
-        <p className="mt-1 text-sm text-muted">{participants.length} команд</p>
+        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted">
+          <span>{participants.length} команд</span>
+          {ratingReleaseDate && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-2.5 py-0.5 text-xs font-medium shadow-sm">
+              Рейтинг по состоянию релиза{" "}
+              <span className="font-semibold text-foreground">{ratingReleaseDate}</span>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Legend */}

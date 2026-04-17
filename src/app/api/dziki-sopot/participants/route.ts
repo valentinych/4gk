@@ -5,10 +5,10 @@ export type { ParticipantCategory, DsParticipant } from "@/lib/ds-participants";
 
 export async function GET() {
   try {
-    const participants = await fetchDsParticipants();
-    return NextResponse.json({ participants });
+    const { participants, ratingReleaseDate } = await fetchDsParticipants();
+    return NextResponse.json({ participants, ratingReleaseDate });
   } catch (err) {
     console.error("[DS participants]", err);
-    return NextResponse.json({ participants: [] });
+    return NextResponse.json({ participants: [], ratingReleaseDate: null });
   }
 }

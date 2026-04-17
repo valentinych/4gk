@@ -1,6 +1,8 @@
 export interface ChgkGgRating {
   position: number;
   score: number;
+  /** Release date in DD.MM.YYYY format, e.g. "16.04.2026" */
+  releaseDate: string;
 }
 
 /**
@@ -56,7 +58,7 @@ export async function fetchChgkGgRating(
         const score = parseInt(scoreStr);
 
         if (isDate && !isNaN(pos) && pos > 0 && !isNaN(score) && score > 0) {
-          return { position: pos, score };
+          return { position: pos, score, releaseDate: dateStr };
         }
       }
     }
@@ -67,20 +69,42 @@ export async function fetchChgkGgRating(
   }
 }
 
+export interface ChgkGgRatingsResult {
+  map: Map<number, ChgkGgRating | null>;
+  /** Most recent release date found across all teams, DD.MM.YYYY, or null */
+  releaseDate: string | null;
+}
+
 /**
  * Fetches ratings for multiple teams in parallel.
- * Returns a map of teamId → ChgkGgRating (null if failed).
+ * Returns a map of teamId → ChgkGgRating and the most recent release date.
  */
 export async function fetchChgkGgRatings(
   teamIds: number[],
-): Promise<Map<number, ChgkGgRating | null>> {
+): Promise<ChgkGgRatingsResult> {
   const unique = [...new Set(teamIds.filter((id) => id > 0))];
   const results = await Promise.all(
     unique.map(async (id) => ({ id, rating: await fetchChgkGgRating(id) })),
   );
   const map = new Map<number, ChgkGgRating | null>();
+  let releaseDate: string | null = null;
+
   for (const { id, rating } of results) {
     map.set(id, rating);
+    if (rating?.releaseDate) {
+      // Keep the most recent date (DD.MM.YYYY → compare as YYYY-MM-DD)
+      const candidate = toIso(rating.releaseDate);
+      if (!releaseDate || candidate > toIso(releaseDate)) {
+        releaseDate = rating.releaseDate;
+      }
+    }
   }
-  return map;
+
+  return { map, releaseDate };
+}
+
+/** Convert DD.MM.YYYY to YYYY-MM-DD for lexicographic date comparison */
+function toIso(ddmmyyyy: string): string {
+  const [d, m, y] = ddmmyyyy.split(".");
+  return `${y}-${m}-${d}`;
 }

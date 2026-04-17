@@ -71,7 +71,13 @@ function parseCategory(
   return { category: "none", label: "" };
 }
 
-export async function fetchDsParticipants(): Promise<DsParticipant[]> {
+export interface DsParticipantsResult {
+  participants: DsParticipant[];
+  /** Most recent rating release date, e.g. "16.04.2026", or null */
+  ratingReleaseDate: string | null;
+}
+
+export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
   noStore();
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
   const text = await fetch(url, { cache: "no-store" }).then((r) => {
@@ -106,7 +112,7 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
 
   // Fetch current ratings from rating.chgk.gg in parallel
   const teamIds = rawParticipants.map((p) => p.teamId);
-  const ratingsMap = await fetchChgkGgRatings(teamIds);
+  const { map: ratingsMap, releaseDate: ratingReleaseDate } = await fetchChgkGgRatings(teamIds);
 
   const withLive = rawParticipants.map((p) => {
     const live = ratingsMap.get(p.teamId) ?? null;
@@ -142,5 +148,5 @@ export async function fetchDsParticipants(): Promise<DsParticipant[]> {
     return { ...p, category: "none" as ParticipantCategory, categoryLabel: "" };
   });
 
-  return [...confirmed, ...ranked];
+  return { participants: [...confirmed, ...ranked], ratingReleaseDate };
 }

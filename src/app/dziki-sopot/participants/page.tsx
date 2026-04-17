@@ -165,7 +165,7 @@ export default async function DsParticipantsPage() {
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="animate-traffic-pulse inline-block h-3 w-3 rounded-full" />
-          <span>Предварительно проходят по рейтингу</span>
+          <span>Предварительно проходят</span>
           <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
             {counts.preliminary}
           </span>

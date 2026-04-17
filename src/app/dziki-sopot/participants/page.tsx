@@ -69,21 +69,32 @@ function fmtTimestamp(raw: string): string {
   return `${day}.${month} ${timeShort}`;
 }
 
-/** Returns the traffic-light indicator for a category */
+/**
+ * Green solid  = confirmed: Время or ВК (regardless of 2DS)
+ * Orange blink = preliminary: Рейтинг (with or without 2DS),
+ *                              or inBothDs as the only factor (category "none")
+ * Empty        = no indicator
+ */
 function TrafficLight({ cat, inBothDs }: { cat: ParticipantCategory; inBothDs: boolean }) {
-  if (inBothDs || cat === "time" || cat === "vk" || cat === "ds2") {
+  if (cat === "time" || cat === "vk") {
     return (
       <span
         className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]"
-        title={inBothDs ? "Участвовали в двух предыдущих ДС" : "Участие подтверждено"}
+        title="Участие подтверждено"
       />
     );
   }
-  if (cat === "rating") {
+  if (cat === "rating" || inBothDs) {
     return (
       <span
         className="animate-traffic-pulse inline-block h-3 w-3 rounded-full"
-        title="Предварительно проходят по рейтингу"
+        title={
+          cat === "rating" && inBothDs
+            ? "Предварительно проходят по рейтингу · Участие в 2 ДС"
+            : cat === "rating"
+              ? "Предварительно проходят по рейтингу"
+              : "Участие в 2 ДС"
+        }
       />
     );
   }
@@ -195,7 +206,6 @@ export default async function DsParticipantsPage() {
                 <th className="px-3 py-2.5 text-left">Команда</th>
                 <th className="px-3 py-2.5 text-left hidden sm:table-cell">Город</th>
                 <th className="px-3 py-2.5 text-right hidden sm:table-cell">Место</th>
-                <th className="px-3 py-2.5 text-right">Рейтинг</th>
                 <th className="px-3 py-2.5 text-left hidden lg:table-cell">Зарегистрировалась</th>
                 <th className="px-3 py-2.5 text-left">Категория</th>
               </tr>
@@ -203,10 +213,13 @@ export default async function DsParticipantsPage() {
             <tbody>
               {participants.map((p, idx) => {
                 const cfg = CAT_CONFIG[p.category];
+                // Teams whose only entry factor is 2DS (category "none") get amber row
+                const rowCls =
+                  p.category === "none" && p.inBothDs ? "bg-amber-50/60" : cfg.rowCls;
                 return (
                   <tr
                     key={idx}
-                    className={`border-b border-border/50 last:border-0 transition-colors hover:brightness-[0.97] ${cfg.rowCls}`}
+                    className={`border-b border-border/50 last:border-0 transition-colors hover:brightness-[0.97] ${rowCls}`}
                   >
                     {/* Traffic light */}
                     <td className="px-3 py-2 text-center">
@@ -246,15 +259,6 @@ export default async function DsParticipantsPage() {
                         p.ratingPosition
                       ) : p.rating !== null ? (
                         p.rating
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
-                    </td>
-
-                    {/* Rating score */}
-                    <td className="px-3 py-2 text-right font-mono text-sm">
-                      {p.ratingScore !== null ? (
-                        p.ratingScore.toLocaleString("ru-RU")
                       ) : (
                         <span className="text-muted">—</span>
                       )}

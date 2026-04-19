@@ -17,7 +17,7 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-white p-6">
+        <div className="rounded-xl border border-border bg-surface p-6">
           <button
             onClick={() => signIn("google", { callbackUrl: "/" })}
             className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-surface"

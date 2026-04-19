@@ -44,7 +44,7 @@ export default function GamesPage() {
           <Link
             key={item.href}
             href={item.href}
-            className="group flex items-center justify-between rounded-xl border border-border bg-white p-5 transition-all hover:border-border-hover hover:shadow-sm"
+            className="group flex items-center justify-between rounded-xl border border-border bg-surface p-5 transition-all hover:border-border-hover hover:shadow-sm"
           >
             <div>
               <div className="flex items-center gap-2">

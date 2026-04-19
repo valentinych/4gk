@@ -65,7 +65,7 @@ export default function HomePage() {
               <Link
                 key={league.href}
                 href={league.href}
-                className="group rounded-xl border border-border bg-white p-6 transition-all hover:border-border-hover hover:shadow-md"
+                className="group rounded-xl border border-border bg-surface p-6 transition-all hover:border-border-hover hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${league.iconBg}`}>
@@ -96,7 +96,7 @@ export default function HomePage() {
               { icon: Globe, label: "Сообщество", description: "Объединяем команды интеллектуальных игр" },
             ].map((item) => (
               <div key={item.label} className="flex flex-col items-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white border border-border">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface border border-border">
                   <item.icon className="h-5 w-5 text-muted" />
                 </div>
                 <p className="mt-3 text-sm font-semibold">{item.label}</p>

@@ -101,7 +101,7 @@ function SchedulePage() {
         href="https://maps.app.goo.gl/tGTPPGV5MvFHvS988"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-3 rounded-xl border border-border bg-white p-4 transition-colors hover:border-accent/30 hover:bg-accent/5"
+        className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-accent/30 hover:bg-accent/5"
       >
         <MapPin className="h-5 w-5 text-accent shrink-0" />
         <div className="flex-1">
@@ -124,7 +124,7 @@ function SchedulePage() {
       </div>
 
       {schedule.map((day) => (
-        <div key={day.date} className="rounded-xl border border-border bg-white overflow-hidden">
+        <div key={day.date} className="rounded-xl border border-border bg-surface overflow-hidden">
           <div className="bg-accent/5 border-b border-border px-5 py-3">
             <h3 className="text-sm font-bold">{day.day}, {day.date}</h3>
           </div>
@@ -231,7 +231,7 @@ function personName(p: Person) {
 
 function PersonList({ title, icon, people }: { title: string; icon: React.ReactNode; people: Person[] }) {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <div className="flex items-center gap-2 mb-3">
         {icon}
         <h3 className="text-sm font-bold">{title}</h3>
@@ -293,28 +293,28 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
       </a>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2 mb-1">
             <Calendar className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Даты</span>
           </div>
           <p className="text-sm font-bold">{dateStr}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2 mb-1">
             <Hash className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Формат</span>
           </div>
           <p className="text-sm font-bold">{tourCount} туров × {questionsPerTour} вопросов = {totalQuestions}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2 mb-1">
             <Users className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Команды</span>
           </div>
           <p className="text-sm font-bold">{teamsLabel}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs text-muted">Сложность</span>
           </div>
@@ -497,7 +497,7 @@ function PolishFlag() {
       className="inline-block w-4 h-4 rounded-full border border-border overflow-hidden shrink-0"
       title="Зачёт ЧСт"
     >
-      <span className="block w-full h-1/2 bg-white" />
+      <span className="block w-full h-1/2 bg-surface" />
       <span className="block w-full h-1/2 bg-red-500" />
     </span>
   );
@@ -554,7 +554,7 @@ async function ParticipantsPage({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
@@ -707,7 +707,7 @@ function RulesPage() {
         </a>
       </div>
 
-      <div className="rounded-xl border border-border bg-white p-6 sm:p-8">
+      <div className="rounded-xl border border-border bg-surface p-6 sm:p-8">
         <h2 className="text-lg font-bold leading-snug mb-6">
           {rulesContent.title}
         </h2>
@@ -796,7 +796,7 @@ function BrainSubTiles() {
         <Link
           key={t.slug}
           href={`/ochp/${t.slug}`}
-          className="group rounded-xl border border-border bg-white p-6 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+          className="group rounded-xl border border-border bg-surface p-6 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
         >
           <span className="text-3xl leading-none">🧠</span>
           <h3 className="mt-3 text-sm font-bold group-hover:text-accent transition-colors">
@@ -859,7 +859,7 @@ export default async function OchpSubPage({
       </div>
 
       {noChampionshipSeason ? (
-        <div className="rounded-xl border border-border bg-white px-6 py-14 text-center">
+        <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
           <p className="text-base font-medium text-foreground">
             Чемпионат Польши в этот сезон не проводился
           </p>
@@ -901,7 +901,7 @@ export default async function OchpSubPage({
               Открыть в Google Drive <ExternalLink className="h-3 w-3" />
             </a>
           </div>
-          <div className="rounded-xl border border-border bg-white overflow-hidden">
+          <div className="rounded-xl border border-border bg-surface overflow-hidden">
             <iframe
               src="https://drive.google.com/file/d/1xXHIw8giOiGCqFe-HOnEaV2sJUsjBUND/preview"
               className="w-full"

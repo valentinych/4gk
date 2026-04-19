@@ -155,7 +155,7 @@ function PlayersCountInput({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
         placeholder="—"
-        className={`w-14 rounded-md border bg-white px-2 py-1 text-center text-sm outline-none transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
+        className={`w-14 rounded-md border bg-surface px-2 py-1 text-center text-sm outline-none transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
           saving
             ? "border-amber-300 focus:border-amber-400"
             : "border-border focus:border-accent focus:ring-1 focus:ring-accent/30"
@@ -442,7 +442,7 @@ export default function EventDetailPage() {
       </Link>
 
       {/* Event header */}
-      <div className="mb-8 rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <div className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span
             className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${c.bg} ${c.text} ${c.border}`}
@@ -514,7 +514,7 @@ export default function EventDetailPage() {
       </div>
 
       {/* Teams section */}
-      <div className="rounded-2xl border border-border bg-white shadow-sm">
+      <div className="rounded-2xl border border-border bg-surface shadow-sm">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted" />
@@ -561,7 +561,7 @@ export default function EventDetailPage() {
                 </div>
 
                 {showDropdown && searchResults.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-white shadow-lg">
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-surface shadow-lg">
                     {searchResults.map((t) => (
                       <button
                         key={t.id}
@@ -613,7 +613,7 @@ export default function EventDetailPage() {
                       value={adminDisplayName}
                       onChange={(e) => setAdminDisplayName(e.target.value)}
                       placeholder="Разовое название команды..."
-                      className="mb-2 w-full rounded-md border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                      className="mb-2 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
                     />
                   )}
 
@@ -694,7 +694,7 @@ export default function EventDetailPage() {
                     value={joinDisplayName}
                     onChange={(e) => setJoinDisplayName(e.target.value)}
                     placeholder="Разовое название..."
-                    className="mb-3 w-full rounded-md border border-border bg-white px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                    className="mb-3 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
                   />
                 )}
 

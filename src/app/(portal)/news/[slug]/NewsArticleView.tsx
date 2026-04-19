@@ -188,7 +188,7 @@ export default function NewsArticleView({ article: initial }: { article: Article
       </div>
 
       {editing ? (
-        <div className="rounded-xl border border-border bg-white p-5">
+        <div className="rounded-xl border border-border bg-surface p-5">
           <h3 className="text-sm font-bold">Редактирование новости</h3>
 
           {error && (

@@ -344,7 +344,7 @@ export default function RosterForm({
       {/* Team section */}
       <section className="mt-8">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Команда</h2>
-        <div className="rounded-xl border border-border bg-white p-5 space-y-4">
+        <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted">
               Поиск по рейтингу ЧГК (по названию или ID команды)
@@ -363,7 +363,7 @@ export default function RosterForm({
               )}
             </div>
             {teamResults.length > 0 && (
-              <ul className="mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-white shadow-md">
+              <ul className="mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-surface shadow-md">
                 {teamResults.map((t) => (
                   <li key={t.id}>
                     <button
@@ -468,7 +468,7 @@ export default function RosterForm({
             )}
           </div>
           {showPlayerSearch && playerResults.length > 0 && (
-            <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border bg-white shadow-lg">
+            <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border bg-surface shadow-lg">
               {playerResults.map((p) => {
                 const alreadyAdded = addedChgkIds.has(p.id);
                 const isBase = basePlayerIds.has(p.id);
@@ -503,7 +503,7 @@ export default function RosterForm({
         {/* Player rows */}
         <div className="space-y-2">
           {players.map((p, idx) => (
-            <div key={idx} className="rounded-xl border border-border bg-white p-3 transition-shadow hover:shadow-sm">
+            <div key={idx} className="rounded-xl border border-border bg-surface p-3 transition-shadow hover:shadow-sm">
               <div className="flex items-start gap-2">
                 {/* Order controls */}
                 <div className="flex flex-col gap-0.5 pt-0.5">
@@ -586,7 +586,7 @@ export default function RosterForm({
             {pendingSuggestions.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between rounded-xl border border-border bg-white px-4 py-2.5"
+                className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{p.surname} {p.name}</p>

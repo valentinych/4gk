@@ -61,7 +61,7 @@ export default function AccountPage() {
       <p className="mt-1 text-sm text-muted">Управление профилем</p>
 
       {/* Profile Card */}
-      <div className="mt-8 rounded-xl border border-border bg-white p-6">
+      <div className="mt-8 rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center gap-4">
           {user.image ? (
             <Image
@@ -84,7 +84,7 @@ export default function AccountPage() {
       </div>
 
       {/* Details */}
-      <div className="mt-4 rounded-xl border border-border bg-white divide-y divide-border">
+      <div className="mt-4 rounded-xl border border-border bg-surface divide-y divide-border">
         <div className="flex items-center gap-3 px-5 py-4">
           <Mail className="h-4 w-4 text-muted shrink-0" />
           <div className="min-w-0">
@@ -163,7 +163,7 @@ export default function AccountPage() {
               <Link
                 key={r.id}
                 href={`/account/roster/${r.eventId}`}
-                className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3 transition-colors hover:bg-surface"
+                className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface"
               >
                 <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                 <div className="min-w-0 flex-1">

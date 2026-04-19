@@ -123,7 +123,7 @@ function PersonList({
 }) {
   if (!people?.length) return null;
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <div className="mb-3 flex items-center gap-2">
         {icon}
         <h3 className="text-sm font-bold">{title}</h3>
@@ -176,14 +176,14 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
       </a>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="mb-1 flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Даты</span>
           </div>
           <p className="text-sm font-bold">{dateStr}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="mb-1 flex items-center gap-2">
             <Hash className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Формат</span>
@@ -192,14 +192,14 @@ async function RatingPage({ tournamentId }: { tournamentId: number }) {
             {tourCount} туров × {questionsPerTour} вопросов = {totalQuestions}
           </p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="mb-1 flex items-center gap-2">
             <Users className="h-4 w-4 text-muted" />
             <span className="text-xs text-muted">Команды</span>
           </div>
           <p className="text-sm font-bold">{teamsLabel}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-surface p-4">
           <div className="mb-1 flex items-center gap-2">
             <span className="text-xs text-muted">Сложность</span>
           </div>
@@ -238,7 +238,7 @@ function YearSwitcher({ slug, activeYear }: { slug: string; activeYear: DsArchiv
           className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
             y === activeYear
               ? "bg-accent text-white"
-              : "border border-border bg-white text-muted hover:border-accent/40 hover:text-foreground"
+              : "border border-border bg-surface text-muted hover:border-accent/40 hover:text-foreground"
           }`}
         >
           {dsYearLabel(y)}

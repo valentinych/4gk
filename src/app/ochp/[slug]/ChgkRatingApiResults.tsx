@@ -129,7 +129,7 @@ export default function ChgkRatingApiResults({
 
   if (loading && !data) {
     return (
-      <div className="rounded-xl border border-border bg-white p-16 text-center">
+      <div className="rounded-xl border border-border bg-surface p-16 text-center">
         <p className="text-sm text-muted">Загрузка таблицы рейтинга…</p>
       </div>
     );
@@ -202,7 +202,7 @@ export default function ChgkRatingApiResults({
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="text-sm border-collapse min-w-max">
           <thead>
             <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
@@ -268,7 +268,7 @@ export default function ChgkRatingApiResults({
                       className="inline-block w-3.5 h-3.5 rounded-full border border-border overflow-hidden mx-auto"
                       title="Зачёт ЧСт"
                     >
-                      <span className="block w-full h-1/2 bg-white" />
+                      <span className="block w-full h-1/2 bg-surface" />
                       <span className="block w-full h-1/2 bg-red-500" />
                     </span>
                   ) : null}
@@ -348,7 +348,7 @@ export default function ChgkRatingApiResults({
           onClick={() => setPopup(null)}
         >
           <div
-            className="relative max-w-2xl w-full rounded-xl border border-border bg-white shadow-lg p-5 max-h-[85vh] overflow-y-auto"
+            className="relative max-w-2xl w-full rounded-xl border border-border bg-surface shadow-lg p-5 max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button

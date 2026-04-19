@@ -102,7 +102,7 @@ function ToastBubble({
     <div
       role="status"
       onClick={onDismiss}
-      className={`pointer-events-auto flex w-full max-w-sm cursor-pointer items-center gap-3 rounded-2xl border border-border bg-white px-4 py-3 shadow-lg ${
+      className={`pointer-events-auto flex w-full max-w-sm cursor-pointer items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-lg ${
         item.leaving ? "animate-toast-out" : "animate-toast-in"
       }`}
     >

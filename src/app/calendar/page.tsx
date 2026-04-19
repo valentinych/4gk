@@ -558,7 +558,7 @@ export default function CalendarPage() {
               className={`inline-flex items-center gap-1.5 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
                 showTemplateForm
                   ? "border-accent bg-accent text-white hover:bg-accent-hover"
-                  : "border-border bg-white text-foreground hover:bg-surface"
+                  : "border-border bg-surface text-foreground hover:bg-surface"
               }`}
             >
               {showTemplateForm ? <X className="h-4 w-4" /> : <LayoutTemplate className="h-4 w-4" />}
@@ -745,7 +745,7 @@ export default function CalendarPage() {
 
       {/* Event form */}
       {canManageEvents && showForm && (
-        <div className="mb-8 rounded-xl border border-border bg-white p-5">
+        <div className="mb-8 rounded-xl border border-border bg-surface p-5">
           {/* Template tiles */}
           {templates.length > 0 && !editingId && (
             <div className="mb-4">
@@ -1050,7 +1050,7 @@ export default function CalendarPage() {
       ) : (
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           {/* Calendar grid */}
-          <div className="rounded-xl border border-border bg-white">
+          <div className="rounded-xl border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <button
                 onClick={prevMonth}
@@ -1217,7 +1217,7 @@ function EventCard({
       : "none";
 
   return (
-    <div className={`rounded-xl border bg-white p-4 transition-all hover:shadow-sm ${c.border}`}>
+    <div className={`rounded-xl border bg-surface p-4 transition-all hover:shadow-sm ${c.border}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">

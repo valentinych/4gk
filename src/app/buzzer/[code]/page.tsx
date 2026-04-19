@@ -211,7 +211,7 @@ export default function GameRoom({
         <Link href="/buzzer" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" /> Назад
         </Link>
-        <div className="rounded-xl border border-border bg-white p-6">
+        <div className="rounded-xl border border-border bg-surface p-6">
           <div className="text-center mb-4">
             <p className="font-mono text-2xl font-bold tracking-[0.2em]">{code}</p>
             <p className="text-xs text-muted mt-1">Код игры</p>
@@ -316,7 +316,7 @@ function AdminView({
             {gs.packageTitle && <p className="text-xs text-muted truncate max-w-[200px]">{gs.packageTitle}</p>}
           </div>
         </div>
-        <button onClick={onCopy} className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm font-mono font-bold tracking-wider hover:bg-surface transition-colors">
+        <button onClick={onCopy} className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm font-mono font-bold tracking-wider hover:bg-surface transition-colors">
           {code}
           {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4 text-muted" />}
         </button>
@@ -324,7 +324,7 @@ function AdminView({
 
       {/* Package upload */}
       {!hasPkg && (
-        <div className="rounded-xl border-2 border-dashed border-border bg-white p-6 mb-4 text-center">
+        <div className="rounded-xl border-2 border-dashed border-border bg-surface p-6 mb-4 text-center">
           <Upload className="h-8 w-8 text-muted mx-auto mb-2" />
           <p className="text-sm font-medium mb-1">Загрузите пакет вопросов</p>
           <p className="text-xs text-muted mb-3">JSON-файл с темами и вопросами</p>
@@ -337,7 +337,7 @@ function AdminView({
 
       {/* Current question info */}
       {hasPkg && (
-        <div className="rounded-xl border border-border bg-white p-5 mb-4">
+        <div className="rounded-xl border border-border bg-surface p-5 mb-4">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="text-xs text-muted">
@@ -392,7 +392,7 @@ function AdminView({
 
       {/* No-package mode */}
       {!hasPkg && (
-        <div className="rounded-xl border border-border bg-white p-5 mb-4">
+        <div className="rounded-xl border border-border bg-surface p-5 mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <div className={`h-3 w-3 rounded-full ${isActive ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
@@ -451,7 +451,7 @@ function AdminView({
               <button onClick={() => onAction("minus")} className="flex-1 rounded-lg bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-500 transition-colors">
                 ✗ Неверно {gs.currentValue ? `(−${gs.halfMinus ? gs.currentValue / 2 : gs.currentValue})` : ""}
               </button>
-              <button onClick={() => onAction("dismiss")} className="rounded-lg border border-border bg-white px-4 py-3 text-sm font-medium hover:bg-surface transition-colors">
+              <button onClick={() => onAction("dismiss")} className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium hover:bg-surface transition-colors">
                 Сброс
               </button>
             </div>
@@ -469,7 +469,7 @@ function AdminView({
 
       {/* Buzz list (when not in active scoring) */}
       {gs.phase !== "buzzed" && gs.buzzes.length > 0 && (
-        <div className="rounded-xl border border-border bg-white p-5 mb-4">
+        <div className="rounded-xl border border-border bg-surface p-5 mb-4">
           <h2 className="text-sm font-bold mb-3">Нажали кнопку</h2>
           <div className="space-y-2">
             {gs.buzzes.map((b) => (
@@ -490,7 +490,7 @@ function AdminView({
 
       {/* Timer settings */}
       {hasPkg && (
-        <div className="rounded-xl border border-border bg-white mb-4">
+        <div className="rounded-xl border border-border bg-surface mb-4">
           <button onClick={() => setShowSettings(!showSettings)} className="flex items-center justify-between w-full px-5 py-3 text-sm font-medium hover:bg-surface/50 transition-colors">
             <span className="flex items-center gap-2"><Settings className="h-4 w-4 text-muted" /> Настройки</span>
             <ChevronRight className={`h-4 w-4 text-muted transition-transform ${showSettings ? "rotate-90" : ""}`} />
@@ -506,7 +506,7 @@ function AdminView({
                   <p className="text-xs text-muted">При неправильном ответе −½ номинала</p>
                 </div>
                 <div className={`relative w-10 h-6 rounded-full transition-colors ${gs.halfMinus ? "bg-accent" : "bg-gray-300"}`}>
-                  <div className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${gs.halfMinus ? "left-5" : "left-1"}`} />
+                  <div className={`absolute top-1 h-4 w-4 rounded-full bg-surface shadow transition-transform ${gs.halfMinus ? "left-5" : "left-1"}`} />
                 </div>
               </div>
               <div className="border-t border-border pt-3">
@@ -531,7 +531,7 @@ function AdminView({
       )}
 
       {/* Players with scores */}
-      <div className="rounded-xl border border-border bg-white p-5">
+      <div className="rounded-xl border border-border bg-surface p-5">
         <h2 className="text-sm font-bold mb-3">Игроки ({gs.players.length})</h2>
         {gs.players.length === 0 ? (
           <p className="text-sm text-muted py-4 text-center">Ждём игроков... Поделитесь кодом <span className="font-mono font-bold">{code}</span></p>
@@ -676,7 +676,7 @@ function AdminScoreTable({
   }));
 
   return (
-    <div className="rounded-xl border border-border bg-white mb-4">
+    <div className="rounded-xl border border-border bg-surface mb-4">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center justify-between w-full px-5 py-3 text-sm font-medium hover:bg-surface/50 transition-colors"
@@ -721,7 +721,7 @@ function AdminScoreTable({
                     </tr>
                     {questions.map((val, qi) => (
                       <tr key={`${ti}-${qi}`} className="border-t border-border/50 hover:bg-surface/30">
-                        <td className="sticky left-0 bg-white z-10 px-2 py-1.5 font-mono text-right text-muted">
+                        <td className="sticky left-0 bg-surface z-10 px-2 py-1.5 font-mono text-right text-muted">
                           {val}
                         </td>
                         {players.map((p) => {
@@ -880,7 +880,7 @@ function PlayerView({
       {gs.players.length > 0 && Object.keys(gs.scores).length > 0 && (
         <div className="mt-6 w-full max-w-xs">
           <p className="text-xs font-bold text-muted mb-2 text-center">Счёт</p>
-          <div className="rounded-xl border border-border bg-white divide-y divide-border">
+          <div className="rounded-xl border border-border bg-surface divide-y divide-border">
             {[...gs.players]
               .sort((a, b) => (gs.scores[b.id] ?? 0) - (gs.scores[a.id] ?? 0))
               .map((p) => {

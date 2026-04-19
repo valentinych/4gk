@@ -197,7 +197,7 @@ export default function WarsawPage() {
             <button
               onClick={handleUpdate}
               disabled={updating}
-              className="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium transition-colors hover:bg-surface disabled:opacity-50"
+              className="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium transition-colors hover:bg-surface disabled:opacity-50"
             >
               {updating ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -243,7 +243,7 @@ export default function WarsawPage() {
 
 function InfoCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-white p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">{icon}</div>
         <div>
@@ -260,7 +260,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
     <button
       onClick={onClick}
       className={`flex-1 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-        active ? "bg-white text-foreground shadow-sm" : "text-muted hover:text-foreground"
+        active ? "bg-surface text-foreground shadow-sm" : "text-muted hover:text-foreground"
       }`}
     >
       {children}
@@ -295,7 +295,7 @@ function ChgkTab({ leagueA, leagueB, tours, matchDetails, leagueAOrder, leagueBO
       {tours.length > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-bold">Туры</h3>
-          <div className="overflow-x-auto rounded-xl border border-border bg-white">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted uppercase tracking-wider">
@@ -373,12 +373,12 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
   return (
     <div>
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
-      <div className="overflow-x-auto rounded-xl border border-border bg-white" ref={tableRef}>
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface" ref={tableRef}>
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border">
-              <th className="sticky left-0 z-10 bg-white px-2 py-2 text-left font-medium text-muted w-8">М</th>
-              <th className="sticky left-8 z-10 bg-white px-2 py-2 text-left font-medium text-muted min-w-[140px]">Команда</th>
+              <th className="sticky left-0 z-10 bg-surface px-2 py-2 text-left font-medium text-muted w-8">М</th>
+              <th className="sticky left-8 z-10 bg-surface px-2 py-2 text-left font-medium text-muted min-w-[140px]">Команда</th>
               <th className="px-1.5 py-2 text-center font-medium text-muted w-8">О</th>
               <th className="px-1.5 py-2 text-center font-medium text-muted w-7">В</th>
               <th className="px-1.5 py-2 text-center font-medium text-muted w-7">Н</th>
@@ -391,8 +391,8 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
           <tbody className="divide-y divide-border">
             {teams.map((team, row) => (
               <tr key={row} className="hover:bg-surface/30">
-                <td className="sticky left-0 z-10 bg-white px-2 py-1.5 font-bold text-muted">{row + 1}</td>
-                <td className="sticky left-8 z-10 bg-white px-2 py-1.5 font-medium whitespace-nowrap max-w-[180px] truncate" title={team.name}>{team.name}</td>
+                <td className="sticky left-0 z-10 bg-surface px-2 py-1.5 font-bold text-muted">{row + 1}</td>
+                <td className="sticky left-8 z-10 bg-surface px-2 py-1.5 font-medium whitespace-nowrap max-w-[180px] truncate" title={team.name}>{team.name}</td>
                 <td className="px-1.5 py-1.5 text-center font-bold">{team.pts}</td>
                 <td className="px-1.5 py-1.5 text-center text-muted">{team.w}</td>
                 <td className="px-1.5 py-1.5 text-center text-muted">{team.d}</td>
@@ -424,7 +424,7 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
         <div className="fixed inset-0 z-[100]" onClick={() => setPopup(null)}>
           <div
             ref={popupRef}
-            className="absolute w-80 rounded-xl border border-border bg-white shadow-xl"
+            className="absolute w-80 rounded-xl border border-border bg-surface shadow-xl"
             style={{
               left: Math.max(8, Math.min(popup.x - 160, window.innerWidth - 328)),
               top: Math.max(8, popup.y - 8),
@@ -551,7 +551,7 @@ function KsiTable({ title, teams }: { title: string; teams: KsiTeam[] }) {
   return (
     <div>
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
@@ -603,7 +603,7 @@ function KsiTable({ title, teams }: { title: string; teams: KsiTeam[] }) {
       {popup && popupTeam && popupThemes && (
         <div className="fixed inset-0 z-50" onClick={() => setPopup(null)}>
           <div
-            className="absolute bg-white rounded-xl shadow-2xl border border-border p-4 min-w-[220px]"
+            className="absolute bg-surface rounded-xl shadow-2xl border border-border p-4 min-w-[220px]"
             style={{
               left: popup.x,
               top: popup.y,
@@ -695,7 +695,7 @@ function IsiRatingTable({ rows }: { rows: IsiRatingRow[] }) {
   return (
     <div>
       <h3 className="mb-3 text-sm font-bold">Рейтинг</h3>
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
@@ -748,7 +748,7 @@ function IsiPocSection({ rows }: { rows: IsiPocRow[] }) {
           </ul>
           <p><strong>Рейтинг POC</strong> = средний кредит по всем играм, нормализованный к шкале 0–1000.</p>
           <p><strong>SOS</strong> (Strength of Schedule) — средняя сила соперников по той же шкале.</p>
-          <div className="mt-3 rounded-lg bg-white p-3 font-mono text-xs leading-relaxed border border-border">
+          <div className="mt-3 rounded-lg bg-surface p-3 font-mono text-xs leading-relaxed border border-border">
             <p>margin = |score_A − score_B|</p>
             <p>marginFactor = min(margin / 150, 1.0)</p>
             <p className="mt-1">Победа: credit = str(opp) × (1 + marginFactor)</p>
@@ -758,7 +758,7 @@ function IsiPocSection({ rows }: { rows: IsiPocRow[] }) {
           </div>
         </div>
       </details>
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
@@ -836,12 +836,12 @@ function IsiCrossTableSection({
   return (
     <div>
       <h3 className="mb-3 text-sm font-bold">Кросс-таблица личных встреч</h3>
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="text-xs whitespace-nowrap border-collapse">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-1.5 py-2 text-left font-medium text-muted sticky left-0 bg-white z-10 min-w-[28px]">№</th>
-              <th className="px-2 py-2 text-left font-medium text-muted sticky left-7 bg-white z-10 min-w-[120px]">Игрок</th>
+              <th className="px-1.5 py-2 text-left font-medium text-muted sticky left-0 bg-surface z-10 min-w-[28px]">№</th>
+              <th className="px-2 py-2 text-left font-medium text-muted sticky left-7 bg-surface z-10 min-w-[120px]">Игрок</th>
               {players.map((_, i) => (
                 <th key={i} className="px-1 py-2 text-center font-medium text-muted w-10" title={players[i]}>
                   {i + 1}
@@ -852,8 +852,8 @@ function IsiCrossTableSection({
           <tbody>
             {players.map((pA, i) => (
               <tr key={pA} className="border-b border-border/50 hover:bg-surface/30">
-                <td className="px-1.5 py-1.5 font-bold text-muted sticky left-0 bg-white z-[5]">{i + 1}</td>
-                <td className="px-2 py-1.5 font-medium sticky left-7 bg-white z-[5]" title={pA}>
+                <td className="px-1.5 py-1.5 font-bold text-muted sticky left-0 bg-surface z-[5]">{i + 1}</td>
+                <td className="px-2 py-1.5 font-medium sticky left-7 bg-surface z-[5]" title={pA}>
                   {pA}
                 </td>
                 {players.map((pB, j) => {
@@ -884,7 +884,7 @@ function IsiCrossTableSection({
       {popup && (
         <div className="fixed inset-0 z-50" onClick={() => setPopup(null)}>
           <div
-            className="absolute bg-white rounded-xl shadow-2xl border border-border p-4 min-w-[280px] max-h-[70vh] overflow-y-auto"
+            className="absolute bg-surface rounded-xl shadow-2xl border border-border p-4 min-w-[280px] max-h-[70vh] overflow-y-auto"
             style={{
               left: popup.x,
               top: popup.y,

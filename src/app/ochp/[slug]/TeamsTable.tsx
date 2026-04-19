@@ -41,7 +41,7 @@ export default function TeamsTable({ teams }: { teams: TeamResult[] }) {
   return (
     <div>
       <h3 className="text-sm font-bold mb-3">Зарегистрированные команды ({teams.length})</h3>
-      <div className="rounded-xl border border-border bg-white overflow-hidden divide-y divide-border">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden divide-y divide-border">
         {teams.map((r, i) => {
           const isOpen = expanded.has(r.team.id);
           const members = r.teamMembers ?? [];
@@ -78,7 +78,7 @@ export default function TeamsTable({ teams }: { teams: TeamResult[] }) {
                           href={`https://rating.chgk.info/players/${m.player.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 rounded-md bg-white border border-border px-2.5 py-1 text-xs font-medium hover:border-accent/30 hover:text-accent transition-colors"
+                          className="inline-flex items-center gap-1 rounded-md bg-surface border border-border px-2.5 py-1 text-xs font-medium hover:border-accent/30 hover:text-accent transition-colors"
                           title={FLAG_LABELS[m.flag] ?? m.flag}
                         >
                           {m.player.name} {m.player.surname}

@@ -28,7 +28,7 @@ export function CookieConsent() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 p-4 sm:p-6">
-      <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-white p-5 shadow-lg">
+      <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-surface p-5 shadow-lg">
         <div className="flex items-start gap-3">
           <Cookie className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
           <div className="min-w-0 flex-1">

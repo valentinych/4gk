@@ -131,7 +131,7 @@ export default function RecentGames() {
           <p className="mt-2 text-muted">Загрузка результатов…</p>
           <div className="mt-6 space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse rounded-xl border border-border bg-white p-4">
+              <div key={i} className="animate-pulse rounded-xl border border-border bg-surface p-4">
                 <div className="h-4 w-2/3 rounded bg-gray-100" />
                 <div className="mt-2 h-3 w-1/3 rounded bg-gray-100" />
               </div>
@@ -172,7 +172,7 @@ export default function RecentGames() {
               href={`https://rating.chgk.info/tournament/${game.tournamentId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center gap-4 rounded-xl border border-border bg-white p-4 transition-all hover:border-border-hover hover:shadow-sm"
+              className="group flex items-center gap-4 rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-hover hover:shadow-sm"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

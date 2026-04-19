@@ -14,7 +14,7 @@ type ApiResult = PocResult & { error?: string };
 
 function PocTable({ poc }: { poc: PocResult["poc"] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-white">
+    <div className="overflow-x-auto rounded-xl border border-border bg-surface">
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-muted/30 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -34,7 +34,7 @@ function PocTable({ poc }: { poc: PocResult["poc"] }) {
               key={row.name}
               className={
                 "border-b border-border last:border-0 " +
-                (idx % 2 === 0 ? "bg-white" : "bg-muted/10")
+                (idx % 2 === 0 ? "bg-surface" : "bg-muted/10")
               }
             >
               <td className="px-3 py-2 text-center text-xs font-bold text-muted">{row.pos}</td>
@@ -105,14 +105,14 @@ function CrossTable({
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="text-xs whitespace-nowrap border-collapse">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-1.5 py-2 text-left font-medium text-muted sticky left-0 bg-white z-10 min-w-[28px]">
+              <th className="px-1.5 py-2 text-left font-medium text-muted sticky left-0 bg-surface z-10 min-w-[28px]">
                 №
               </th>
-              <th className="px-2 py-2 text-left font-medium text-muted sticky left-7 bg-white z-10 min-w-[120px]">
+              <th className="px-2 py-2 text-left font-medium text-muted sticky left-7 bg-surface z-10 min-w-[120px]">
                 Игрок
               </th>
               {crossPlayers.map((_, i) => (
@@ -129,11 +129,11 @@ function CrossTable({
           <tbody>
             {crossPlayers.map((pA, i) => (
               <tr key={pA} className="border-b border-border/50 hover:bg-surface/30">
-                <td className="px-1.5 py-1.5 font-bold text-muted sticky left-0 bg-white z-[5]">
+                <td className="px-1.5 py-1.5 font-bold text-muted sticky left-0 bg-surface z-[5]">
                   {i + 1}
                 </td>
                 <td
-                  className="px-2 py-1.5 font-medium sticky left-7 bg-white z-[5]"
+                  className="px-2 py-1.5 font-medium sticky left-7 bg-surface z-[5]"
                   title={pA}
                 >
                   {pA}
@@ -176,7 +176,7 @@ function CrossTable({
       {popup && (
         <div className="fixed inset-0 z-50" onClick={() => setPopup(null)}>
           <div
-            className="absolute bg-white rounded-xl shadow-2xl border border-border p-4 min-w-[280px] max-h-[70vh] overflow-y-auto"
+            className="absolute bg-surface rounded-xl shadow-2xl border border-border p-4 min-w-[280px] max-h-[70vh] overflow-y-auto"
             style={{
               left: popup.x,
               top: popup.y,
@@ -322,7 +322,7 @@ function PocCalculatorInner() {
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               placeholder="https://docs.google.com/spreadsheets/d/..."
-              className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20 transition-shadow"
+              className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20 transition-shadow"
               disabled={loading}
             />
           </div>

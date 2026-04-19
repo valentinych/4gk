@@ -130,11 +130,11 @@ export default function AdminPage() {
           placeholder="Поиск по имени или email…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-border bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-accent"
+          className="w-full rounded-xl border border-border bg-surface pl-10 pr-4 py-2.5 text-sm outline-none focus:border-accent"
         />
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-white">
+      <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted uppercase tracking-wider">

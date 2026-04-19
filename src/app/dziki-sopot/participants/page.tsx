@@ -153,7 +153,7 @@ export default async function DsParticipantsPage() {
         <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted">
           <span>{participants.length} команд</span>
           {ratingReleaseDate && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-2.5 py-0.5 text-xs font-medium shadow-sm">
+            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium shadow-sm">
               Рейтинг по состоянию релиза{" "}
               <span className="font-semibold text-foreground">{ratingReleaseDate}</span>
             </span>
@@ -164,14 +164,14 @@ export default async function DsParticipantsPage() {
       {/* Legend */}
       <div className="mb-6 flex flex-wrap gap-3">
         {/* Traffic light summary */}
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]" />
           <span>Участие подтверждено</span>
           <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">
             {counts.confirmed}
           </span>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="animate-traffic-pulse inline-block h-3 w-3 rounded-full" />
           <span>Предварительно проходят</span>
           <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
@@ -194,7 +194,7 @@ export default async function DsParticipantsPage() {
           return (
             <div
               key={cat}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-medium shadow-sm"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm"
             >
               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cfg.badgeCls}`}>
                 {cat === "ds2" ? "Участие в 2 ДС" : cfg.label}
@@ -216,7 +216,7 @@ export default async function DsParticipantsPage() {
           Данные недоступны
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-white">
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20 text-xs font-semibold uppercase tracking-wide text-muted">

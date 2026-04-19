@@ -161,7 +161,7 @@ export function OchpPageClient() {
       </div>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2">
-        <div className="relative rounded-xl border border-border bg-white p-5" ref={menuRef}>
+        <div className="relative rounded-xl border border-border bg-surface p-5" ref={menuRef}>
           <button
             type="button"
             onClick={(e) => {
@@ -182,7 +182,7 @@ export function OchpPageClient() {
             />
           </button>
           {menuOpen && (
-            <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-lg border border-border bg-white py-1 shadow-lg">
+            <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg">
               {ochpSeasonOptions().map((y) => (
                 <button
                   key={y}
@@ -198,7 +198,7 @@ export function OchpPageClient() {
             </div>
           )}
         </div>
-        <div className="rounded-xl border border-border bg-white p-5">
+        <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
               <Trophy className="h-4 w-4 text-muted" />
@@ -234,7 +234,7 @@ export function OchpPageClient() {
                 <Link
                   key={`${tile.slug}-${tile.href}`}
                   href={tile.href}
-                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
                 >
                   <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
                   <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
@@ -250,7 +250,7 @@ export function OchpPageClient() {
                   href={tile.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
                 >
                   <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
                   <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
@@ -263,7 +263,7 @@ export function OchpPageClient() {
               <Link
                 key={tile.slug}
                 href={`/ochp/${tile.slug}`}
-                className="group flex items-start gap-3.5 rounded-xl border border-border bg-white p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+                className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
               >
                 <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
                 <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">

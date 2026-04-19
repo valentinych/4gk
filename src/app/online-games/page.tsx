@@ -50,7 +50,7 @@ export default function OnlineGamesPage() {
           <Link
             key={game.href}
             href={game.href}
-            className="group rounded-xl border border-border bg-white p-6 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+            className="group rounded-xl border border-border bg-surface p-6 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
           >
             <div className="mb-3">{game.emoji}</div>
             <h2 className="text-sm font-bold group-hover:text-accent transition-colors">

@@ -142,7 +142,7 @@ export default function BrainResults({ tier }: { tier: string }) {
       </div>
 
       {!data ? (
-        <div className="rounded-xl border border-border bg-white p-16 text-center">
+        <div className="rounded-xl border border-border bg-surface p-16 text-center">
           <RefreshCw className="h-6 w-6 text-muted animate-spin mx-auto mb-3" />
           <p className="text-sm text-muted">Загрузка результатов...</p>
         </div>
@@ -151,7 +151,7 @@ export default function BrainResults({ tier }: { tier: string }) {
           {data.groups
             .filter((g) => g.type === "group")
             .map((group, gi) => (
-              <div key={gi} className="rounded-xl border border-border bg-white overflow-hidden">
+              <div key={gi} className="rounded-xl border border-border bg-surface overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-surface/50 border-b border-border">
                   <span className="text-xs font-bold text-accent">
                     Группа {group.letter}
@@ -209,7 +209,7 @@ export default function BrainResults({ tier }: { tier: string }) {
             ))}
 
           {data.finals.length > 0 && (
-            <div className="rounded-xl border border-border bg-white overflow-hidden">
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="px-4 py-2.5 bg-surface/50 border-b border-border">
                 <span className="text-xs font-bold text-accent">Финалы</span>
               </div>

@@ -312,7 +312,7 @@ function AdminView({
         <div className="lg:col-span-2 space-y-4">
           {/* Team management */}
           {state.phase === "lobby" && (
-            <div className="rounded-xl border border-border bg-white p-5">
+            <div className="rounded-xl border border-border bg-surface p-5">
               <h3 className="text-sm font-bold mb-3">Команды</h3>
               <div className="space-y-2 mb-3">
                 {state.teams.map((t) => (
@@ -363,7 +363,7 @@ function AdminView({
 
           {/* Google Drive loader */}
           {(state.phase === "lobby" || !state.hasRound) && (
-            <div className="rounded-xl border border-border bg-white p-5">
+            <div className="rounded-xl border border-border bg-surface p-5">
               <h3 className="text-sm font-bold mb-3">Загрузить бой</h3>
               <p className="text-xs text-muted mb-2">
                 Вставьте ссылку на папку боя в Google Drive (Бой → Темы → Треки)
@@ -396,7 +396,7 @@ function AdminView({
 
           {/* Current track info (admin only) */}
           {state.hasRound && state.phase !== "lobby" && (
-            <div className="rounded-xl border border-border bg-white p-5">
+            <div className="rounded-xl border border-border bg-surface p-5">
               {state.phase === "theme-intro" ? (
                 <div className="text-center py-8">
                   <p className="text-xs text-muted mb-2 uppercase tracking-wider">
@@ -501,7 +501,7 @@ function AdminView({
           )}
 
           {/* Settings */}
-          <div className="rounded-xl border border-border bg-white p-5">
+          <div className="rounded-xl border border-border bg-surface p-5">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold">Настройки</h3>
             </div>
@@ -522,7 +522,7 @@ function AdminView({
         {/* Right column - score */}
         <div className="space-y-4">
           {/* Team scores */}
-          <div className="rounded-xl border border-border bg-white p-5">
+          <div className="rounded-xl border border-border bg-surface p-5">
             <h3 className="text-sm font-bold mb-3">Счёт</h3>
             <div className="space-y-2">
               {state.teams.map((t) => (
@@ -546,7 +546,7 @@ function AdminView({
           </div>
 
           {/* Players list */}
-          <div className="rounded-xl border border-border bg-white p-5">
+          <div className="rounded-xl border border-border bg-surface p-5">
             <h3 className="text-sm font-bold mb-3">Игроки</h3>
             {state.teams.map((t) => (
               <div key={t.id} className="mb-3 last:mb-0">
@@ -682,7 +682,7 @@ function PlayerView({
       <audio ref={audioRef} preload="auto" />
 
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-white">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface">
         <Link
           href="/music-si"
           className="text-sm text-muted hover:text-foreground"
@@ -759,7 +759,7 @@ function PlayerView({
 
       {/* Scores bar */}
       {state.teams.length > 0 && (
-        <div className="border-t border-border bg-white px-4 py-3">
+        <div className="border-t border-border bg-surface px-4 py-3">
           <div className="flex justify-around">
             {state.teams.map((t) => (
               <div key={t.id} className="text-center">
@@ -853,7 +853,7 @@ function AdminScoreTable({
   }
 
   return (
-    <div className="mt-6 rounded-xl border border-border bg-white p-5 overflow-x-auto">
+    <div className="mt-6 rounded-xl border border-border bg-surface p-5 overflow-x-auto">
       <h3 className="text-sm font-bold mb-3">Таблица результатов</h3>
       <table className="w-full text-xs border-collapse">
         <thead>

@@ -150,7 +150,7 @@ export default function BuzzerPage() {
 
       <div className="space-y-6">
         {isLoading ? (
-          <div className="rounded-xl border border-border bg-white p-6 text-center">
+          <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <div className="h-5 w-5 mx-auto animate-spin rounded-full border-2 border-accent border-t-transparent" />
           </div>
         ) : canCreateGames ? (
@@ -158,7 +158,7 @@ export default function BuzzerPage() {
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="group w-full rounded-xl border-2 border-dashed border-border bg-white p-6 text-center transition-all hover:border-accent/40 hover:shadow-md disabled:opacity-60"
+              className="group w-full rounded-xl border-2 border-dashed border-border bg-surface p-6 text-center transition-all hover:border-accent/40 hover:shadow-md disabled:opacity-60"
             >
               <div className="flex items-center justify-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 group-hover:bg-accent/20 transition-colors">
@@ -176,7 +176,7 @@ export default function BuzzerPage() {
             </button>
 
             {rooms.length > 0 && (
-              <div className="rounded-xl border border-border bg-white p-5">
+              <div className="rounded-xl border border-border bg-surface p-5">
                 <h2 className="text-sm font-bold mb-3">Ваши комнаты</h2>
                 <div className="space-y-2">
                   {rooms.map((r) => (
@@ -236,7 +236,7 @@ export default function BuzzerPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-white p-6">
+        <div className="rounded-xl border border-border bg-surface p-6">
           <h2 className="text-sm font-bold mb-4">Войти в игру по коду</h2>
           <div className="space-y-3">
             <div>

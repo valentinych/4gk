@@ -107,7 +107,7 @@ export default function ChgkProfile() {
 
   if (!chgkId) {
     return (
-      <div className="rounded-xl border border-border bg-white p-6">
+      <div className="rounded-xl border border-border bg-surface p-6">
         <h3 className="text-sm font-bold tracking-tight">Рейтинг ЧГК</h3>
         <p className="mt-1 text-xs text-muted">
           Привяжите свой профиль с{" "}
@@ -147,7 +147,7 @@ export default function ChgkProfile() {
 
   if (profileLoading && !profile) {
     return (
-      <div className="rounded-xl border border-border bg-white p-6">
+      <div className="rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center gap-2 text-sm text-muted">
           <Loader2 className="h-4 w-4 animate-spin" />
           Загрузка профиля ЧГК…
@@ -161,7 +161,7 @@ export default function ChgkProfile() {
   const tournamentsCount = profile?.tournamentsCount ?? 0;
 
   return (
-    <div className="rounded-xl border border-border bg-white">
+    <div className="rounded-xl border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
         <h3 className="text-sm font-bold tracking-tight">Рейтинг ЧГК</h3>
         <a

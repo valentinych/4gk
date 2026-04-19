@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ToastProvider } from "@/components/Toaster";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,8 +43,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pl">
+    <html lang="pl" suppressHydrationWarning>
       <head>
+        {/* Anti-flash script: sets dark class before React hydration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
         {process.env.UMAMI_WEBSITE_ID && (
           <Script
             src={`${process.env.UMAMI_HOST || "https://analytics.4gk.pl"}/script.js`}
@@ -53,14 +60,16 @@ export default function RootLayout({
         )}
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <SessionProvider>
-          <ToastProvider>
-            <Header />
-            <main className="min-h-screen">{children}</main>
-            <Footer />
-            <CookieConsent />
-          </ToastProvider>
-        </SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>
+            <ToastProvider>
+              <Header />
+              <main className="min-h-screen">{children}</main>
+              <Footer />
+              <CookieConsent />
+            </ToastProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

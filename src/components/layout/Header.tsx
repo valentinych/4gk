@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { UserMenu, UserMenuMobile } from "@/components/UserMenu";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { href: "/ochp", label: "ОЧП" },
@@ -18,7 +19,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-white/85 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-lg">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <Logo size={28} />
@@ -37,7 +38,8 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
           <div className="hidden sm:block">
             <UserMenu />
           </div>
@@ -51,7 +53,7 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-border bg-white px-4 pb-4 md:hidden">
+        <div className="border-t border-border bg-background px-4 pb-4 md:hidden">
           {navItems.map((item) => (
             <Link
               key={item.href}

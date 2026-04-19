@@ -171,22 +171,22 @@ export default function ChgkResults({
       </div>
 
       {!data ? (
-        <div className="rounded-xl border border-border bg-white p-16 text-center">
+        <div className="rounded-xl border border-border bg-surface p-16 text-center">
           <RefreshCw className="h-6 w-6 text-muted animate-spin mx-auto mb-3" />
           <p className="text-sm text-muted">Загрузка результатов...</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-white">
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
           <p className="text-xs text-muted px-3 pt-3 pb-1">
             Лучший результат тура (или ничья за 1-е место в туре) — тёмно-зелёный круг с белой цифрой.
           </p>
           <table className="text-sm border-collapse">
             <thead>
               <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
-                <th className="px-1.5 sm:px-2 py-2.5 text-right font-medium w-7 sm:w-8 sticky left-0 bg-white z-10">
+                <th className="px-1.5 sm:px-2 py-2.5 text-right font-medium w-7 sm:w-8 sticky left-0 bg-surface z-10">
                   №
                 </th>
-                <th className="px-1.5 sm:px-2 py-2.5 text-left font-medium sticky left-7 sm:left-8 bg-white z-10 max-w-[120px] sm:max-w-none">
+                <th className="px-1.5 sm:px-2 py-2.5 text-left font-medium sticky left-7 sm:left-8 bg-surface z-10 max-w-[120px] sm:max-w-none">
                   Команда
                 </th>
                 <th className="px-1.5 sm:px-2 py-2.5 text-center font-medium w-9 sm:w-10 bg-surface/50">
@@ -210,10 +210,10 @@ export default function ChgkResults({
                     key={i}
                     className="hover:bg-surface/50"
                   >
-                    <td className="px-1.5 sm:px-2 py-1.5 text-right text-muted font-mono text-xs sticky left-0 bg-white z-10">
+                    <td className="px-1.5 sm:px-2 py-1.5 text-right text-muted font-mono text-xs sticky left-0 bg-surface z-10">
                       {team.pos}
                     </td>
-                    <td className="px-1.5 sm:px-2 py-1.5 sticky left-7 sm:left-8 bg-white z-10 max-w-[120px] sm:max-w-none">
+                    <td className="px-1.5 sm:px-2 py-1.5 sticky left-7 sm:left-8 bg-surface z-10 max-w-[120px] sm:max-w-none">
                       <div className="flex items-start gap-1">
                         <span className="font-medium text-sm leading-tight break-words min-w-0">
                           {team.name}
@@ -223,7 +223,7 @@ export default function ChgkResults({
                             className="inline-block w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-border overflow-hidden shrink-0 mt-0.5"
                             title="Зачёт ЧСт"
                           >
-                            <span className="block w-full h-1/2 bg-white" />
+                            <span className="block w-full h-1/2 bg-surface" />
                             <span className="block w-full h-1/2 bg-red-500" />
                           </span>
                         )}

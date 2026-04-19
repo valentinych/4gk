@@ -162,7 +162,7 @@ export default function NewsPage() {
       </div>
 
       {isAdmin && showForm && (
-        <div className="mb-8 rounded-xl border border-border bg-white p-5">
+        <div className="mb-8 rounded-xl border border-border bg-surface p-5">
           <h3 className="text-sm font-bold">
             {editingId ? "Редактирование новости" : "Новая новость"}
           </h3>
@@ -279,7 +279,7 @@ export default function NewsPage() {
             return (
               <div
                 key={article.id}
-                className={`group relative rounded-xl border bg-white p-6 transition-all hover:border-border-hover hover:shadow-sm ${
+                className={`group relative rounded-xl border bg-surface p-6 transition-all hover:border-border-hover hover:shadow-sm ${
                   !article.published ? "border-dashed border-border opacity-60" : "border-border"
                 }`}
               >

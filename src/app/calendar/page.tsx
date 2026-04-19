@@ -250,13 +250,13 @@ export default function CalendarPage() {
     if (role) fetchRosterCounts();
   }, [role, fetchRosterCounts]);
 
-  const eventMap = useMemo(() => buildEventMap(events), [events]);
+  const eventMap = useMemo(() => buildEventMap(filteredEvents), [filteredEvents]);
   const cells = useMemo(() => getMonthDays(year, month), [year, month]);
 
   const monthEvents = useMemo(() => {
     const seen = new Set<string>();
     const result: CalendarEvent[] = [];
-    for (const ev of events) {
+    for (const ev of filteredEvents) {
       const s = parseDate(ev.startDate);
       const e = ev.endDate ? parseDate(ev.endDate) : s;
       if (
@@ -272,7 +272,7 @@ export default function CalendarPage() {
     return result.sort(
       (a, b) => parseDate(a.startDate).getTime() - parseDate(b.startDate).getTime()
     );
-  }, [events, year, month]);
+  }, [filteredEvents, year, month]);
 
   const selectedEvents = selectedDay ? (eventMap.get(selectedDay) ?? []) : [];
 
@@ -448,8 +448,41 @@ export default function CalendarPage() {
   const usedCities = useMemo(() => {
     const cities = new Set<string>();
     for (const ev of events) cities.add(ev.city);
-    return Array.from(cities);
+    return Array.from(cities).sort();
   }, [events]);
+
+  // null = show all; Set<string> = only show these cities
+  const [selectedCities, setSelectedCities] = useState<Set<string> | null>(null);
+
+  function toggleCity(city: string) {
+    const all = new Set(usedCities);
+    const current = selectedCities ?? all;
+    const next = new Set(current);
+    if (next.has(city)) {
+      next.delete(city);
+    } else {
+      next.add(city);
+    }
+    // If all cities selected again → back to "show all"
+    setSelectedCities(next.size === all.size ? null : next);
+  }
+
+  function selectAllCities() {
+    setSelectedCities(null);
+  }
+
+  const isCityVisible = (city: string) =>
+    selectedCities === null || selectedCities.has(city);
+
+  const filteredEvents = useMemo(
+    () => (selectedCities === null ? events : events.filter((ev) => selectedCities.has(ev.city))),
+    [events, selectedCities],
+  );
+
+  const hiddenCount = useMemo(
+    () => events.length - filteredEvents.length,
+    [events.length, filteredEvents.length],
+  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -897,21 +930,58 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* City legend */}
+      {/* City filter */}
       {usedCities.length > 0 && (
-        <div className="mb-6 flex flex-wrap gap-2">
-          {usedCities.map((city) => {
-            const c = getCityColor(city);
-            return (
-              <span
-                key={city}
-                className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted">Площадки:</span>
+            {usedCities.map((city) => {
+              const c = getCityColor(city);
+              const active = isCityVisible(city);
+              return (
+                <button
+                  key={city}
+                  onClick={() => toggleCity(city)}
+                  title={active ? `Скрыть ${city}` : `Показать ${city}`}
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+                    active
+                      ? `${c.bg} ${c.text} ${c.border} hover:brightness-95`
+                      : "border-border bg-surface text-muted/50 line-through opacity-50 hover:opacity-70"
+                  }`}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full transition-opacity ${c.dot} ${active ? "" : "opacity-30"}`}
+                  />
+                  {city}
+                </button>
+              );
+            })}
+            {selectedCities !== null && (
+              <button
+                onClick={selectAllCities}
+                className="inline-flex items-center gap-1 rounded-md border border-accent/30 bg-accent/5 px-2.5 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
               >
-                <span className={`h-2 w-2 rounded-full ${c.dot}`} />
-                {city}
-              </span>
-            );
-          })}
+                <X className="h-3 w-3" />
+                Сбросить фильтр
+              </button>
+            )}
+          </div>
+          {hiddenCount > 0 && (
+            <p className="mt-2 text-xs text-muted/70">
+              {hiddenCount === 1
+                ? "1 мероприятие скрыто"
+                : hiddenCount < 5
+                  ? `${hiddenCount} мероприятия скрыто`
+                  : `${hiddenCount} мероприятий скрыто`}
+              {" · "}
+              <button
+                onClick={selectAllCities}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                Показать все
+              </button>
+            </p>
+          )}
         </div>
       )}
 

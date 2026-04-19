@@ -67,9 +67,21 @@ interface GgTournamentRow {
 
 /**
  * Scrape rating.chgk.gg team page for tournament rows containing delta D.
- * IMPORTANT: the date shown on chgk.gg is the *release* date, not the play
- * date, so we match by tournament name rather than by date.
- * Returns a name→row map (lowercased key).
+ *
+ * chgk.gg has two row formats inside a release:
+ *
+ *  MAIN ROW  (cells[0] = release date "DD.MM.YYYY", 7 cells):
+ *    [0] releaseDate  [1] rank  [2] totalRating+releaseΔ  [3] tournamentName
+ *    [4] roster  [5] questionsTotal  [6] bp+perTournamentD  ← correct D!
+ *
+ *  SUB-ROW  (cells[0] = tournament name, additional tournament in same release, 4 cells):
+ *    [0] tournamentName  [1] roster  [2] position  [3] bp+perTournamentD  ← correct D!
+ *
+ * NOTE: cells[2] of a main row is the RELEASE-level cumulative delta (includes
+ * adjustments unrelated to this specific tournament).  Only cells[6] (main) or
+ * cells[3] (sub) carry the accurate per-tournament D.
+ *
+ * Returns a name→row map keyed by lowercased tournament name.
  */
 async function fetchChgkGgTeamDeltas(
   teamId: number,
@@ -97,16 +109,22 @@ async function fetchChgkGgTeamDeltas(
         );
       }
 
-      // Tournament rows: [releaseDate, position, score+delta, tournamentName, ...]
-      // Release-only rows: tournamentName cell is empty — skip those
       if (cells.length < 4) continue;
-      const tournamentName = cells[3]?.trim() ?? "";
-      if (!tournamentName) continue;
 
-      map.set(tournamentName.toLowerCase(), {
-        name: tournamentName,
-        d: parseDelta(cells[2]),
-      });
+      const isMainRow = /^\d{2}\.\d{2}\.\d{4}$/.test(cells[0]);
+
+      if (isMainRow) {
+        // Main row: tournament name in cells[3], per-tournament D in cells[6]
+        const name = cells[3]?.trim();
+        if (!name || cells.length < 7) continue;
+        map.set(name.toLowerCase(), { name, d: parseDelta(cells[6]) });
+      } else {
+        // Sub-row: tournament name in cells[0], per-tournament D in cells[3]
+        const name = cells[0]?.trim();
+        if (!name) continue;
+        // cells[3] format: "bp delta" — take only the delta part
+        map.set(name.toLowerCase(), { name, d: parseDelta(cells[3]) });
+      }
     }
   } catch {
     // silently ignore — delta will be null for all tournaments of this team

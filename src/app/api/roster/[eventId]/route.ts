@@ -109,14 +109,31 @@ export async function POST(req: Request, { params }: Params) {
   return NextResponse.json(roster);
 }
 
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(req: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { eventId } = await params;
+  const isOrganizer =
+    session.user.role === "ADMIN" || session.user.role === "ORGANIZER";
 
+  // Organizer deleting a specific team's roster by teamChgkId
+  const teamChgkIdParam = new URL(req.url).searchParams.get("teamChgkId");
+  if (teamChgkIdParam) {
+    if (!isOrganizer) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const teamChgkId = parseInt(teamChgkIdParam, 10);
+    if (isNaN(teamChgkId)) {
+      return NextResponse.json({ error: "Invalid teamChgkId" }, { status: 400 });
+    }
+    await db.teamRoster.deleteMany({ where: { eventId, teamChgkId } });
+    return NextResponse.json({ ok: true });
+  }
+
+  // Default: delete own roster
   await db.teamRoster.deleteMany({
     where: { eventId, userId: session.user.id },
   });

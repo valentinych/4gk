@@ -207,8 +207,11 @@ export default function EventDetailPage() {
   const [joinDisplayName, setJoinDisplayName] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
 
-  /* ─── Remove ─── */
+  /* ─── Remove team from event ─── */
   const [removing, setRemoving] = useState<string | null>(null);
+
+  /* ─── Delete submitted roster (organizer) ─── */
+  const [removingRoster, setRemovingRoster] = useState<number | null>(null);
 
   /* ─── Load page data ─── */
   const loadTeams = useCallback(async () => {
@@ -373,6 +376,25 @@ export default function EventDetailPage() {
       }
     } finally {
       setRemoving(null);
+    }
+  }
+
+  async function handleDeleteRoster(teamChgkId: number) {
+    if (!confirm("Удалить поданный состав этой команды?")) return;
+    setRemovingRoster(teamChgkId);
+    try {
+      const res = await fetch(
+        `/api/roster/${eventId}?teamChgkId=${teamChgkId}`,
+        { method: "DELETE" },
+      );
+      if (res.ok) {
+        setTeams((prev) =>
+          prev.map((t) => (t.teamChgkId === teamChgkId ? { ...t, hasRoster: false } : t)),
+        );
+        toast("Состав удалён");
+      }
+    } finally {
+      setRemovingRoster(null);
     }
   }
 
@@ -758,9 +780,23 @@ export default function EventDetailPage() {
                       {isOrganizer && (
                         <>
                           {/* Состав submitted? */}
-                          <td className="px-3 py-3 text-center text-base">
+                          <td className="px-3 py-3 text-center">
                             {team.hasRoster ? (
-                              <span title="Состав подан">✅</span>
+                              <div className="inline-flex items-center gap-1">
+                                <span title="Состав подан">✅</span>
+                                <button
+                                  onClick={() => handleDeleteRoster(team.teamChgkId)}
+                                  disabled={removingRoster === team.teamChgkId}
+                                  title="Удалить состав"
+                                  className="rounded p-0.5 text-muted transition-colors hover:bg-red-50 hover:text-danger disabled:opacity-40"
+                                >
+                                  {removingRoster === team.teamChgkId ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </div>
                             ) : (
                               <span title="Состав не подан" className="text-muted/40">—</span>
                             )}

@@ -107,9 +107,9 @@ export async function fetchTeamRosterInfo(teamId: number): Promise<TeamRosterInf
   if (!entries.length) return { basePlayers: [], recentPlayers: [] };
 
   const seasons = [...new Set(entries.map((e) => e.idseason))].sort((a, b) => b - a);
-  // Current season only for base; one previous season for suggestions
+  // Current season only — no previous-season suggestions
   const baseSeasonsSet = new Set(seasons.slice(0, 1));
-  const recentSeasonsSet = new Set(seasons.slice(1, 2));
+  const recentSeasonsSet = new Set<number>();
 
   const basePlayerIds = new Set<number>();
   const recentPlayerIds = new Set<number>();

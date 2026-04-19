@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { ArrowRight, Trophy, ExternalLink } from "lucide-react";
+import { ArrowRight, Trophy, ExternalLink, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { RecentGame } from "@/app/api/player/recent-games/route";
 
@@ -24,6 +24,29 @@ function PositionBadge({ position, total }: { position: number | null; total: nu
   return (
     <span className={`inline-flex items-center gap-0.5 rounded-md px-2 py-0.5 text-xs font-semibold ${colorClass}`}>
       {position}/{total}
+    </span>
+  );
+}
+
+function DeltaBadge({ delta }: { delta: number | null }) {
+  if (delta === null) return null;
+  if (delta === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs text-muted">
+        <Minus className="h-3 w-3" />0
+      </span>
+    );
+  }
+  if (delta > 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-emerald-600">
+        <TrendingUp className="h-3 w-3" />+{delta}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-rose-500">
+      <TrendingDown className="h-3 w-3" />{delta}
     </span>
   );
 }
@@ -158,19 +181,26 @@ export default function RecentGames() {
                   </p>
                   <ExternalLink className="h-3 w-3 shrink-0 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <div className="mt-1 flex items-center gap-3 text-xs text-muted">
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
                   <span>{formatDate(game.date)}</span>
                   <span>·</span>
                   <span>{game.teamName}</span>
                   {game.questionsTotal !== null && (
                     <>
                       <span>·</span>
-                      <span>{game.questionsTotal} взято</span>
+                      <span>
+                        {game.questionsTotal}
+                        {game.questionsMax !== null && `/${game.questionsMax}`}
+                        {" взято"}
+                      </span>
                     </>
                   )}
                 </div>
               </div>
-              <PositionBadge position={game.position} total={game.totalTeams} />
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <PositionBadge position={game.position} total={game.totalTeams} />
+                <DeltaBadge delta={game.ratingDelta} />
+              </div>
             </a>
           ))}
         </div>

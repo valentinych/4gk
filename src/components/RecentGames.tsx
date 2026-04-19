@@ -104,7 +104,7 @@ export default function RecentGames() {
     return (
       <section className="py-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Последние игры</h2>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Мои последние игры</h2>
           <p className="mt-2 text-muted">Загрузка результатов…</p>
           <div className="mt-6 space-y-3">
             {[...Array(5)].map((_, i) => (
@@ -138,18 +138,7 @@ export default function RecentGames() {
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Последние игры</h2>
-            <p className="mt-1 text-sm text-muted">
-              Результаты из{" "}
-              <a
-                href={`https://rating.chgk.info/player/${chgkId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-              >
-                рейтинга ЧГК
-              </a>
-            </p>
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Мои последние игры</h2>
           </div>
         </div>
 

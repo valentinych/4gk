@@ -37,41 +37,26 @@ export default function HomePage() {
     <div>
       {/* Hero */}
       <section className="border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="mb-4 text-sm font-medium tracking-widest uppercase text-muted">
+            <p className="mb-3 text-xs font-medium tracking-widest uppercase text-muted">
               Интеллектуальные игры в Польше
             </p>
-            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+            <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
               Результаты. Рейтинги. Турниры.
             </h1>
-            <p className="mt-6 text-lg leading-relaxed text-muted">
+            <p className="mt-4 text-base leading-relaxed text-muted">
               Портал с результатами интеллектуальных игр — чемпионаты, лиги и турниры
               «Что? Где? Когда?» в Польше.
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/ochp"
-                className="flex items-center gap-2 rounded-xl bg-accent px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
-              >
-                Открытый Чемпионат Польши
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/games"
-                className="flex items-center gap-2 rounded-xl border border-border px-7 py-3 text-sm font-semibold transition-colors hover:bg-surface"
-              >
-                Все турниры
-              </Link>
-            </div>
           </div>
         </div>
       </section>
 
       {/* Leagues */}
-      <section className="py-20">
+      <section className="py-12">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-10">
+          <div className="mb-7">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Лиги и чемпионаты</h2>
             <p className="mt-2 text-muted">Актуальные соревнования сезона 2025/2026</p>
           </div>
@@ -102,7 +87,7 @@ export default function HomePage() {
       </section>
 
       {/* Info */}
-      <section className="border-y border-border bg-surface/50 py-14">
+      <section className="border-y border-border bg-surface/50 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="grid gap-8 text-center sm:grid-cols-3">
             {[

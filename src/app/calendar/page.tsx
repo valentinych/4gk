@@ -250,6 +250,26 @@ export default function CalendarPage() {
     if (role) fetchRosterCounts();
   }, [role, fetchRosterCounts]);
 
+  // ── City filter ──────────────────────────────────────────────────────────────
+  const usedCitiesEarly = useMemo(() => {
+    const cities = new Set<string>();
+    for (const ev of events) cities.add(ev.city);
+    return Array.from(cities).sort();
+  }, [events]);
+
+  // null = show all; Set<string> = only show these cities
+  const [selectedCities, setSelectedCities] = useState<Set<string> | null>(null);
+
+  const filteredEvents = useMemo(
+    () => (selectedCities === null ? events : events.filter((ev) => selectedCities.has(ev.city))),
+    [events, selectedCities],
+  );
+
+  const hiddenCount = useMemo(
+    () => events.length - filteredEvents.length,
+    [events.length, filteredEvents.length],
+  );
+
   const eventMap = useMemo(() => buildEventMap(filteredEvents), [filteredEvents]);
   const cells = useMemo(() => getMonthDays(year, month), [year, month]);
 
@@ -445,14 +465,7 @@ export default function CalendarPage() {
 
   const todayKey = dateKey(today);
 
-  const usedCities = useMemo(() => {
-    const cities = new Set<string>();
-    for (const ev of events) cities.add(ev.city);
-    return Array.from(cities).sort();
-  }, [events]);
-
-  // null = show all; Set<string> = only show these cities
-  const [selectedCities, setSelectedCities] = useState<Set<string> | null>(null);
+  const usedCities = usedCitiesEarly;
 
   function toggleCity(city: string) {
     const all = new Set(usedCities);
@@ -463,7 +476,6 @@ export default function CalendarPage() {
     } else {
       next.add(city);
     }
-    // If all cities selected again → back to "show all"
     setSelectedCities(next.size === all.size ? null : next);
   }
 
@@ -473,16 +485,6 @@ export default function CalendarPage() {
 
   const isCityVisible = (city: string) =>
     selectedCities === null || selectedCities.has(city);
-
-  const filteredEvents = useMemo(
-    () => (selectedCities === null ? events : events.filter((ev) => selectedCities.has(ev.city))),
-    [events, selectedCities],
-  );
-
-  const hiddenCount = useMemo(
-    () => events.length - filteredEvents.length,
-    [events.length, filteredEvents.length],
-  );
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">

@@ -61,26 +61,26 @@ function ddmmyyyyToKey(s: string): string {
 }
 
 interface GgTournamentRow {
-  date: string;        // YYYY-MM-DD
-  name: string;        // tournament name (for matching)
+  name: string;     // tournament name as shown on chgk.gg (for matching)
   d: number | null;
 }
 
 /**
  * Scrape rating.chgk.gg team page for tournament rows containing delta D.
- * Returns an array of rows ordered as they appear on the page.
- * On any error returns an empty array.
+ * IMPORTANT: the date shown on chgk.gg is the *release* date, not the play
+ * date, so we match by tournament name rather than by date.
+ * Returns a name→row map (lowercased key).
  */
 async function fetchChgkGgTeamDeltas(
   teamId: number,
-): Promise<GgTournamentRow[]> {
-  const rows: GgTournamentRow[] = [];
+): Promise<Map<string, GgTournamentRow>> {
+  const map = new Map<string, GgTournamentRow>();
   try {
     const res = await fetch(`https://rating.chgk.gg/b/team/${teamId}/`, {
       next: { revalidate: 3600 },
       headers: { "User-Agent": "4gk.pl/1.0 (+https://4gk.pl)" },
     });
-    if (!res.ok) return rows;
+    if (!res.ok) return map;
     const html = await res.text();
 
     const rowRegex =
@@ -97,18 +97,13 @@ async function fetchChgkGgTeamDeltas(
         );
       }
 
-      // Tournament rows: [date, position, score+delta, tournamentName, ...]
-      // Release rows: tournamentName cell is empty
+      // Tournament rows: [releaseDate, position, score+delta, tournamentName, ...]
+      // Release-only rows: tournamentName cell is empty — skip those
       if (cells.length < 4) continue;
-      const dateStr = cells[0];
       const tournamentName = cells[3]?.trim() ?? "";
       if (!tournamentName) continue;
 
-      const isDate = /^\d{2}\.\d{2}\.\d{4}$/.test(dateStr);
-      if (!isDate) continue;
-
-      rows.push({
-        date: ddmmyyyyToKey(dateStr),
+      map.set(tournamentName.toLowerCase(), {
         name: tournamentName,
         d: parseDelta(cells[2]),
       });
@@ -116,24 +111,15 @@ async function fetchChgkGgTeamDeltas(
   } catch {
     // silently ignore — delta will be null for all tournaments of this team
   }
-  return rows;
+  return map;
 }
 
-/** Find the D delta for a given tournament in the chgk.gg rows.
- *  Matches first by exact name, then falls back to date-only. */
+/** Look up the D delta for a tournament by name (case-insensitive). */
 function findDelta(
-  rows: GgTournamentRow[],
-  date: string,   // YYYY-MM-DD
+  map: Map<string, GgTournamentRow>,
   name: string,
 ): number | null {
-  // Prefer exact name match on the same date
-  const byName = rows.find(
-    (r) => r.date === date && r.name.toLowerCase() === name.toLowerCase(),
-  );
-  if (byName) return byName.d;
-  // Fallback: first row with matching date
-  const byDate = rows.find((r) => r.date === date);
-  return byDate?.d ?? null;
+  return map.get(name.toLowerCase())?.d ?? null;
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
@@ -190,9 +176,9 @@ export async function GET(request: Request) {
       });
     const recent = sorted.slice(0, 5);
 
-    // 5. For each unique team used in recent games, fetch chgk.gg delta rows
+    // 5. For each unique team used in recent games, fetch chgk.gg delta map
     const uniqueTeamIds = [...new Set(recent.map((e) => e.idteam))];
-    const deltaByTeam = new Map<number, GgTournamentRow[]>();
+    const deltaByTeam = new Map<number, Map<string, GgTournamentRow>>();
     await Promise.all(
       uniqueTeamIds.map(async (teamId) => {
         deltaByTeam.set(teamId, await fetchChgkGgTeamDeltas(teamId));
@@ -221,10 +207,9 @@ export async function GET(request: Request) {
           ? Object.values(info.questionQty).reduce((s, v) => s + v, 0)
           : null;
 
-        // Rating delta from chgk.gg — match by name first, date as fallback
-        const dateKey = toDateKey(info.dateStart);
-        const ggRows = deltaByTeam.get(entry.idteam) ?? [];
-        const ratingDelta = findDelta(ggRows, dateKey, info.name);
+        // Rating delta from chgk.gg — match by tournament name
+        const ggMap = deltaByTeam.get(entry.idteam) ?? new Map();
+        const ratingDelta = findDelta(ggMap, info.name);
 
         return {
           tournamentId: entry.idtournament,

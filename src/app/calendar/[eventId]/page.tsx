@@ -135,7 +135,7 @@ function PlayersCountInput({
         onChange(next);
         setLocal(next != null ? String(next) : "");
         setSavedFlag(true);
-        setTimeout(() => setSavedFlag(false), 1200);
+        setTimeout(() => setSavedFlag(false), 2000);
       }
     } finally {
       setSaving(false);
@@ -143,7 +143,7 @@ function PlayersCountInput({
   }
 
   return (
-    <div className="relative flex items-center">
+    <div className="relative inline-flex items-center">
       <input
         type="number"
         min={0}
@@ -155,13 +155,22 @@ function PlayersCountInput({
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         }}
         placeholder="—"
-        className="w-14 rounded-md border border-border bg-white px-2 py-1 text-center text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className={`w-14 rounded-md border bg-white px-2 py-1 text-center text-sm outline-none transition-colors [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
+          saving
+            ? "border-amber-300 focus:border-amber-400"
+            : "border-border focus:border-accent focus:ring-1 focus:ring-accent/30"
+        }`}
       />
       {saving && (
-        <Loader2 className="absolute -right-5 h-3 w-3 animate-spin text-muted" />
+        <Loader2 className="absolute -right-5 h-3.5 w-3.5 animate-spin text-muted" />
       )}
       {saved && !saving && (
-        <CheckCircle2 className="absolute -right-5 h-3 w-3 text-emerald-500" />
+        <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2">
+          <div className="animate-saved-popup flex items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-white shadow-lg">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span className="text-xs font-semibold whitespace-nowrap">Сохранено</span>
+          </div>
+        </div>
       )}
     </div>
   );

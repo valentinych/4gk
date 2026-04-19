@@ -260,7 +260,39 @@ export default function CalendarPage() {
   }, [events]);
 
   // null = show all; Set<string> = only show these cities
-  const [selectedCities, setSelectedCities] = useState<Set<string> | null>(null);
+  // Initialised from localStorage so the filter survives page reloads
+  const [selectedCities, setSelectedCities] = useState<Set<string> | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("calendar-city-filter");
+      if (!raw) return null;
+      const arr = JSON.parse(raw) as string[];
+      return Array.isArray(arr) && arr.length > 0 ? new Set(arr) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  // Persist filter to localStorage whenever it changes
+  useEffect(() => {
+    if (selectedCities === null) {
+      localStorage.removeItem("calendar-city-filter");
+    } else {
+      localStorage.setItem("calendar-city-filter", JSON.stringify([...selectedCities]));
+    }
+  }, [selectedCities]);
+
+  // After events load, drop cities from the stored filter that no longer exist
+  useEffect(() => {
+    if (usedCitiesEarly.length === 0 || selectedCities === null) return;
+    const valid = new Set([...selectedCities].filter((c) => usedCitiesEarly.includes(c)));
+    if (valid.size === 0 || valid.size === usedCitiesEarly.length) {
+      setSelectedCities(null);
+    } else if (valid.size !== selectedCities.size) {
+      setSelectedCities(valid);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usedCitiesEarly]);
 
   const filteredEvents = useMemo(
     () => (selectedCities === null ? events : events.filter((ev) => selectedCities.has(ev.city))),
@@ -470,15 +502,20 @@ export default function CalendarPage() {
   const usedCities = usedCitiesEarly;
 
   function toggleCity(city: string) {
+    if (selectedCities === null) {
+      // Default state: first click isolates that city, deselecting all others
+      setSelectedCities(new Set([city]));
+      return;
+    }
     const all = new Set(usedCities);
-    const current = selectedCities ?? all;
-    const next = new Set(current);
+    const next = new Set(selectedCities);
     if (next.has(city)) {
       next.delete(city);
     } else {
       next.add(city);
     }
-    setSelectedCities(next.size === all.size ? null : next);
+    // If nothing selected or all selected → back to default
+    setSelectedCities(next.size === 0 || next.size === all.size ? null : next);
   }
 
   function selectAllCities() {

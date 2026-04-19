@@ -61,9 +61,19 @@ export async function GET() {
 
   const result: {
     counts: Record<string, number>;
+    teamCounts: Record<string, number>;
     mine: string[];
     registered: string[];
-  } = { counts: {}, mine: [], registered: [] };
+  } = { counts: {}, teamCounts: {}, mine: [], registered: [] };
+
+  // EventTeam counts (registered teams) — visible to everyone
+  const teamGrouped = await db.eventTeam.groupBy({
+    by: ["eventId"],
+    _count: { id: true },
+  });
+  for (const g of teamGrouped) {
+    result.teamCounts[g.eventId] = g._count.id;
+  }
 
   if (isOrganizer) {
     const grouped = await db.teamRoster.groupBy({

@@ -195,6 +195,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [rosterCounts, setRosterCounts] = useState<Record<string, number>>({});
+  const [teamCounts, setTeamCounts] = useState<Record<string, number>>({});
   const [myRosterEventIds, setMyRosterEventIds] = useState<string[]>([]);
   const [myRegisteredEventIds, setMyRegisteredEventIds] = useState<string[]>([]);
 
@@ -225,6 +226,7 @@ export default function CalendarPage() {
       if (res.ok) {
         const data = await res.json();
         setRosterCounts(data.counts ?? {});
+        setTeamCounts(data.teamCounts ?? {});
         setMyRosterEventIds(data.mine ?? []);
         setMyRegisteredEventIds(data.registered ?? []);
       }
@@ -247,8 +249,8 @@ export default function CalendarPage() {
   }, [canManageEvents, fetchTemplates]);
 
   useEffect(() => {
-    if (role) fetchRosterCounts();
-  }, [role, fetchRosterCounts]);
+    fetchRosterCounts();
+  }, [fetchRosterCounts]);
 
   // ── City filter ──────────────────────────────────────────────────────────────
   const usedCitiesEarly = useMemo(() => {
@@ -1122,6 +1124,7 @@ export default function CalendarPage() {
                   hasMyRoster={myRosterEventIds.includes(ev.id)}
                   isRegistered={myRegisteredEventIds.includes(ev.id)}
                   rosterCount={rosterCounts[ev.id] ?? 0}
+                  teamCount={teamCounts[ev.id] ?? 0}
                 />
               ))
             )}
@@ -1151,6 +1154,7 @@ function EventCard({
   hasMyRoster,
   isRegistered,
   rosterCount,
+  teamCount,
 }: {
   event: CalendarEvent;
   canManage: boolean;
@@ -1161,6 +1165,7 @@ function EventCard({
   hasMyRoster?: boolean;
   isRegistered?: boolean;
   rosterCount?: number;
+  teamCount?: number;
 }) {
   const c = getCityColor(event.city);
 
@@ -1302,20 +1307,34 @@ function EventCard({
         )}
       </div>
 
-      {canManage && (rosterCount ?? 0) > 0 && (
+      {((teamCount ?? 0) > 0 || (canManage && (rosterCount ?? 0) > 0)) && (
         <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-          <span className="inline-flex items-center gap-1 text-xs text-muted">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-            {rosterCount} {rosterCount === 1 ? "команда" : rosterCount! < 5 ? "команды" : "команд"}
-          </span>
-          <a
-            href={`/api/roster/${event.id}/csv`}
-            download
-            className="ml-auto inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
-          >
-            <Download className="h-3 w-3" />
-            CSV
-          </a>
+          {/* Registered teams count — visible to everyone */}
+          {(teamCount ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs text-muted">
+              <Users className="h-3.5 w-3.5" />
+              {teamCount}{" "}
+              {teamCount === 1 ? "команда" : teamCount! < 5 ? "команды" : "команд"} заявилось
+            </span>
+          )}
+          {/* Submitted rosters count + CSV — organizers only */}
+          {canManage && (rosterCount ?? 0) > 0 && (
+            <>
+              <span className="text-border">·</span>
+              <span className="inline-flex items-center gap-1 text-xs text-muted">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                {rosterCount} {rosterCount === 1 ? "состав" : rosterCount! < 5 ? "состава" : "составов"} подано
+              </span>
+              <a
+                href={`/api/roster/${event.id}/csv`}
+                download
+                className="ml-auto inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+              >
+                <Download className="h-3 w-3" />
+                CSV
+              </a>
+            </>
+          )}
         </div>
       )}
     </div>

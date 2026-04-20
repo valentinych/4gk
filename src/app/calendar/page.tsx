@@ -164,6 +164,10 @@ const emptyForm = {
   registrationLink: "",
   mediaLink: "",
   mediaLinkLabel: "",
+  registrationOpensAt: "",
+  registrationClosesAt: "",
+  participantLimit: "",
+  closeOnLimit: false,
 };
 
 interface Template {
@@ -214,6 +218,8 @@ export default function CalendarPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showRegWindow, setShowRegWindow] = useState(false);
+  const [showLimit, setShowLimit] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -363,7 +369,18 @@ export default function CalendarPage() {
       registrationLink: ev.registrationLink ?? "",
       mediaLink: ev.mediaLink ?? "",
       mediaLinkLabel: ev.mediaLinkLabel ?? "",
+      registrationOpensAt: ev.registrationOpensAt
+        ? ev.registrationOpensAt.slice(0, 16)
+        : "",
+      registrationClosesAt: ev.registrationClosesAt
+        ? ev.registrationClosesAt.slice(0, 16)
+        : "",
+      participantLimit:
+        ev.participantLimit != null ? String(ev.participantLimit) : "",
+      closeOnLimit: !!ev.closeOnLimit,
     });
+    setShowRegWindow(!!(ev.registrationOpensAt || ev.registrationClosesAt));
+    setShowLimit(ev.participantLimit != null);
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -378,10 +395,18 @@ export default function CalendarPage() {
         ? `/api/admin/calendar/${editingId}`
         : "/api/admin/calendar";
       const method = editingId ? "PATCH" : "POST";
+      const payload = {
+        ...form,
+        registrationOpensAt: form.registrationOpensAt || null,
+        registrationClosesAt: form.registrationClosesAt || null,
+        participantLimit:
+          form.participantLimit === "" ? null : Number(form.participantLimit),
+        closeOnLimit: form.participantLimit === "" ? false : form.closeOnLimit,
+      };
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -389,6 +414,8 @@ export default function CalendarPage() {
         return;
       }
       setForm(emptyForm);
+      setShowRegWindow(false);
+      setShowLimit(false);
       setEditingId(null);
       setShowForm(false);
       await fetchEvents();
@@ -448,6 +475,10 @@ export default function CalendarPage() {
       registrationLink: t.registrationLink ?? "",
       mediaLink: t.mediaLink ?? "",
       mediaLinkLabel: t.mediaLinkLabel ?? "",
+      registrationOpensAt: "",
+      registrationClosesAt: "",
+      participantLimit: "",
+      closeOnLimit: false,
     });
     setShowTemplateForm(true);
     setShowForm(false);
@@ -546,7 +577,7 @@ export default function CalendarPage() {
             <button
               onClick={() => {
                 setShowTemplateForm(false);
-                if (showForm) { setEditingId(null); setForm(emptyForm); }
+                if (showForm) { setEditingId(null); setForm(emptyForm); setShowRegWindow(false); setShowLimit(false); }
                 setShowForm(!showForm);
               }}
               className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
@@ -970,11 +1001,99 @@ export default function CalendarPage() {
               />
             </div>
 
+            {/* Registration window */}
+            <div className="rounded-lg border border-border p-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={showRegWindow}
+                  onChange={(e) => {
+                    setShowRegWindow(e.target.checked);
+                    if (!e.target.checked) {
+                      setForm({ ...form, registrationOpensAt: "", registrationClosesAt: "" });
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                />
+                Окно приёма заявок
+              </label>
+              {showRegWindow && (
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-muted">Начало приёма</label>
+                    <input
+                      type="datetime-local"
+                      value={form.registrationOpensAt}
+                      onChange={(e) => setForm({ ...form, registrationOpensAt: e.target.value })}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="mb-1 block text-xs font-medium text-muted">Конец приёма</label>
+                    <input
+                      type="datetime-local"
+                      value={form.registrationClosesAt}
+                      onChange={(e) => setForm({ ...form, registrationClosesAt: e.target.value })}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Participant limit */}
+            <div className="rounded-lg border border-border p-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-medium">
+                <input
+                  type="checkbox"
+                  checked={showLimit}
+                  onChange={(e) => {
+                    setShowLimit(e.target.checked);
+                    if (e.target.checked) {
+                      setForm({ ...form, participantLimit: form.participantLimit || "16" });
+                    } else {
+                      setForm({ ...form, participantLimit: "", closeOnLimit: false });
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                />
+                Лимит участников
+              </label>
+              {showLimit && (
+                <div className="mt-3 space-y-3">
+                  <div className="sm:w-48">
+                    <label className="mb-1 block text-xs font-medium text-muted">Максимум команд</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={form.participantLimit}
+                      onChange={(e) => setForm({ ...form, participantLimit: e.target.value })}
+                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                    />
+                  </div>
+                  <label className="flex cursor-pointer items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.closeOnLimit}
+                      onChange={(e) => setForm({ ...form, closeOnLimit: e.target.checked })}
+                      className="mt-0.5 h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                    />
+                    <span>
+                      Закрыть приём заявок при достижении лимита
+                      <span className="mt-0.5 block text-xs text-muted">
+                        Если выключено — заявки свыше лимита попадают в раздел «Резерв».
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end gap-3 pt-2">
               {editingId && (
                 <button
                   type="button"
-                  onClick={() => { setEditingId(null); setForm(emptyForm); setShowForm(false); }}
+                  onClick={() => { setEditingId(null); setForm(emptyForm); setShowRegWindow(false); setShowLimit(false); setShowForm(false); }}
                   className="rounded-xl border border-border px-6 py-2.5 text-sm font-semibold transition-colors hover:bg-surface"
                 >
                   Отмена

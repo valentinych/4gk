@@ -25,6 +25,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Город обязателен" }, { status: 400 });
   }
 
+  const limitRaw = body.participantLimit;
+  const limit = limitRaw === null || limitRaw === undefined || limitRaw === ""
+    ? null
+    : Number(limitRaw);
+  if (limit !== null && (!Number.isFinite(limit) || limit <= 0)) {
+    return NextResponse.json({ error: "Лимит должен быть положительным числом" }, { status: 400 });
+  }
+
   const event = await db.calendarEvent.create({
     data: {
       title: body.title.trim(),
@@ -40,6 +48,10 @@ export async function POST(req: Request) {
       registrationLink: body.registrationLink?.trim() || null,
       mediaLink: body.mediaLink?.trim() || null,
       mediaLinkLabel: body.mediaLinkLabel?.trim() || null,
+      registrationOpensAt: body.registrationOpensAt ? new Date(body.registrationOpensAt) : null,
+      registrationClosesAt: body.registrationClosesAt ? new Date(body.registrationClosesAt) : null,
+      participantLimit: limit,
+      closeOnLimit: Boolean(body.closeOnLimit),
     },
   });
 

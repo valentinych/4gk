@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { Fragment, useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "@/components/Toaster";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -83,6 +83,10 @@ interface EventData {
   registrationLink?: string | null;
   mediaLink?: string | null;
   mediaLinkLabel?: string | null;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
+  participantLimit?: number | null;
+  closeOnLimit?: boolean | null;
 }
 
 interface TeamEntry {
@@ -95,6 +99,7 @@ interface TeamEntry {
   addedBy: string;
   addedAt: string;
   withdrawnAt: string | null;
+  isReserve: boolean;
 }
 
 interface ChgkTeamResult {
@@ -521,11 +526,12 @@ export default function EventDetailPage() {
   const myActiveEntry = myEntry && !myEntry.withdrawnAt ? myEntry : undefined;
   const alreadyJoined = !!myActiveEntry;
 
-  const activeTeams = teams.filter((t) => !t.withdrawnAt);
+  const activeTeams = teams.filter((t) => !t.withdrawnAt && !t.isReserve);
+  const reserveTeams = teams.filter((t) => !t.withdrawnAt && t.isReserve);
   const withdrawnTeams = teams
     .filter((t) => t.withdrawnAt)
     .sort((a, b) => (a.withdrawnAt! < b.withdrawnAt! ? 1 : -1));
-  const sortedTeams = [...activeTeams, ...withdrawnTeams];
+  const sortedTeams = [...activeTeams, ...reserveTeams, ...withdrawnTeams];
   const activeTeamsCount = activeTeams.length;
 
   return (
@@ -584,6 +590,29 @@ export default function EventDetailPage() {
           )}
         </div>
 
+        {(event.registrationOpensAt || event.registrationClosesAt || event.participantLimit != null) && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-surface/60 px-3 py-2 text-xs text-muted">
+            {event.registrationOpensAt && (
+              <span>
+                Приём заявок с <span className="font-medium text-foreground">{formatDateTime(event.registrationOpensAt)}</span>
+              </span>
+            )}
+            {event.registrationClosesAt && (
+              <span>
+                до <span className="font-medium text-foreground">{formatDateTime(event.registrationClosesAt)}</span>
+              </span>
+            )}
+            {event.participantLimit != null && (
+              <span>
+                Лимит команд: <span className="font-medium text-foreground">{event.participantLimit}</span>
+                {event.closeOnLimit
+                  ? <span className="ml-1 text-red-600">(приём закроется при достижении лимита)</span>
+                  : <span className="ml-1 text-amber-700">(заявки свыше — в резерв)</span>}
+              </span>
+            )}
+          </div>
+        )}
+
         {(event.registrationLink || event.mediaLink) && (
           <div className="mt-4 flex flex-wrap gap-2">
             {event.registrationLink && (
@@ -620,6 +649,15 @@ export default function EventDetailPage() {
             {activeTeamsCount > 0 && (
               <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted">
                 {activeTeamsCount}
+                {event.participantLimit != null && `/${event.participantLimit}`}
+              </span>
+            )}
+            {reserveTeams.length > 0 && (
+              <span
+                title={`${reserveTeams.length} в резерве`}
+                className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700"
+              >
+                Резерв: {reserveTeams.length}
               </span>
             )}
             {withdrawnTeams.length > 0 && (
@@ -890,13 +928,43 @@ export default function EventDetailPage() {
                   const hasCustom = !!team.displayName && team.displayName !== team.teamName;
                   const canRemove = isOrganizer || team.addedBy === userId;
                   const isWithdrawn = !!team.withdrawnAt;
+                  const isReserve = !isWithdrawn && team.isReserve;
                   const rowClass = isWithdrawn
                     ? "bg-red-50/60 text-red-900/80"
-                    : "hover:bg-surface/40";
+                    : isReserve
+                      ? "bg-amber-50/40"
+                      : "hover:bg-surface/40";
+
+                  // Section header rows
+                  const prev = sortedTeams[idx - 1];
+                  const showReserveHeader =
+                    isReserve && (!prev || !prev.isReserve || !!prev.withdrawnAt);
+                  const showWithdrawnHeader =
+                    isWithdrawn && (!prev || !prev.withdrawnAt);
+
+                  const reserveIndex = isReserve
+                    ? reserveTeams.findIndex((t) => t.id === team.id) + 1
+                    : 0;
+
                   return (
-                    <tr key={team.id} className={rowClass}>
+                    <Fragment key={team.id}>
+                      {showReserveHeader && (
+                        <tr className="bg-amber-50/70">
+                          <td colSpan={isOrganizer ? 7 : 5} className="px-5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-700">
+                            Резерв {event.participantLimit != null && `(лимит ${event.participantLimit})`}
+                          </td>
+                        </tr>
+                      )}
+                      {showWithdrawnHeader && (
+                        <tr className="bg-red-50/70">
+                          <td colSpan={isOrganizer ? 7 : 5} className="px-5 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-red-700">
+                            Отзаявившиеся
+                          </td>
+                        </tr>
+                      )}
+                    <tr className={rowClass}>
                       <td className="px-5 py-3 font-mono text-xs text-muted">
-                        {isWithdrawn ? "—" : idx + 1}
+                        {isWithdrawn ? "—" : isReserve ? `Р${reserveIndex}` : idx + 1}
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">
@@ -905,6 +973,11 @@ export default function EventDetailPage() {
                           </span>
                           {hasCustom && (
                             <span className="text-xs text-muted">({team.teamName})</span>
+                          )}
+                          {isReserve && (
+                            <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                              Резерв
+                            </span>
                           )}
                           {isWithdrawn && (
                             <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
@@ -1015,6 +1088,7 @@ export default function EventDetailPage() {
                         )}
                       </td>
                     </tr>
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -1025,6 +1099,14 @@ export default function EventDetailPage() {
         {teams.length > 0 && (
           <div className="border-t border-border px-5 py-3 text-xs text-muted">
             {activeTeamsCount} {teamCountWord(activeTeamsCount)}
+            {event.participantLimit != null && (
+              <span className="ml-1 text-muted/70">/ {event.participantLimit}</span>
+            )}
+            {reserveTeams.length > 0 && (
+              <span className="ml-2 text-amber-700">
+                (резерв: {reserveTeams.length})
+              </span>
+            )}
             {withdrawnTeams.length > 0 && (
               <span className="ml-2 text-red-600">
                 (отзаявилось: {withdrawnTeams.length})

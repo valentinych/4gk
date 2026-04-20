@@ -49,6 +49,25 @@ export async function PATCH(
   if (body.registrationLink !== undefined) data.registrationLink = body.registrationLink?.trim() || null;
   if (body.mediaLink !== undefined) data.mediaLink = body.mediaLink?.trim() || null;
   if (body.mediaLinkLabel !== undefined) data.mediaLinkLabel = body.mediaLinkLabel?.trim() || null;
+  if (body.registrationOpensAt !== undefined) {
+    data.registrationOpensAt = body.registrationOpensAt ? new Date(body.registrationOpensAt) : null;
+  }
+  if (body.registrationClosesAt !== undefined) {
+    data.registrationClosesAt = body.registrationClosesAt ? new Date(body.registrationClosesAt) : null;
+  }
+  if (body.participantLimit !== undefined) {
+    const v = body.participantLimit;
+    if (v === null || v === "") {
+      data.participantLimit = null;
+    } else {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n <= 0) {
+        return NextResponse.json({ error: "Лимит должен быть положительным числом" }, { status: 400 });
+      }
+      data.participantLimit = n;
+    }
+  }
+  if (body.closeOnLimit !== undefined) data.closeOnLimit = Boolean(body.closeOnLimit);
 
   const updated = await db.calendarEvent.update({ where: { id }, data });
   return NextResponse.json(updated);

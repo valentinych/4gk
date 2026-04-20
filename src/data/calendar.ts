@@ -15,6 +15,10 @@ export interface CalendarEvent {
   registrationLink?: string | null;
   mediaLink?: string | null;
   mediaLinkLabel?: string | null;
+  registrationOpensAt?: string | null;
+  registrationClosesAt?: string | null;
+  participantLimit?: number | null;
+  closeOnLimit?: boolean | null;
 }
 
 export const cityColors: Record<string, { bg: string; text: string; border: string; dot: string }> = {

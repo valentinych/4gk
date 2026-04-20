@@ -23,6 +23,7 @@ export async function GET(_req: Request, { params }: Params) {
         addedBy: true,
         addedAt: true,
         withdrawnAt: true,
+        isReserve: true,
       },
     }),
     // TeamRoster submissions for this event – used to show "has roster" badge
@@ -52,6 +53,10 @@ export async function GET(_req: Request, { params }: Params) {
       registrationLink: event.registrationLink,
       mediaLink: event.mediaLink,
       mediaLinkLabel: event.mediaLinkLabel,
+      registrationOpensAt: event.registrationOpensAt?.toISOString() ?? null,
+      registrationClosesAt: event.registrationClosesAt?.toISOString() ?? null,
+      participantLimit: event.participantLimit,
+      closeOnLimit: event.closeOnLimit,
     },
     teams: teams.map((t) => ({
       ...t,
@@ -80,6 +85,23 @@ export async function POST(req: Request, { params }: Params) {
 
   const role = session.user.role;
   const isOrganizer = role === "ADMIN" || role === "ORGANIZER";
+
+  // Enforce registration window for non-organizers
+  if (!isOrganizer) {
+    const now = new Date();
+    if (event.registrationOpensAt && now < event.registrationOpensAt) {
+      return NextResponse.json(
+        { error: `Приём заявок откроется ${event.registrationOpensAt.toLocaleString("ru-RU")}` },
+        { status: 403 },
+      );
+    }
+    if (event.registrationClosesAt && now > event.registrationClosesAt) {
+      return NextResponse.json(
+        { error: "Приём заявок на это событие уже закрыт" },
+        { status: 403 },
+      );
+    }
+  }
 
   let teamChgkId: number;
   let teamName: string;
@@ -115,6 +137,21 @@ export async function POST(req: Request, { params }: Params) {
 
   const displayName = body.displayName?.trim() || null;
 
+  // Determine if this new (or restored) registration should be a reserve
+  async function resolveReserve(): Promise<{ isReserve: boolean; reject?: string }> {
+    if (!event!.participantLimit) return { isReserve: false };
+    const activeCount = await db.eventTeam.count({
+      where: { eventId, withdrawnAt: null, isReserve: false },
+    });
+    if (activeCount >= event!.participantLimit) {
+      if (event!.closeOnLimit) {
+        return { isReserve: false, reject: "Лимит участников достигнут — приём заявок закрыт" };
+      }
+      return { isReserve: true };
+    }
+    return { isReserve: false };
+  }
+
   // If the team was previously withdrawn for this event, restore the entry
   // (clears withdrawnAt, updates adder/timestamp)
   const existing = await db.eventTeam.findUnique({
@@ -123,6 +160,8 @@ export async function POST(req: Request, { params }: Params) {
 
   if (existing) {
     if (existing.withdrawnAt) {
+      const { isReserve, reject } = await resolveReserve();
+      if (reject) return NextResponse.json({ error: reject }, { status: 403 });
       const restored = await db.eventTeam.update({
         where: { id: existing.id },
         data: {
@@ -134,6 +173,7 @@ export async function POST(req: Request, { params }: Params) {
           teamName,
           displayName,
           playersCount: null,
+          isReserve,
         },
       });
       return NextResponse.json(restored, { status: 200 });
@@ -144,6 +184,9 @@ export async function POST(req: Request, { params }: Params) {
     );
   }
 
+  const { isReserve, reject } = await resolveReserve();
+  if (reject) return NextResponse.json({ error: reject }, { status: 403 });
+
   try {
     const entry = await db.eventTeam.create({
       data: {
@@ -153,6 +196,7 @@ export async function POST(req: Request, { params }: Params) {
         displayName,
         addedBy: session.user.id,
         selfJoined: !isOrganizer,
+        isReserve,
       },
     });
     return NextResponse.json(entry, { status: 201 });

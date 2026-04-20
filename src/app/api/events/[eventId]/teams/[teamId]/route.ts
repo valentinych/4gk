@@ -70,10 +70,13 @@ export async function DELETE(req: Request, { params }: Params) {
 
   // Organizer can force a hard delete with ?hard=1 (for already-withdrawn rows).
   const hard = new URL(req.url).searchParams.get("hard") === "1";
+  const wasActiveNonReserve = !entry.withdrawnAt && !entry.isReserve;
+
   if (hard && isOrganizer) {
     await db.eventTeam.delete({ where: { id: teamId } });
     // Also remove any submitted roster for this team so state is consistent
     await db.teamRoster.deleteMany({ where: { eventId, teamChgkId: entry.teamChgkId } });
+    if (wasActiveNonReserve) await promoteTopReserve(eventId);
     return NextResponse.json({ ok: true, hardDeleted: true });
   }
 
@@ -90,5 +93,33 @@ export async function DELETE(req: Request, { params }: Params) {
   // Drop any submitted roster for this team – a withdrawn team can't hold a roster.
   await db.teamRoster.deleteMany({ where: { eventId, teamChgkId: entry.teamChgkId } });
 
+  if (wasActiveNonReserve) await promoteTopReserve(eventId);
+
   return NextResponse.json({ ok: true, entry: updated });
+}
+
+// Promote the oldest reserve team (if any) to the active list when a slot opens.
+async function promoteTopReserve(eventId: string) {
+  const event = await db.calendarEvent.findUnique({
+    where: { id: eventId },
+    select: { participantLimit: true },
+  });
+  if (!event?.participantLimit) return;
+
+  const activeCount = await db.eventTeam.count({
+    where: { eventId, withdrawnAt: null, isReserve: false },
+  });
+  if (activeCount >= event.participantLimit) return;
+
+  const topReserve = await db.eventTeam.findFirst({
+    where: { eventId, withdrawnAt: null, isReserve: true },
+    orderBy: { addedAt: "asc" },
+    select: { id: true },
+  });
+  if (!topReserve) return;
+
+  await db.eventTeam.update({
+    where: { id: topReserve.id },
+    data: { isReserve: false },
+  });
 }

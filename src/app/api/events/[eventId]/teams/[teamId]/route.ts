@@ -23,6 +23,13 @@ export async function PATCH(req: Request, { params }: Params) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  if (entry.withdrawnAt) {
+    return NextResponse.json(
+      { error: "Команда отзаявлена — редактирование недоступно" },
+      { status: 400 },
+    );
+  }
+
   const body = (await req.json()) as {
     displayName?: string | null;
     playersCount?: number | null;
@@ -43,13 +50,13 @@ export async function PATCH(req: Request, { params }: Params) {
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(req: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { teamId } = await params;
+  const { eventId, teamId } = await params;
   const entry = await db.eventTeam.findUnique({ where: { id: teamId } });
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -61,6 +68,27 @@ export async function DELETE(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await db.eventTeam.delete({ where: { id: teamId } });
-  return NextResponse.json({ ok: true });
+  // Organizer can force a hard delete with ?hard=1 (for already-withdrawn rows).
+  const hard = new URL(req.url).searchParams.get("hard") === "1";
+  if (hard && isOrganizer) {
+    await db.eventTeam.delete({ where: { id: teamId } });
+    // Also remove any submitted roster for this team so state is consistent
+    await db.teamRoster.deleteMany({ where: { eventId, teamChgkId: entry.teamChgkId } });
+    return NextResponse.json({ ok: true, hardDeleted: true });
+  }
+
+  // Soft delete: mark the team as withdrawn. The row stays in the list,
+  // shown at the bottom highlighted red with the withdrawal timestamp.
+  const updated = await db.eventTeam.update({
+    where: { id: teamId },
+    data: {
+      withdrawnAt: new Date(),
+      withdrawnBy: session.user.id,
+    },
+  });
+
+  // Drop any submitted roster for this team – a withdrawn team can't hold a roster.
+  await db.teamRoster.deleteMany({ where: { eventId, teamChgkId: entry.teamChgkId } });
+
+  return NextResponse.json({ ok: true, entry: updated });
 }

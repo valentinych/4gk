@@ -22,6 +22,7 @@ export async function GET(_req: Request, { params }: Params) {
         playersCount: true,
         addedBy: true,
         addedAt: true,
+        withdrawnAt: true,
       },
     }),
     // TeamRoster submissions for this event – used to show "has roster" badge
@@ -113,6 +114,35 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const displayName = body.displayName?.trim() || null;
+
+  // If the team was previously withdrawn for this event, restore the entry
+  // (clears withdrawnAt, updates adder/timestamp)
+  const existing = await db.eventTeam.findUnique({
+    where: { eventId_teamChgkId: { eventId, teamChgkId } },
+  });
+
+  if (existing) {
+    if (existing.withdrawnAt) {
+      const restored = await db.eventTeam.update({
+        where: { id: existing.id },
+        data: {
+          withdrawnAt: null,
+          withdrawnBy: null,
+          addedBy: session.user.id,
+          addedAt: new Date(),
+          selfJoined: !isOrganizer,
+          teamName,
+          displayName,
+          playersCount: null,
+        },
+      });
+      return NextResponse.json(restored, { status: 200 });
+    }
+    return NextResponse.json(
+      { error: "Эта команда уже добавлена к событию" },
+      { status: 409 },
+    );
+  }
 
   try {
     const entry = await db.eventTeam.create({

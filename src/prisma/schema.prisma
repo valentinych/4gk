@@ -103,6 +103,8 @@ model EventTeam {
   addedBy      String
   selfJoined   Boolean  @default(false)
   addedAt     DateTime @default(now())
+  withdrawnAt DateTime?
+  withdrawnBy String?
 
   event       CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
   addedByUser User          @relation(fields: [addedBy], references: [id])

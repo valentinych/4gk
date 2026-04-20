@@ -94,6 +94,7 @@ interface TeamEntry {
   displayName: string | null;
   addedBy: string;
   addedAt: string;
+  withdrawnAt: string | null;
 }
 
 interface ChgkTeamResult {
@@ -174,6 +175,12 @@ function PlayersCountInput({
       )}
     </div>
   );
+}
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function teamCountWord(n: number) {
@@ -305,7 +312,15 @@ export default function EventDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) { setAddError(data.error ?? "Ошибка"); return; }
-      setTeams((prev) => [...prev, data]);
+      setTeams((prev) => {
+        const idx = prev.findIndex((t) => t.id === data.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...data, hasRoster: false };
+          return next;
+        }
+        return [...prev, data];
+      });
       clearSelected();
       toast("Команда добавлена");
     } finally {
@@ -358,7 +373,15 @@ export default function EventDetailPage() {
         setJoinPhase("preview");
         return;
       }
-      setTeams((prev) => [...prev, data]);
+      setTeams((prev) => {
+        const idx = prev.findIndex((t) => t.id === data.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...data, hasRoster: false };
+          return next;
+        }
+        return [...prev, data];
+      });
       setJoinPhase("idle");
       setMyTeam(null);
       toast("Вы присоединились к событию");
@@ -376,12 +399,39 @@ export default function EventDetailPage() {
   }
 
   async function handleRemove(teamId: string) {
+    if (!confirm("Отозвать заявку команды?")) return;
     setRemoving(teamId);
     try {
       const res = await fetch(`/api/events/${eventId}/teams/${teamId}`, { method: "DELETE" });
       if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const now = new Date().toISOString();
+        setTeams((prev) =>
+          prev.map((t) =>
+            t.id === teamId
+              ? {
+                  ...t,
+                  withdrawnAt: data?.entry?.withdrawnAt ?? now,
+                  hasRoster: false,
+                }
+              : t,
+          ),
+        );
+        toast("Заявка отозвана");
+      }
+    } finally {
+      setRemoving(null);
+    }
+  }
+
+  async function handleHardDelete(teamId: string) {
+    if (!confirm("Полностью удалить запись о команде из события?")) return;
+    setRemoving(teamId);
+    try {
+      const res = await fetch(`/api/events/${eventId}/teams/${teamId}?hard=1`, { method: "DELETE" });
+      if (res.ok) {
         setTeams((prev) => prev.filter((t) => t.id !== teamId));
-        toast("Команда удалена из события");
+        toast("Запись удалена");
       }
     } finally {
       setRemoving(null);
@@ -428,7 +478,15 @@ export default function EventDetailPage() {
 
   const c = getCityColor(event.city);
   const myEntry = userId ? teams.find((t) => t.addedBy === userId) : undefined;
-  const alreadyJoined = !!myEntry;
+  const myActiveEntry = myEntry && !myEntry.withdrawnAt ? myEntry : undefined;
+  const alreadyJoined = !!myActiveEntry;
+
+  const activeTeams = teams.filter((t) => !t.withdrawnAt);
+  const withdrawnTeams = teams
+    .filter((t) => t.withdrawnAt)
+    .sort((a, b) => (a.withdrawnAt! < b.withdrawnAt! ? 1 : -1));
+  const sortedTeams = [...activeTeams, ...withdrawnTeams];
+  const activeTeamsCount = activeTeams.length;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -519,9 +577,17 @@ export default function EventDetailPage() {
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted" />
             <h2 className="font-bold">Команды</h2>
-            {teams.length > 0 && (
+            {activeTeamsCount > 0 && (
               <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted">
-                {teams.length}
+                {activeTeamsCount}
+              </span>
+            )}
+            {withdrawnTeams.length > 0 && (
+              <span
+                title={`${withdrawnTeams.length} отзаявившихся`}
+                className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600"
+              >
+                −{withdrawnTeams.length}
               </span>
             )}
           </div>
@@ -649,7 +715,22 @@ export default function EventDetailPage() {
                   className="ml-auto flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
                 >
                   {removing === myEntry?.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
-                  Отменить
+                  Отозвать заявку
+                </button>
+              </div>
+            ) : myEntry?.withdrawnAt ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <X className="h-4 w-4 shrink-0" />
+                <span>
+                  Заявка отозвана{" "}
+                  <strong>{formatDateTime(myEntry.withdrawnAt)}</strong>
+                </span>
+                <button
+                  onClick={handleJoinStart}
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                  Заявиться снова
                 </button>
               </div>
             ) : joinPhase === "idle" ? (
@@ -752,6 +833,7 @@ export default function EventDetailPage() {
                 <tr className="border-b border-border text-left text-xs text-muted">
                   <th className="px-5 py-2.5 font-medium w-10">#</th>
                   <th className="px-5 py-2.5 font-medium">Команда</th>
+                  <th className="px-3 py-2.5 font-medium whitespace-nowrap">Заявка</th>
                   <th className="px-5 py-2.5 font-medium w-20 text-right">ID</th>
                   {isOrganizer && (
                     <>
@@ -763,17 +845,46 @@ export default function EventDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {teams.map((team, idx) => {
+                {sortedTeams.map((team, idx) => {
                   const displayName = team.displayName ?? team.teamName;
                   const hasCustom = !!team.displayName && team.displayName !== team.teamName;
                   const canRemove = isOrganizer || team.addedBy === userId;
+                  const isWithdrawn = !!team.withdrawnAt;
+                  const rowClass = isWithdrawn
+                    ? "bg-red-50/60 text-red-900/80"
+                    : "hover:bg-surface/40";
                   return (
-                    <tr key={team.id} className="hover:bg-surface/40">
-                      <td className="px-5 py-3 font-mono text-xs text-muted">{idx + 1}</td>
+                    <tr key={team.id} className={rowClass}>
+                      <td className="px-5 py-3 font-mono text-xs text-muted">
+                        {isWithdrawn ? "—" : idx + 1}
+                      </td>
                       <td className="px-5 py-3">
-                        <span className="font-medium">{displayName}</span>
-                        {hasCustom && (
-                          <span className="ml-2 text-xs text-muted">({team.teamName})</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-medium ${isWithdrawn ? "line-through decoration-red-400/70" : ""}`}>
+                            {displayName}
+                          </span>
+                          {hasCustom && (
+                            <span className="text-xs text-muted">({team.teamName})</span>
+                          )}
+                          {isWithdrawn && (
+                            <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+                              Отзаявлена
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-xs">
+                        {isWithdrawn ? (
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-muted/70 line-through">
+                              {formatDateTime(team.addedAt)}
+                            </span>
+                            <span className="font-semibold text-red-600">
+                              Отзыв: {formatDateTime(team.withdrawnAt!)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted">{formatDateTime(team.addedAt)}</span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right">
@@ -790,7 +901,9 @@ export default function EventDetailPage() {
                         <>
                           {/* Состав submitted? */}
                           <td className="px-3 py-3 text-center">
-                            {team.hasRoster ? (
+                            {isWithdrawn ? (
+                              <span title="Команда отзаявилась" className="text-red-400/70">—</span>
+                            ) : team.hasRoster ? (
                               <div className="inline-flex items-center gap-1">
                                 <span title="Состав подан">✅</span>
                                 <button
@@ -812,28 +925,46 @@ export default function EventDetailPage() {
                           </td>
                           {/* Editable players count */}
                           <td className="px-3 py-2">
-                            <PlayersCountInput
-                              eventId={eventId}
-                              teamId={team.id}
-                              value={team.playersCount}
-                              onChange={(v) =>
-                                setTeams((prev) =>
-                                  prev.map((t) =>
-                                    t.id === team.id ? { ...t, playersCount: v } : t,
-                                  ),
-                                )
-                              }
-                            />
+                            {isWithdrawn ? (
+                              <span className="text-xs text-red-400/70">—</span>
+                            ) : (
+                              <PlayersCountInput
+                                eventId={eventId}
+                                teamId={team.id}
+                                value={team.playersCount}
+                                onChange={(v) =>
+                                  setTeams((prev) =>
+                                    prev.map((t) =>
+                                      t.id === team.id ? { ...t, playersCount: v } : t,
+                                    ),
+                                  )
+                                }
+                              />
+                            )}
                           </td>
                         </>
                       )}
                       <td className="pr-3">
-                        {canRemove && (
+                        {canRemove && !isWithdrawn && (
                           <button
                             onClick={() => handleRemove(team.id)}
                             disabled={removing === team.id}
                             className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-danger disabled:opacity-50"
-                            title="Удалить"
+                            title="Отозвать заявку"
+                          >
+                            {removing === team.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <X className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        )}
+                        {isOrganizer && isWithdrawn && (
+                          <button
+                            onClick={() => handleHardDelete(team.id)}
+                            disabled={removing === team.id}
+                            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-danger disabled:opacity-50"
+                            title="Удалить запись навсегда"
                           >
                             {removing === team.id ? (
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -853,10 +984,15 @@ export default function EventDetailPage() {
 
         {teams.length > 0 && (
           <div className="border-t border-border px-5 py-3 text-xs text-muted">
-            {teams.length} {teamCountWord(teams.length)}
-            {isOrganizer && teams.some((t) => t.playersCount != null) && (
+            {activeTeamsCount} {teamCountWord(activeTeamsCount)}
+            {withdrawnTeams.length > 0 && (
+              <span className="ml-2 text-red-600">
+                (отзаявилось: {withdrawnTeams.length})
+              </span>
+            )}
+            {isOrganizer && activeTeams.some((t) => t.playersCount != null) && (
               <span className="ml-3">
-                · {teams.reduce((s, t) => s + (t.playersCount ?? 0), 0)} игроков суммарно
+                · {activeTeams.reduce((s, t) => s + (t.playersCount ?? 0), 0)} игроков суммарно
               </span>
             )}
           </div>

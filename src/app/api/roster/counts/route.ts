@@ -10,9 +10,9 @@ async function resolveMyTeamChgkId(
   userId: string,
   playerChgkId: number | null | undefined,
 ): Promise<number | null> {
-  // 1. Cheapest: look for a previous self-join in EventTeam
+  // 1. Cheapest: look for a previous self-join in EventTeam (active entries only)
   const selfJoin = await db.eventTeam.findFirst({
-    where: { addedBy: userId, selfJoined: true },
+    where: { addedBy: userId, selfJoined: true, withdrawnAt: null },
     select: { teamChgkId: true },
     orderBy: { addedAt: "desc" },
   });
@@ -66,9 +66,10 @@ export async function GET() {
     registered: string[];
   } = { counts: {}, teamCounts: {}, mine: [], registered: [] };
 
-  // EventTeam counts (registered teams) — visible to everyone
+  // EventTeam counts (registered teams) — visible to everyone, withdrawn excluded
   const teamGrouped = await db.eventTeam.groupBy({
     by: ["eventId"],
+    where: { withdrawnAt: null },
     _count: { id: true },
   });
   for (const g of teamGrouped) {
@@ -100,7 +101,7 @@ export async function GET() {
     if (myTeamChgkId != null) {
       const rosterSet = new Set(result.mine);
       const entries = await db.eventTeam.findMany({
-        where: { teamChgkId: myTeamChgkId },
+        where: { teamChgkId: myTeamChgkId, withdrawnAt: null },
         select: { eventId: true },
       });
       // Only include events where the roster hasn't been submitted yet

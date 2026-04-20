@@ -145,7 +145,45 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="mt-6 relative">
+      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <Shield className="h-4 w-4 text-muted" />
+          Роли и права
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {[
+            {
+              role: "Player",
+              badge: "bg-gray-100 text-gray-600",
+              desc: "Обычный игрок. Может заявляться на события в календаре, подавать и редактировать состав своей команды, видеть свои последние игры и рейтинг.",
+            },
+            {
+              role: "Moderator",
+              badge: "bg-blue-50 text-blue-700",
+              desc: "Всё, что и Player, плюс управление новостями (создание, редактирование, публикация).",
+            },
+            {
+              role: "Organizer",
+              badge: "bg-emerald-50 text-emerald-700",
+              desc: "Всё, что и Moderator, плюс создание и редактирование событий в календаре, управление заявленными командами и их составами, экспорт CSV.",
+            },
+            {
+              role: "Admin",
+              badge: "bg-amber-50 text-amber-700",
+              desc: "Полный доступ: все права Organizer, плюс управление пользователями на этой странице — смена ролей, привязка Rating ID, удаление аккаунтов.",
+            },
+          ].map((r) => (
+            <div key={r.role} className="flex gap-2 rounded-lg border border-border p-2.5">
+              <span className={`h-fit shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${r.badge}`}>
+                {r.role}
+              </span>
+              <p className="text-xs leading-relaxed text-muted">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         <input
           type="text"

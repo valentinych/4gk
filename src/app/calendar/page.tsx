@@ -150,6 +150,15 @@ function formatEventDateTime(
   return `${s.getDate()} ${MONTHS_GEN[s.getMonth()]} – ${e!.getDate()} ${MONTHS_GEN[e!.getMonth()]}`;
 }
 
+function formatShortDateTime(iso: string) {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const month = MONTHS_GEN[d.getMonth()];
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${day} ${month} ${hh}:${mm}`;
+}
+
 const emptyForm = {
   title: "",
   type: "one-day",
@@ -1416,6 +1425,25 @@ function EventCard({
         )}
       </div>
 
+      {(event.registrationOpensAt || event.registrationClosesAt || event.participantLimit != null) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
+          {event.registrationOpensAt && (
+            <span>Приём с {formatShortDateTime(event.registrationOpensAt)}</span>
+          )}
+          {event.registrationClosesAt && (
+            <span>до {formatShortDateTime(event.registrationClosesAt)}</span>
+          )}
+          {event.participantLimit != null && (
+            <span>
+              · Лимит {event.participantLimit}
+              {(teamCount ?? 0) >= event.participantLimit && (
+                <span className="ml-1 font-semibold text-amber-700">(достигнут)</span>
+              )}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-2">
         {event.registrationLink && (
           <a
@@ -1440,33 +1468,73 @@ function EventCard({
             <ExternalLink className="h-3 w-3" />
           </a>
         )}
-        {isLoggedIn && (
-          isRegistered ? (
-            <Link
-              href={`/calendar/${event.id}?action=withdraw`}
-              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
-            >
-              <UserMinus className="h-3 w-3" />
-              Отзаявиться
-            </Link>
-          ) : isWithdrawn ? (
+        {isLoggedIn && (() => {
+          const nowMs = Date.now();
+          const opens = event.registrationOpensAt ? new Date(event.registrationOpensAt).getTime() : null;
+          const closes = event.registrationClosesAt ? new Date(event.registrationClosesAt).getTime() : null;
+          const notYetOpen = opens !== null && nowMs < opens;
+          const closedByTime = closes !== null && nowMs > closes;
+          const limitReached = event.participantLimit != null && (teamCount ?? 0) >= event.participantLimit;
+          const hardClosed = limitReached && !!event.closeOnLimit;
+          const willReserve = limitReached && !event.closeOnLimit;
+          const blockedReason = notYetOpen
+            ? "Приём заявок ещё не открыт"
+            : closedByTime
+              ? "Приём заявок закрыт"
+              : hardClosed
+                ? "Лимит команд достигнут"
+                : null;
+
+          if (isRegistered) {
+            return (
+              <Link
+                href={`/calendar/${event.id}?action=withdraw`}
+                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+              >
+                <UserMinus className="h-3 w-3" />
+                Отзаявиться
+              </Link>
+            );
+          }
+
+          if (blockedReason) {
+            return (
+              <span
+                title={blockedReason}
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted cursor-not-allowed"
+              >
+                <UserPlus className="h-3 w-3" />
+                {blockedReason}
+              </span>
+            );
+          }
+
+          if (isWithdrawn) {
+            return (
+              <Link
+                href={`/calendar/${event.id}?action=join`}
+                className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+              >
+                <RotateCcw className="h-3 w-3" />
+                {willReserve ? "Заявиться в резерв" : "Перезаявиться"}
+              </Link>
+            );
+          }
+
+          return (
             <Link
               href={`/calendar/${event.id}?action=join`}
-              className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
-            >
-              <RotateCcw className="h-3 w-3" />
-              Перезаявиться
-            </Link>
-          ) : (
-            <Link
-              href={`/calendar/${event.id}?action=join`}
-              className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent/5 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+              className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                willReserve
+                  ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  : "border-accent/30 bg-accent/5 text-accent hover:bg-accent/10"
+              }`}
             >
               <UserPlus className="h-3 w-3" />
-              Заявиться
+              {willReserve ? "Заявиться в резерв" : "Заявиться"}
             </Link>
-          )
-        )}
+          );
+        })()}
         {isLoggedIn && (
           <Link
             href={`/account/roster/${event.id}`}

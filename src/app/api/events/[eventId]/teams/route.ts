@@ -91,13 +91,21 @@ export async function POST(req: Request, { params }: Params) {
     const now = new Date();
     if (event.registrationOpensAt && now < event.registrationOpensAt) {
       return NextResponse.json(
-        { error: `Приём заявок откроется ${event.registrationOpensAt.toLocaleString("ru-RU")}` },
+        {
+          error: "Приём заявок ещё не открыт",
+          reason: "not_yet_open",
+          registrationOpensAt: event.registrationOpensAt.toISOString(),
+        },
         { status: 403 },
       );
     }
     if (event.registrationClosesAt && now > event.registrationClosesAt) {
       return NextResponse.json(
-        { error: "Приём заявок на это событие уже закрыт" },
+        {
+          error: "Приём заявок на это событие уже закрыт",
+          reason: "closed_by_time",
+          registrationClosesAt: event.registrationClosesAt.toISOString(),
+        },
         { status: 403 },
       );
     }
@@ -145,7 +153,10 @@ export async function POST(req: Request, { params }: Params) {
     });
     if (activeCount >= event!.participantLimit) {
       if (event!.closeOnLimit) {
-        return { isReserve: false, reject: "Лимит участников достигнут — приём заявок закрыт" };
+        return {
+          isReserve: false,
+          reject: "Лимит участников достигнут — приём заявок закрыт",
+        };
       }
       return { isReserve: true };
     }

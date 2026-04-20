@@ -395,7 +395,7 @@ export default function EventDetailPage() {
       });
       setJoinPhase("idle");
       setMyTeam(null);
-      toast("Вы присоединились к событию");
+      toast(data?.isReserve ? "Заявка добавлена в резерв" : "Вы присоединились к событию");
     } catch {
       setJoinError("Ошибка сети");
       setJoinPhase("preview");
@@ -480,7 +480,19 @@ export default function EventDetailPage() {
     const activeEntry = entry && !entry.withdrawnAt ? entry : undefined;
 
     if (action === "join") {
-      if (!activeEntry) {
+      // Skip auto-trigger if registration is blocked — user will see
+      // the red "Регистрация недоступна" banner and can read why.
+      const nowMs = Date.now();
+      const opens = event?.registrationOpensAt ? new Date(event.registrationOpensAt).getTime() : null;
+      const closes = event?.registrationClosesAt ? new Date(event.registrationClosesAt).getTime() : null;
+      const activeCount = teams.filter((t) => !t.withdrawnAt && !t.isReserve).length;
+      const blocked =
+        (opens !== null && nowMs < opens) ||
+        (closes !== null && nowMs > closes) ||
+        (event?.participantLimit != null &&
+          activeCount >= event.participantLimit &&
+          !!event.closeOnLimit);
+      if (!activeEntry && !blocked) {
         autoActionRan.current = true;
         handleJoinStart();
       } else {
@@ -533,6 +545,25 @@ export default function EventDetailPage() {
     .sort((a, b) => (a.withdrawnAt! < b.withdrawnAt! ? 1 : -1));
   const sortedTeams = [...activeTeams, ...reserveTeams, ...withdrawnTeams];
   const activeTeamsCount = activeTeams.length;
+
+  // Registration window + limit status (computed on client, timezone-safe)
+  const now = Date.now();
+  const opensAt = event.registrationOpensAt ? new Date(event.registrationOpensAt).getTime() : null;
+  const closesAt = event.registrationClosesAt ? new Date(event.registrationClosesAt).getTime() : null;
+  const notYetOpen = opensAt !== null && now < opensAt;
+  const closedByTime = closesAt !== null && now > closesAt;
+  const limitReached =
+    event.participantLimit != null && activeTeamsCount >= event.participantLimit;
+  const hardClosedByLimit = limitReached && !!event.closeOnLimit;
+  const willGoToReserve = limitReached && !event.closeOnLimit;
+  const registrationBlocked = notYetOpen || closedByTime || hardClosedByLimit;
+  const blockedReason: string | null = notYetOpen
+    ? `Приём заявок откроется ${formatDateTime(event.registrationOpensAt!)}`
+    : closedByTime
+      ? `Приём заявок закрыт ${formatDateTime(event.registrationClosesAt!)}`
+      : hardClosedByLimit
+        ? `Достигнут лимит команд (${event.participantLimit}) — приём закрыт`
+        : null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -805,7 +836,9 @@ export default function EventDetailPage() {
                 </span>
                 <button
                   onClick={handleJoinStart}
-                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                  disabled={registrationBlocked}
+                  title={blockedReason ?? undefined}
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <UserPlus className="h-3.5 w-3.5" />
                   Заявиться снова
@@ -813,13 +846,33 @@ export default function EventDetailPage() {
               </div>
             ) : joinPhase === "idle" ? (
               <div>
-                <button
-                  onClick={handleJoinStart}
-                  className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Заявиться
-                </button>
+                {registrationBlocked ? (
+                  <div className="inline-flex flex-col gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <span className="font-medium">Регистрация недоступна</span>
+                    <span className="text-xs">{blockedReason}</span>
+                  </div>
+                ) : (
+                  <>
+                    {willGoToReserve && (
+                      <div className="mb-2 inline-flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        <span>
+                          Лимит в <strong>{event.participantLimit}</strong> команд уже достигнут.
+                          Ваша заявка попадёт в резерв и автоматически перейдёт в основной состав,
+                          если одна из команд отзаявится.
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <button
+                        onClick={handleJoinStart}
+                        className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        {willGoToReserve ? "Заявиться в резерв" : "Заявиться"}
+                      </button>
+                    </div>
+                  </>
+                )}
                 {joinError && <p className="mt-2 text-xs text-red-600">{joinError}</p>}
               </div>
             ) : joinPhase === "loading" ? (
@@ -829,6 +882,11 @@ export default function EventDetailPage() {
               </div>
             ) : joinPhase === "preview" || joinPhase === "submitting" ? (
               <div className="rounded-lg border border-accent/20 bg-accent/5 p-4">
+                {willGoToReserve && (
+                  <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    Заявка попадёт в <strong>резерв</strong> — лимит в {event.participantLimit} команд уже достигнут.
+                  </div>
+                )}
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">
                   Ваша команда
                 </p>
@@ -870,7 +928,7 @@ export default function EventDetailPage() {
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    Подтвердить
+                    {willGoToReserve ? "Подтвердить (резерв)" : "Подтвердить"}
                   </button>
                   <button
                     onClick={cancelJoin}

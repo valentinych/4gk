@@ -20,6 +20,9 @@ import {
   Users,
   CheckCircle2,
   Download,
+  UserPlus,
+  UserMinus,
+  RotateCcw,
 } from "lucide-react";
 import {
   getCityColor,
@@ -198,6 +201,7 @@ export default function CalendarPage() {
   const [teamCounts, setTeamCounts] = useState<Record<string, number>>({});
   const [myRosterEventIds, setMyRosterEventIds] = useState<string[]>([]);
   const [myRegisteredEventIds, setMyRegisteredEventIds] = useState<string[]>([]);
+  const [myWithdrawnEventIds, setMyWithdrawnEventIds] = useState<string[]>([]);
 
   const [showForm, setShowForm] = useState(false);
   const [showTemplateForm, setShowTemplateForm] = useState(false);
@@ -229,6 +233,7 @@ export default function CalendarPage() {
         setTeamCounts(data.teamCounts ?? {});
         setMyRosterEventIds(data.mine ?? []);
         setMyRegisteredEventIds(data.registered ?? []);
+        setMyWithdrawnEventIds(data.withdrawn ?? []);
       }
     } catch {}
   }, []);
@@ -1160,6 +1165,7 @@ export default function CalendarPage() {
                   isLoggedIn={!!role}
                   hasMyRoster={myRosterEventIds.includes(ev.id)}
                   isRegistered={myRegisteredEventIds.includes(ev.id)}
+                  isWithdrawn={myWithdrawnEventIds.includes(ev.id)}
                   rosterCount={rosterCounts[ev.id] ?? 0}
                   teamCount={teamCounts[ev.id] ?? 0}
                 />
@@ -1190,6 +1196,7 @@ function EventCard({
   isLoggedIn,
   hasMyRoster,
   isRegistered,
+  isWithdrawn,
   rosterCount,
   teamCount,
 }: {
@@ -1201,6 +1208,7 @@ function EventCard({
   isLoggedIn?: boolean;
   hasMyRoster?: boolean;
   isRegistered?: boolean;
+  isWithdrawn?: boolean;
   rosterCount?: number;
   teamCount?: number;
 }) {
@@ -1312,6 +1320,33 @@ function EventCard({
             {event.mediaLinkLabel || "Медиа"}
             <ExternalLink className="h-3 w-3" />
           </a>
+        )}
+        {isLoggedIn && !canManage && (
+          isRegistered ? (
+            <Link
+              href={`/calendar/${event.id}?action=withdraw`}
+              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+            >
+              <UserMinus className="h-3 w-3" />
+              Отзаявиться
+            </Link>
+          ) : isWithdrawn ? (
+            <Link
+              href={`/calendar/${event.id}?action=join`}
+              className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Перезаявиться
+            </Link>
+          ) : (
+            <Link
+              href={`/calendar/${event.id}?action=join`}
+              className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent/5 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+            >
+              <UserPlus className="h-3 w-3" />
+              Заявиться
+            </Link>
+          )
         )}
         {isLoggedIn && (
           <Link

@@ -64,7 +64,8 @@ export async function GET() {
     teamCounts: Record<string, number>;
     mine: string[];
     registered: string[];
-  } = { counts: {}, teamCounts: {}, mine: [], registered: [] };
+    withdrawn: string[];
+  } = { counts: {}, teamCounts: {}, mine: [], registered: [], withdrawn: [] };
 
   // EventTeam counts (registered teams) — visible to everyone, withdrawn excluded
   const teamGrouped = await db.eventTeam.groupBy({
@@ -101,13 +102,17 @@ export async function GET() {
     if (myTeamChgkId != null) {
       const rosterSet = new Set(result.mine);
       const entries = await db.eventTeam.findMany({
-        where: { teamChgkId: myTeamChgkId, withdrawnAt: null },
-        select: { eventId: true },
+        where: { teamChgkId: myTeamChgkId },
+        select: { eventId: true, withdrawnAt: true },
       });
+      const activeIds = entries.filter((e) => !e.withdrawnAt).map((e) => e.eventId);
+      const activeSet = new Set(activeIds);
       // Only include events where the roster hasn't been submitted yet
-      result.registered = entries
-        .map((e) => e.eventId)
-        .filter((id) => !rosterSet.has(id));
+      result.registered = activeIds.filter((id) => !rosterSet.has(id));
+      // Withdrawn = events where team has ONLY a withdrawn entry
+      result.withdrawn = entries
+        .filter((e) => e.withdrawnAt && !activeSet.has(e.eventId))
+        .map((e) => e.eventId);
     }
   }
 

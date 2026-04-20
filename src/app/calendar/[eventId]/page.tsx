@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useToast } from "@/components/Toaster";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -193,7 +193,10 @@ function teamCountWord(n: number) {
 
 export default function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
-  const { data: session } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const action = searchParams.get("action");
+  const { data: session, status: sessionStatus } = useSession();
   const role = session?.user?.role;
   const userId = session?.user?.id;
   const isOrganizer = role === "ADMIN" || role === "ORGANIZER";
@@ -228,6 +231,9 @@ export default function EventDetailPage() {
 
   /* ─── Delete submitted roster (organizer) ─── */
   const [removingRoster, setRemovingRoster] = useState<number | null>(null);
+
+  /* ─── Auto-action from URL (?action=join|withdraw) ─── */
+  const autoActionRan = useRef(false);
 
   /* ─── Load page data ─── */
   const loadTeams = useCallback(async () => {
@@ -398,8 +404,8 @@ export default function EventDetailPage() {
     setJoinCustomName(false);
   }
 
-  async function handleRemove(teamId: string) {
-    if (!confirm("Отозвать заявку команды?")) return;
+  async function handleRemove(teamId: string, skipConfirm = false) {
+    if (!skipConfirm && !confirm("Отозвать заявку команды?")) return;
     setRemoving(teamId);
     try {
       const res = await fetch(`/api/events/${eventId}/teams/${teamId}`, { method: "DELETE" });
@@ -456,6 +462,40 @@ export default function EventDetailPage() {
       setRemovingRoster(null);
     }
   }
+
+  /* ─── Auto-run action from URL once page data is ready ─── */
+  useEffect(() => {
+    if (autoActionRan.current) return;
+    if (!action) return;
+    if (pageLoading) return;
+    if (sessionStatus === "loading") return;
+    if (!userId || isOrganizer) { autoActionRan.current = true; return; }
+
+    const entry = teams.find((t) => t.addedBy === userId);
+    const activeEntry = entry && !entry.withdrawnAt ? entry : undefined;
+
+    if (action === "join") {
+      if (!activeEntry) {
+        autoActionRan.current = true;
+        handleJoinStart();
+      } else {
+        autoActionRan.current = true;
+      }
+    } else if (action === "withdraw") {
+      if (activeEntry) {
+        autoActionRan.current = true;
+        handleRemove(activeEntry.id, true);
+      } else {
+        autoActionRan.current = true;
+      }
+    } else {
+      autoActionRan.current = true;
+    }
+
+    // Clean the action param from the URL so a refresh doesn't re-trigger.
+    router.replace(`/calendar/${eventId}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [action, pageLoading, sessionStatus, userId, isOrganizer, teams]);
 
   if (pageLoading) {
     return (
@@ -740,7 +780,7 @@ export default function EventDetailPage() {
                   className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
                 >
                   <UserPlus className="h-4 w-4" />
-                  Присоединиться
+                  Заявиться
                 </button>
                 {joinError && <p className="mt-2 text-xs text-red-600">{joinError}</p>}
               </div>
@@ -815,7 +855,7 @@ export default function EventDetailPage() {
               className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
             >
               <LogIn className="h-4 w-4" />
-              Войдите, чтобы присоединиться
+              Войдите, чтобы заявиться
             </Link>
           </div>
         )}

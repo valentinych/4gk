@@ -127,7 +127,7 @@ export default function BrainResults({ tier }: { tier: string }) {
           </div>
           {updatedAt && (
             <span className="text-xs text-muted">
-              Обновлено: {updatedAt.toLocaleTimeString("ru")}
+              Обновлено: {updatedAt.toLocaleTimeString("ru", { timeZone: "Europe/Warsaw" })}
             </span>
           )}
         </div>

@@ -151,7 +151,7 @@ export default function ChgkResults({
           </div>
           {updatedAt && (
             <span className="text-xs text-muted">
-              Обновлено: {updatedAt.toLocaleTimeString("ru")}
+              Обновлено: {updatedAt.toLocaleTimeString("ru", { timeZone: "Europe/Warsaw" })}
             </span>
           )}
           {data && data.lastQuestion > 0 && (

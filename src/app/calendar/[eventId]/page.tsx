@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, useEffect, useRef, useCallback } from "react";
+import { formatWarsawDateTime } from "@/lib/time";
 import { useToast } from "@/components/Toaster";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -182,11 +183,7 @@ function PlayersCountInput({
   );
 }
 
-function formatDateTime(iso: string) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+const formatDateTime = (iso: string) => formatWarsawDateTime(iso);
 
 function teamCountWord(n: number) {
   if (n % 100 >= 11 && n % 100 <= 19) return "команд";

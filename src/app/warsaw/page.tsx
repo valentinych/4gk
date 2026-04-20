@@ -220,7 +220,7 @@ export default function WarsawPage() {
         <InfoCard
           icon={<Users className="h-4 w-4 text-muted" />}
           label="Обновлено"
-          value={updatedAt ? new Date(updatedAt).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+          value={updatedAt ? new Date(updatedAt).toLocaleString("ru-RU", { timeZone: "Europe/Warsaw", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
         />
       </div>
 

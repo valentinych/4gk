@@ -30,6 +30,11 @@ import {
   CITY_OPTIONS,
   type CalendarEvent,
 } from "@/data/calendar";
+import {
+  formatWarsawShort,
+  isoToWarsawInputValue,
+  warsawInputValueToIso,
+} from "@/lib/time";
 
 const MONTHS_RU = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -150,14 +155,7 @@ function formatEventDateTime(
   return `${s.getDate()} ${MONTHS_GEN[s.getMonth()]} – ${e!.getDate()} ${MONTHS_GEN[e!.getMonth()]}`;
 }
 
-function formatShortDateTime(iso: string) {
-  const d = new Date(iso);
-  const day = d.getDate();
-  const month = MONTHS_GEN[d.getMonth()];
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${day} ${month} ${hh}:${mm}`;
-}
+const formatShortDateTime = (iso: string) => formatWarsawShort(iso);
 
 const emptyForm = {
   title: "",
@@ -378,12 +376,8 @@ export default function CalendarPage() {
       registrationLink: ev.registrationLink ?? "",
       mediaLink: ev.mediaLink ?? "",
       mediaLinkLabel: ev.mediaLinkLabel ?? "",
-      registrationOpensAt: ev.registrationOpensAt
-        ? ev.registrationOpensAt.slice(0, 16)
-        : "",
-      registrationClosesAt: ev.registrationClosesAt
-        ? ev.registrationClosesAt.slice(0, 16)
-        : "",
+      registrationOpensAt: isoToWarsawInputValue(ev.registrationOpensAt),
+      registrationClosesAt: isoToWarsawInputValue(ev.registrationClosesAt),
       participantLimit:
         ev.participantLimit != null ? String(ev.participantLimit) : "",
       closeOnLimit: !!ev.closeOnLimit,
@@ -406,8 +400,8 @@ export default function CalendarPage() {
       const method = editingId ? "PATCH" : "POST";
       const payload = {
         ...form,
-        registrationOpensAt: form.registrationOpensAt || null,
-        registrationClosesAt: form.registrationClosesAt || null,
+        registrationOpensAt: warsawInputValueToIso(form.registrationOpensAt),
+        registrationClosesAt: warsawInputValueToIso(form.registrationClosesAt),
         participantLimit:
           form.participantLimit === "" ? null : Number(form.participantLimit),
         closeOnLimit: form.participantLimit === "" ? false : form.closeOnLimit,
@@ -1027,26 +1021,29 @@ export default function CalendarPage() {
                 Окно приёма заявок
               </label>
               {showRegWindow && (
-                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-                  <div className="flex-1">
-                    <label className="mb-1 block text-xs font-medium text-muted">Начало приёма</label>
-                    <input
-                      type="datetime-local"
-                      value={form.registrationOpensAt}
-                      onChange={(e) => setForm({ ...form, registrationOpensAt: e.target.value })}
-                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-                    />
+                <>
+                  <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                    <div className="flex-1">
+                      <label className="mb-1 block text-xs font-medium text-muted">Начало приёма</label>
+                      <input
+                        type="datetime-local"
+                        value={form.registrationOpensAt}
+                        onChange={(e) => setForm({ ...form, registrationOpensAt: e.target.value })}
+                        className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="mb-1 block text-xs font-medium text-muted">Конец приёма</label>
+                      <input
+                        type="datetime-local"
+                        value={form.registrationClosesAt}
+                        onChange={(e) => setForm({ ...form, registrationClosesAt: e.target.value })}
+                        className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                      />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <label className="mb-1 block text-xs font-medium text-muted">Конец приёма</label>
-                    <input
-                      type="datetime-local"
-                      value={form.registrationClosesAt}
-                      onChange={(e) => setForm({ ...form, registrationClosesAt: e.target.value })}
-                      className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-                    />
-                  </div>
-                </div>
+                  <p className="mt-1.5 text-[11px] text-muted">Время указывается в варшавском часовом поясе.</p>
+                </>
               )}
             </div>
 

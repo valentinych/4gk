@@ -1321,7 +1321,7 @@ function EventCard({
             <ExternalLink className="h-3 w-3" />
           </a>
         )}
-        {isLoggedIn && !canManage && (
+        {isLoggedIn && (
           isRegistered ? (
             <Link
               href={`/calendar/${event.id}?action=withdraw`}

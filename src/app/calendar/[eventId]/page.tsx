@@ -469,7 +469,7 @@ export default function EventDetailPage() {
     if (!action) return;
     if (pageLoading) return;
     if (sessionStatus === "loading") return;
-    if (!userId || isOrganizer) { autoActionRan.current = true; return; }
+    if (!userId) { autoActionRan.current = true; return; }
 
     const entry = teams.find((t) => t.addedBy === userId);
     const activeEntry = entry && !entry.withdrawnAt ? entry : undefined;
@@ -495,7 +495,7 @@ export default function EventDetailPage() {
     // Clean the action param from the URL so a refresh doesn't re-trigger.
     router.replace(`/calendar/${eventId}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [action, pageLoading, sessionStatus, userId, isOrganizer, teams]);
+  }, [action, pageLoading, sessionStatus, userId, teams]);
 
   if (pageLoading) {
     return (

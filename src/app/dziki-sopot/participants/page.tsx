@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import Link from "next/link";
+import { Suspense } from "react";
 import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { fetchDsParticipants } from "@/lib/ds-participants";
-import type { DsParticipant, DsParticipantsResult, ParticipantCategory } from "@/lib/ds-participants";
+import type { DsParticipantsResult, ParticipantCategory } from "@/lib/ds-participants";
 
 export const metadata: Metadata = {
   title: "Участники | Dziki Sopot 🐗 2026",
   description: "Список команд-участников Dziki Sopot 2026",
 };
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 
 // ─── Category config ──────────────────────────────────────────────────────────
@@ -59,12 +62,11 @@ const CAT_CONFIG: Record<
 /** "22.03.2026 13:06:04" → "22.03 13:06" */
 function fmtTimestamp(raw: string): string {
   if (!raw) return "—";
-  // Format: DD.MM.YYYY HH:mm:ss
   const parts = raw.trim().split(" ");
   const datePart = parts[0] ?? "";
   const timePart = parts[1] ?? "";
   const [day, month] = datePart.split(".");
-  const timeShort = timePart.slice(0, 5); // "13:06"
+  const timeShort = timePart.slice(0, 5);
   if (!day || !month) return raw;
   return `${day}.${month} ${timeShort}`;
 }
@@ -101,7 +103,98 @@ function TrafficLight({ cat, inBothDs }: { cat: ParticipantCategory; inBothDs: b
   return <span className="inline-block h-3 w-3" />;
 }
 
-// ─── Data fetching ────────────────────────────────────────────────────────────
+// ─── Page shell (renders instantly) ───────────────────────────────────────────
+
+export default function DsParticipantsPage() {
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <Link
+        href="/dziki-sopot"
+        className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Dziki Sopot
+      </Link>
+
+      <div className="mb-8">
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+          <Users className="h-3.5 w-3.5" />
+          Dziki Sopot 🐗 — 2026
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Участники</h1>
+      </div>
+
+      <Suspense fallback={<ParticipantsSkeleton />}>
+        <ParticipantsSection />
+      </Suspense>
+
+      <p className="mt-4 text-xs text-muted">
+        Данные обновляются автоматически из{" "}
+        <a
+          href="https://docs.google.com/spreadsheets/d/1muLzibrQamNZxNk-fA7gCvrLLXqzVhJXMT_f1UCZ_nU/edit"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-accent"
+        >
+          Google Sheets
+        </a>
+        .{" "}Рейтинг —{" "}
+        <a
+          href="https://rating.chgk.gg"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-accent"
+        >
+          rating.chgk.gg
+        </a>
+        .
+      </p>
+    </div>
+  );
+}
+
+// ─── Skeleton (shown while streaming) ─────────────────────────────────────────
+
+function ParticipantsSkeleton() {
+  return (
+    <div aria-busy="true" aria-live="polite" className="animate-pulse">
+      <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-muted">
+        <div className="h-4 w-24 rounded bg-muted/30" />
+        <div className="h-5 w-56 rounded-full bg-muted/20" />
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-7 w-44 rounded-full border border-border bg-surface" />
+        ))}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+        <div className="h-9 bg-muted/15" />
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 border-t border-border/40 px-3 py-3"
+          >
+            <div className="h-3 w-3 rounded-full bg-muted/25" />
+            <div className="h-3 w-6 rounded bg-muted/20" />
+            <div className="h-3 flex-1 rounded bg-muted/20" />
+            <div className="hidden sm:block h-3 w-20 rounded bg-muted/15" />
+            <div className="hidden sm:block h-3 w-10 rounded bg-muted/15" />
+            <div className="hidden lg:block h-3 w-24 rounded bg-muted/15" />
+            <div className="h-5 w-24 rounded-full bg-muted/20" />
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-3 text-center text-xs text-muted">
+        Загружаем данные из Google Sheets и рейтинга ЧГК…
+      </p>
+    </div>
+  );
+}
+
+// ─── Async content (streamed) ─────────────────────────────────────────────────
 
 async function fetchParticipantsData(): Promise<DsParticipantsResult> {
   try {
@@ -111,10 +204,7 @@ async function fetchParticipantsData(): Promise<DsParticipantsResult> {
   }
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default async function DsParticipantsPage() {
-  await headers(); // opt out of static caching — render on every request
+async function ParticipantsSection() {
   const { participants, ratingReleaseDate } = await fetchParticipantsData();
 
   const counts = {
@@ -123,9 +213,7 @@ export default async function DsParticipantsPage() {
     rating:      participants.filter((p) => p.category === "rating" && !p.inBothDs).length,
     ds2:         participants.filter((p) => p.category === "ds2").length,
     none:        participants.filter((p) => p.category === "none" && !p.inBothDs).length,
-    // Green dot: confirmed (Время or ВК, regardless of inBothDs)
     confirmed:   participants.filter((p) => p.category === "time" || p.category === "vk").length,
-    // Orange dot: preliminary (rating any, or none+inBothDs)
     preliminary: participants.filter(
       (p) => (p.category === "rating" || p.inBothDs) && p.category !== "time" && p.category !== "vk"
     ).length,
@@ -133,37 +221,18 @@ export default async function DsParticipantsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-      {/* Back */}
-      <Link
-        href="/dziki-sopot"
-        className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Dziki Sopot
-      </Link>
-
-      {/* Header */}
-      <div className="mb-8">
-        <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-          <Users className="h-3.5 w-3.5" />
-          Dziki Sopot 🐗 — 2026
-        </div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Участники</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted">
-          <span>{participants.length} команд</span>
-          {ratingReleaseDate && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium shadow-sm">
-              Рейтинг по состоянию релиза{" "}
-              <span className="font-semibold text-foreground">{ratingReleaseDate}</span>
-            </span>
-          )}
-        </div>
+    <>
+      <div className="mb-6 -mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
+        <span>{participants.length} команд</span>
+        {ratingReleaseDate && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium shadow-sm">
+            Рейтинг по состоянию релиза{" "}
+            <span className="font-semibold text-foreground">{ratingReleaseDate}</span>
+          </span>
+        )}
       </div>
 
-      {/* Legend */}
       <div className="mb-6 flex flex-wrap gap-3">
-        {/* Traffic light summary */}
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]" />
           <span>Участие подтверждено</span>
@@ -179,7 +248,6 @@ export default async function DsParticipantsPage() {
           </span>
         </div>
 
-        {/* Category legend — badge pill style matching the table */}
         {(
           [
             { cat: "time",   count: counts.time },
@@ -210,7 +278,6 @@ export default async function DsParticipantsPage() {
         })}
       </div>
 
-      {/* Table */}
       {participants.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-border p-12 text-center text-sm text-muted">
           Данные недоступны
@@ -232,7 +299,6 @@ export default async function DsParticipantsPage() {
             <tbody>
               {participants.map((p, idx) => {
                 const cfg = CAT_CONFIG[p.category];
-                // Teams whose only entry factor is 2DS (category "none") get amber row
                 const rowCls =
                   p.category === "none" && p.inBothDs ? "bg-amber-50/60" : cfg.rowCls;
                 return (
@@ -240,17 +306,14 @@ export default async function DsParticipantsPage() {
                     key={idx}
                     className={`border-b border-border/50 last:border-0 transition-colors hover:brightness-[0.97] ${rowCls}`}
                   >
-                    {/* Traffic light */}
                     <td className="px-3 py-2 text-center">
                       <TrafficLight cat={p.category} inBothDs={p.inBothDs} />
                     </td>
 
-                    {/* # */}
                     <td className="px-3 py-2 text-center text-xs font-bold text-muted">
                       {idx + 1}
                     </td>
 
-                    {/* Team name */}
                     <td className="px-3 py-2 font-medium">
                       {p.teamId > 0 ? (
                         <a
@@ -267,12 +330,10 @@ export default async function DsParticipantsPage() {
                       )}
                     </td>
 
-                    {/* City */}
                     <td className="px-3 py-2 text-muted hidden sm:table-cell">
                       {p.city || "—"}
                     </td>
 
-                    {/* Rating position */}
                     <td className="px-3 py-2 text-right font-mono text-sm hidden sm:table-cell">
                       {p.ratingPosition !== null ? (
                         p.ratingPosition
@@ -283,12 +344,10 @@ export default async function DsParticipantsPage() {
                       )}
                     </td>
 
-                    {/* Registration timestamp */}
                     <td className="px-3 py-2 text-xs text-muted tabular-nums hidden lg:table-cell whitespace-nowrap">
                       {fmtTimestamp(p.registeredAt)}
                     </td>
 
-                    {/* Category badge */}
                     <td className="px-3 py-2">
                       <div className="flex flex-col gap-0.5 items-start">
                         {p.category !== "none" && !(p.inBothDs && p.category === "ds2") && (
@@ -315,28 +374,6 @@ export default async function DsParticipantsPage() {
           </table>
         </div>
       )}
-
-      <p className="mt-4 text-xs text-muted">
-        Данные обновляются автоматически из{" "}
-        <a
-          href="https://docs.google.com/spreadsheets/d/1muLzibrQamNZxNk-fA7gCvrLLXqzVhJXMT_f1UCZ_nU/edit"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2 hover:text-accent"
-        >
-          Google Sheets
-        </a>
-        .{" "}Рейтинг —{" "}
-        <a
-          href="https://rating.chgk.gg"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2 hover:text-accent"
-        >
-          rating.chgk.gg
-        </a>
-        .
-      </p>
-    </div>
+    </>
   );
 }

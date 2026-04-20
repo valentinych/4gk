@@ -70,3 +70,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   return NextResponse.json(updated);
 }
+
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const { id } = await params;
+
+  if (id === admin.id) {
+    return NextResponse.json({ error: "Нельзя удалить самого себя" }, { status: 400 });
+  }
+
+  const user = await db.user.findUnique({ where: { id }, select: { id: true } });
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  // EventTeam.addedBy has no ON DELETE CASCADE — remove them manually first.
+  await db.$transaction([
+    db.eventTeam.deleteMany({ where: { addedBy: id } }),
+    db.user.delete({ where: { id } }),
+  ]);
+
+  return NextResponse.json({ ok: true });
+}

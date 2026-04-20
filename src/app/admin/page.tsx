@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Check,
   X,
+  Trash2,
 } from "lucide-react";
 
 interface UserRow {
@@ -34,6 +35,7 @@ export default function AdminPage() {
   const [editingChgk, setEditingChgk] = useState<string | null>(null);
   const [chgkInput, setChgkInput] = useState("");
   const [saving, setSaving] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async (q = "") => {
@@ -78,6 +80,26 @@ export default function AdminPage() {
       setError("Ошибка сети");
     } finally {
       setSaving(null);
+    }
+  }
+
+  async function deleteUser(u: UserRow) {
+    const label = u.name || u.email || u.id;
+    if (!confirm(`Удалить пользователя «${label}»? Это действие нельзя отменить.`)) return;
+    setDeleting(u.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setError(err.error || "Не удалось удалить пользователя");
+        return;
+      }
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setDeleting(null);
     }
   }
 
@@ -142,18 +164,19 @@ export default function AdminPage() {
               <th className="px-4 py-3 font-medium">Rating ID</th>
               <th className="px-4 py-3 font-medium">Роль</th>
               <th className="px-4 py-3 font-medium">Регистрация</th>
+              <th className="px-4 py-3 font-medium text-right">Действия</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-muted">
+                <td colSpan={5} className="px-4 py-8 text-center text-muted">
                   <Loader2 className="mx-auto h-5 w-5 animate-spin" />
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-muted">
+                <td colSpan={5} className="px-4 py-8 text-center text-muted">
                   Пользователи не найдены
                 </td>
               </tr>
@@ -242,22 +265,16 @@ export default function AdminPage() {
                   </td>
 
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => {
-                        const cycle: Record<string, string> = { PLAYER: "MODERATOR", MODERATOR: "ORGANIZER", ORGANIZER: "ADMIN", ADMIN: "PLAYER" };
-                        updateUser(u.id, { role: cycle[u.role] ?? "PLAYER" });
-                      }}
-                      disabled={saving === u.id || u.id === session.user.id}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    <div
+                      className={`inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-1 py-0.5 text-xs font-medium transition-colors ${
                         u.role === "ADMIN"
-                          ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
+                          ? "bg-amber-50 text-amber-700"
                           : u.role === "ORGANIZER"
-                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            ? "bg-emerald-50 text-emerald-700"
                             : u.role === "MODERATOR"
-                              ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      title={u.id === session.user.id ? "Нельзя изменить свою роль" : `Сменить роль (${u.role})`}
+                              ? "bg-blue-50 text-blue-700"
+                              : "bg-gray-100 text-gray-600"
+                      } ${u.id === session.user.id ? "opacity-70" : ""}`}
                     >
                       {saving === u.id ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -266,12 +283,45 @@ export default function AdminPage() {
                       ) : (
                         <ShieldOff className="h-3 w-3" />
                       )}
-                      {{ ADMIN: "Admin", ORGANIZER: "Organizer", MODERATOR: "Moderator", PLAYER: "Player" }[u.role] ?? u.role}
-                    </button>
+                      <select
+                        value={u.role}
+                        onChange={(e) => updateUser(u.id, { role: e.target.value })}
+                        disabled={saving === u.id || u.id === session.user.id}
+                        title={u.id === session.user.id ? "Нельзя изменить свою роль" : "Сменить роль"}
+                        className="appearance-none bg-transparent py-1 pr-5 text-xs font-medium outline-none disabled:cursor-not-allowed"
+                        style={{
+                          backgroundImage:
+                            "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'/%3e%3c/svg%3e\")",
+                          backgroundRepeat: "no-repeat",
+                          backgroundPosition: "right 0.25rem center",
+                          backgroundSize: "0.7rem",
+                        }}
+                      >
+                        <option value="PLAYER">Player</option>
+                        <option value="MODERATOR">Moderator</option>
+                        <option value="ORGANIZER">Organizer</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 text-xs text-muted whitespace-nowrap">
                     {new Date(u.createdAt).toLocaleDateString("ru-RU")}
+                  </td>
+
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => deleteUser(u)}
+                      disabled={deleting === u.id || u.id === session.user.id}
+                      className="rounded-md p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-danger disabled:opacity-40 disabled:cursor-not-allowed"
+                      title={u.id === session.user.id ? "Нельзя удалить себя" : "Удалить пользователя"}
+                    >
+                      {deleting === u.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </button>
                   </td>
                 </tr>
               ))

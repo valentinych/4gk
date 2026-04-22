@@ -20,6 +20,18 @@ interface MyRosterEntry {
 export default function AccountPage() {
   const { data: session, status } = useSession();
 
+  const [myRosters, setMyRosters] = useState<MyRosterEntry[]>([]);
+
+  const isAuthenticated = status === "authenticated" && !!session?.user;
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetch("/api/roster/mine")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setMyRosters(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, [isAuthenticated]);
+
   if (status === "loading") {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -44,16 +56,6 @@ export default function AccountPage() {
   }
 
   const user = session.user;
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [myRosters, setMyRosters] = useState<MyRosterEntry[]>([]);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    fetch("/api/roster/mine")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setMyRosters(Array.isArray(data) ? data : []))
-      .catch(() => {});
-  }, []);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">

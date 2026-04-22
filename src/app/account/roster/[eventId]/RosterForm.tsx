@@ -453,15 +453,18 @@ export default function RosterForm({
 
         {/* Player search */}
         <div ref={playerSearchRef} className="relative mb-3">
+          <label className="mb-1.5 block text-base font-bold text-foreground">
+            Поиск по фамилии или ID игрока
+          </label>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
             <input
               type="text"
-              placeholder="Поиск по фамилии или ID игрока..."
+              placeholder="Фамилия или ID игрока..."
               value={playerQuery}
               onChange={(e) => { setPlayerQuery(e.target.value); setShowPlayerSearch(true); }}
               onFocus={() => setShowPlayerSearch(true)}
-              className="w-full rounded-xl border border-border py-2.5 pl-9 pr-3 text-sm focus:border-accent focus:outline-none"
+              className="w-full rounded-xl border-2 border-border py-3 pl-11 pr-3 text-base font-medium focus:border-accent focus:outline-none"
             />
             {playerSearching && (
               <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted" />
@@ -569,7 +572,7 @@ export default function RosterForm({
           type="button" onClick={addBlankPlayer}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm text-muted transition-colors hover:border-accent hover:text-accent"
         >
-          <Plus className="h-4 w-4" /> Добавить игрока вручную
+          <Plus className="h-4 w-4" /> Добавить НОВОГО игрока, которого нет в базе
         </button>
       </section>
 

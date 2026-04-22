@@ -74,9 +74,19 @@ export interface TeamRosterInfo {
   recentPlayers: ChgkPlayer[];
 }
 
-export async function fetchTeamSeasons(teamId: number): Promise<ChgkSeasonEntry[]> {
+/**
+ * Fetches team season entries. The rating.chgk.info endpoint paginates at ~30
+ * rows regardless of the `limit` parameter, so without a season filter newer
+ * seasons may be missing entirely. Pass `seasonId` to request exactly that
+ * season and bypass the pagination issue.
+ */
+export async function fetchTeamSeasons(
+  teamId: number,
+  seasonId?: number,
+): Promise<ChgkSeasonEntry[]> {
   try {
-    const res = await fetch(`${BASE}/teams/${teamId}/seasons.json?limit=500`, { cache: "no-store" });
+    const qs = seasonId ? `?idseason=${seasonId}` : `?limit=500`;
+    const res = await fetch(`${BASE}/teams/${teamId}/seasons.json${qs}`, { cache: "no-store" });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : (data.items ?? []);
@@ -85,47 +95,71 @@ export async function fetchTeamSeasons(teamId: number): Promise<ChgkSeasonEntry[
   }
 }
 
+let currentSeasonIdCache: { id: number; fetchedAt: number } | null = null;
+
+/** Returns the id of the season whose date range contains "now". */
+export async function fetchCurrentSeasonId(): Promise<number | null> {
+  const now = Date.now();
+  if (currentSeasonIdCache && now - currentSeasonIdCache.fetchedAt < 60 * 60 * 1000) {
+    return currentSeasonIdCache.id;
+  }
+  try {
+    const res = await fetch(`${BASE}/seasons.json?limit=500`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const seasons = (Array.isArray(data) ? data : (data.items ?? [])) as {
+      id: number;
+      dateStart: string;
+      dateEnd: string;
+    }[];
+    const today = new Date();
+    const active = seasons.find(
+      (s) => new Date(s.dateStart) <= today && today <= new Date(s.dateEnd),
+    );
+    const id = active?.id ?? Math.max(...seasons.map((s) => s.id));
+    if (Number.isFinite(id)) {
+      currentSeasonIdCache = { id, fetchedAt: now };
+      return id;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Returns IDs of players in a team's current-season base roster. */
-export async function fetchTeamBasePlayerIds(teamId: number): Promise<Set<number>> {
-  const entries = await fetchTeamSeasons(teamId);
-  const seasons = [...new Set(entries.map((e) => e.idseason))].sort((a, b) => b - a);
-  // Only the current (most recent) season
-  const currentSeason = new Set(seasons.slice(0, 1));
+export async function fetchTeamBasePlayerIds(
+  teamId: number,
+  seasonId?: number,
+): Promise<Set<number>> {
+  const resolvedSeason = seasonId ?? (await fetchCurrentSeasonId()) ?? undefined;
+  const entries = await fetchTeamSeasons(teamId, resolvedSeason);
   const ids = new Set<number>();
   for (const e of entries) {
-    if (currentSeason.has(e.idseason)) ids.add(e.idplayer);
+    if (!resolvedSeason || e.idseason === resolvedSeason) ids.add(e.idplayer);
   }
   return ids;
 }
 
 /**
- * Returns base roster players (current season only) and recent non-base players
- * (previous season only), all with full name data fetched from the rating API.
+ * Returns base roster players (current season only). `recentPlayers` is kept
+ * in the return shape for API compatibility but is always empty.
  */
-export async function fetchTeamRosterInfo(teamId: number): Promise<TeamRosterInfo> {
-  const entries = await fetchTeamSeasons(teamId);
+export async function fetchTeamRosterInfo(
+  teamId: number,
+  seasonId?: number,
+): Promise<TeamRosterInfo> {
+  const resolvedSeason = seasonId ?? (await fetchCurrentSeasonId()) ?? undefined;
+  const entries = await fetchTeamSeasons(teamId, resolvedSeason);
   if (!entries.length) return { basePlayers: [], recentPlayers: [] };
 
-  const seasons = [...new Set(entries.map((e) => e.idseason))].sort((a, b) => b - a);
-  // Current season only — no previous-season suggestions
-  const baseSeasonsSet = new Set(seasons.slice(0, 1));
-  const recentSeasonsSet = new Set<number>();
-
   const basePlayerIds = new Set<number>();
-  const recentPlayerIds = new Set<number>();
-
   for (const e of entries) {
-    if (baseSeasonsSet.has(e.idseason)) basePlayerIds.add(e.idplayer);
-    else if (recentSeasonsSet.has(e.idseason)) recentPlayerIds.add(e.idplayer);
+    if (!resolvedSeason || e.idseason === resolvedSeason) basePlayerIds.add(e.idplayer);
   }
-  // Remove from recent if already in base
-  for (const id of basePlayerIds) recentPlayerIds.delete(id);
 
   const baseIds = [...basePlayerIds].slice(0, 25);
-  const recentIds = [...recentPlayerIds].slice(0, 25);
-  const allIds = [...new Set([...baseIds, ...recentIds])];
-
-  const playerResults = await Promise.all(allIds.map((id) => fetchPlayer(id)));
+  const playerResults = await Promise.all(baseIds.map((id) => fetchPlayer(id)));
   const playerMap = new Map<number, ChgkPlayer>();
   for (const p of playerResults) {
     if (p) playerMap.set(p.id, p);
@@ -133,18 +167,23 @@ export async function fetchTeamRosterInfo(teamId: number): Promise<TeamRosterInf
 
   return {
     basePlayers: baseIds.map((id) => playerMap.get(id)).filter((p): p is ChgkPlayer => !!p),
-    recentPlayers: recentIds.map((id) => playerMap.get(id)).filter((p): p is ChgkPlayer => !!p),
+    recentPlayers: [],
   };
 }
 
 /** Finds the player's most recent base team from their season history. */
 export async function fetchPlayerCurrentTeam(
   playerId: number,
-): Promise<{ teamId: number; teamName: string; city?: string | null } | null> {
+): Promise<{ teamId: number; teamName: string; city?: string | null; currentSeasonId: number } | null> {
   const seasons = await fetchPlayerSeasons(playerId);
   if (!seasons.length) return null;
   const sorted = [...seasons].sort((a, b) => b.idseason - a.idseason);
   const team = await fetchTeam(sorted[0].idteam);
   if (!team) return null;
-  return { teamId: team.id, teamName: team.name, city: team.town?.name };
+  return {
+    teamId: team.id,
+    teamName: team.name,
+    city: team.town?.name,
+    currentSeasonId: sorted[0].idseason,
+  };
 }

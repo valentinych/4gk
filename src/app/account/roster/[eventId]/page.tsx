@@ -58,7 +58,10 @@ export default async function RosterPage({ params }: Props) {
     try {
       const currentTeam = await fetchPlayerCurrentTeam(session.user.chgkId);
       if (currentTeam) {
-        const rosterInfo = await fetchTeamRosterInfo(currentTeam.teamId);
+        const rosterInfo = await fetchTeamRosterInfo(
+          currentTeam.teamId,
+          currentTeam.currentSeasonId,
+        );
         suggestedTeamData = {
           teamId: currentTeam.teamId,
           teamName: currentTeam.teamName,

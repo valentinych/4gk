@@ -133,8 +133,12 @@ export default function RosterForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Track whether the team was set from the initial suggestion (skip auto-fill on mount)
-  const isInitialTeam = useRef(true);
+  // Skip the first effect run only when the team was pre-filled from an
+  // existing roster or suggestion — otherwise the first real user selection
+  // must trigger a fetch.
+  const isInitialTeam = useRef(
+    (initialRoster?.teamChgkId ?? suggestion?.teamId ?? null) !== null,
+  );
 
   // When team changes via search, fetch full roster and pre-fill players
   useEffect(() => {

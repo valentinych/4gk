@@ -73,12 +73,14 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Лиги и чемпионаты</h2>
             <p className="mt-2 text-muted">Актуальные соревнования сезона 2025/2026</p>
           </div>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-            {leagues.map((league) => (
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            {leagues.map((league, i) => (
               <Link
                 key={league.title}
                 href={league.href}
-                className="group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-hover hover:shadow-md"
+                className={`group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-hover hover:shadow-md ${
+                  i < 3 ? "lg:col-span-2" : "lg:col-span-3"
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <span className="text-3xl leading-none" aria-hidden>

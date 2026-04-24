@@ -29,7 +29,7 @@ const leagues = [
     emoji: "🐗",
   },
   {
-    href: "/calendar",
+    href: "/turnirushki",
     title: "Турнирушки",
     description: "Турниры Вадима Кузмича",
     cities: ["Вроцлав", "Познань", "Свебодзин"],

@@ -70,7 +70,7 @@ export default function HomePage() {
       {/* Leagues */}
       <section className="py-12">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-7">
+          <div className="mb-7 text-center">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Лиги и чемпионаты</h2>
             <p className="mt-2 text-muted">Актуальные соревнования сезона 2025/2026</p>
           </div>

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { ArrowRight, Trophy, Globe, Calendar } from "lucide-react";
 import RecentGames from "@/components/RecentGames";
@@ -73,34 +74,36 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Лиги и чемпионаты</h2>
             <p className="mt-2 text-muted">Актуальные соревнования сезона 2025/2026</p>
           </div>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="flex flex-wrap justify-center gap-3">
             {leagues.map((league, i) => (
-              <Link
-                key={league.title}
-                href={league.href}
-                className={`group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-hover hover:shadow-md ${
-                  i < 3 ? "lg:col-span-2" : "lg:col-span-3"
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <span className="text-3xl leading-none" aria-hidden>
-                    {league.emoji}
-                  </span>
-                  <ArrowRight className="h-4 w-4 text-muted opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
-                </div>
-                <h3 className="mt-3 text-sm font-bold">{league.title}</h3>
-                <p className="mt-1 text-xs leading-snug text-muted">{league.description}</p>
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {league.cities.map((city) => (
-                    <span
-                      key={city}
-                      className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${league.badgeColor}`}
-                    >
-                      {city}
+              <Fragment key={league.title}>
+                <Link
+                  href={league.href}
+                  className="group basis-[calc(50%-0.375rem)] rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-hover hover:shadow-md sm:basis-[calc(33.333%-0.5rem)] lg:basis-[200px] lg:max-w-[220px]"
+                >
+                  <div className="flex items-start justify-between">
+                    <span className="text-3xl leading-none" aria-hidden>
+                      {league.emoji}
                     </span>
-                  ))}
-                </div>
-              </Link>
+                    <ArrowRight className="h-4 w-4 text-muted opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+                  </div>
+                  <h3 className="mt-3 text-sm font-bold">{league.title}</h3>
+                  <p className="mt-1 text-xs leading-snug text-muted">{league.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {league.cities.map((city) => (
+                      <span
+                        key={city}
+                        className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${league.badgeColor}`}
+                      >
+                        {city}
+                      </span>
+                    ))}
+                  </div>
+                </Link>
+                {i === 2 && (
+                  <div aria-hidden className="hidden h-0 basis-full lg:block" />
+                )}
+              </Fragment>
             ))}
           </div>
         </div>

@@ -22,7 +22,7 @@ const leagues = [
   {
     href: "/dziki-sopot",
     title: "Dziki Sopot",
-    description: "Международный турнир, 05–06 сентября 2026",
+    description: "Международный турнир",
     badge: "Сопот",
     badgeColor: "bg-amber-50 text-amber-700 border-amber-100",
     emoji: "🐗",
@@ -30,7 +30,7 @@ const leagues = [
   {
     href: "/calendar",
     title: "Турнирушки",
-    description: "Дружеские турниры и тренировки",
+    description: "Турниры Вадима Кузмича",
     badge: "Польша",
     badgeColor: "bg-orange-50 text-orange-700 border-orange-100",
     emoji: "🦊",

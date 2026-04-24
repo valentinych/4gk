@@ -1,34 +1,47 @@
 import Link from "next/link";
-import { ArrowRight, MapPin, Globe, Trophy, Calendar } from "lucide-react";
+import { ArrowRight, Trophy, Globe, Calendar } from "lucide-react";
 import RecentGames from "@/components/RecentGames";
 
 const leagues = [
   {
     href: "/ochp",
     title: "ОЧП",
-    description: "Открытый чемпионат Польши — крупнейший национальный турнир по интеллектуальным играм",
+    description: "Открытый чемпионат Польши",
     badge: "Польша",
     badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    icon: Globe,
-    iconBg: "bg-emerald-100 text-emerald-600",
+    emoji: "🇵🇱",
   },
   {
     href: "/warsaw",
     title: "Чемпионат Варшавы",
-    description: "Регулярный чемпионат по интеллектуальным играм среди команд Варшавы",
+    description: "Регулярный чемпионат команд Варшавы",
     badge: "Варшава",
     badgeColor: "bg-blue-50 text-blue-700 border-blue-100",
-    icon: MapPin,
-    iconBg: "bg-blue-100 text-blue-600",
+    emoji: "🧜‍♀️",
   },
   {
     href: "/dziki-sopot",
     title: "Dziki Sopot",
-    description: "Международный турнир по интеллектуальным играм. 05–06 сентября 2026 года",
+    description: "Международный турнир, 05–06 сентября 2026",
     badge: "Сопот",
     badgeColor: "bg-amber-50 text-amber-700 border-amber-100",
-    icon: Trophy,
-    iconBg: "bg-amber-100 text-amber-600",
+    emoji: "🐗",
+  },
+  {
+    href: "/calendar",
+    title: "Турнирушки",
+    description: "Дружеские турниры и тренировки",
+    badge: "Польша",
+    badgeColor: "bg-orange-50 text-orange-700 border-orange-100",
+    emoji: "🦊",
+  },
+  {
+    href: "/calendar",
+    title: "Любительские",
+    description: "Турниры для начинающих команд",
+    badge: "Польша",
+    badgeColor: "bg-lime-50 text-lime-700 border-lime-100",
+    emoji: "🌿",
   },
 ];
 
@@ -60,23 +73,23 @@ export default function HomePage() {
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Лиги и чемпионаты</h2>
             <p className="mt-2 text-muted">Актуальные соревнования сезона 2025/2026</p>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
             {leagues.map((league) => (
               <Link
-                key={league.href}
+                key={league.title}
                 href={league.href}
-                className="group rounded-xl border border-border bg-surface p-6 transition-all hover:border-border-hover hover:shadow-md"
+                className="group rounded-xl border border-border bg-surface p-4 transition-all hover:border-border-hover hover:shadow-md"
               >
                 <div className="flex items-start justify-between">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${league.iconBg}`}>
-                    <league.icon className="h-5 w-5" />
-                  </div>
+                  <span className="text-3xl leading-none" aria-hidden>
+                    {league.emoji}
+                  </span>
                   <ArrowRight className="h-4 w-4 text-muted opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
                 </div>
-                <h3 className="mt-4 text-lg font-bold">{league.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">{league.description}</p>
-                <div className="mt-4">
-                  <span className={`rounded-md border px-2 py-0.5 text-xs font-medium ${league.badgeColor}`}>
+                <h3 className="mt-3 text-sm font-bold">{league.title}</h3>
+                <p className="mt-1 text-xs leading-snug text-muted">{league.description}</p>
+                <div className="mt-3">
+                  <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${league.badgeColor}`}>
                     {league.badge}
                   </span>
                 </div>

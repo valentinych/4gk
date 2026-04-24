@@ -7,7 +7,7 @@ const leagues = [
     href: "/ochp",
     title: "ОЧП",
     description: "Открытый чемпионат Польши",
-    badge: "Польша",
+    cities: ["Варшава"],
     badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-100",
     emoji: "🇵🇱",
   },
@@ -15,7 +15,7 @@ const leagues = [
     href: "/warsaw",
     title: "Чемпионат Варшавы",
     description: "Регулярный чемпионат команд Варшавы",
-    badge: "Варшава",
+    cities: ["Варшава"],
     badgeColor: "bg-blue-50 text-blue-700 border-blue-100",
     emoji: "🧜‍♀️",
   },
@@ -23,7 +23,7 @@ const leagues = [
     href: "/dziki-sopot",
     title: "Dziki Sopot",
     description: "Международный турнир",
-    badge: "Сопот",
+    cities: ["Сопот"],
     badgeColor: "bg-amber-50 text-amber-700 border-amber-100",
     emoji: "🐗",
   },
@@ -31,7 +31,7 @@ const leagues = [
     href: "/calendar",
     title: "Турнирушки",
     description: "Турниры Вадима Кузмича",
-    badge: "Польша",
+    cities: ["Вроцлав", "Познань", "Свебодзин"],
     badgeColor: "bg-orange-50 text-orange-700 border-orange-100",
     emoji: "🦊",
   },
@@ -39,7 +39,7 @@ const leagues = [
     href: "/calendar",
     title: "Любительские",
     description: "Турниры для начинающих команд",
-    badge: "Польша",
+    cities: ["Познань", "Варшава"],
     badgeColor: "bg-lime-50 text-lime-700 border-lime-100",
     emoji: "🌿",
   },
@@ -88,10 +88,15 @@ export default function HomePage() {
                 </div>
                 <h3 className="mt-3 text-sm font-bold">{league.title}</h3>
                 <p className="mt-1 text-xs leading-snug text-muted">{league.description}</p>
-                <div className="mt-3">
-                  <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${league.badgeColor}`}>
-                    {league.badge}
-                  </span>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {league.cities.map((city) => (
+                    <span
+                      key={city}
+                      className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${league.badgeColor}`}
+                    >
+                      {city}
+                    </span>
+                  ))}
                 </div>
               </Link>
             ))}

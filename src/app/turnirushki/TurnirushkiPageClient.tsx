@@ -9,6 +9,7 @@ import {
   findTurnirushkaBySlug,
   turnirushkaLabel,
 } from "@/lib/turnirushki";
+import { hasKsiResults } from "@/lib/turnirushki-ksi";
 
 export function TurnirushkiPageClient() {
   const router = useRouter();
@@ -55,6 +56,13 @@ export function TurnirushkiPageClient() {
       href: `/turnirushki/results-chgk${tParam}`,
     },
   ];
+  if (hasKsiResults(current.slug)) {
+    tiles.push({
+      emoji: "🎯",
+      title: "Результаты КСИ (Командная Своя Игра)",
+      href: `/turnirushki/ksi${tParam}`,
+    });
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">

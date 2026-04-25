@@ -10,10 +10,13 @@ import {
 } from "@/lib/turnirushki";
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
+import { getKsiResults } from "@/lib/turnirushki-ksi";
+import KsiResultsTable from "./KsiResultsTable";
 
 const titles: Record<string, string> = {
   "rating-page": "Страница турнира на сайте рейтинга",
   "results-chgk": "Результаты Что? Где? Когда?",
+  ksi: "КСИ (Командная Своя Игра)",
 };
 
 interface Person {
@@ -242,6 +245,20 @@ export default async function TurnirushkiSubPage({
         <RatingPage tournamentId={current.ratingTournamentId} />
       ) : slug === "results-chgk" ? (
         <ChgkRatingApiResults tournamentId={current.ratingTournamentId} />
+      ) : slug === "ksi" ? (
+        (() => {
+          const ksi = getKsiResults(current.slug);
+          if (!ksi) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по КСИ
+                </p>
+              </div>
+            );
+          }
+          return <KsiResultsTable data={ksi} />;
+        })()
       ) : null}
     </div>
   );

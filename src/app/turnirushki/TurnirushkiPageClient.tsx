@@ -69,8 +69,7 @@ export function TurnirushkiPageClient() {
               🦉 {turnirushkaLabel(current)}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Турниры Вроцлавского Клуба — серия дружеских соревнований по
-              интеллектуальным играм в Польше.
+              Турниры Вроцлавского Клуба
             </p>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { TurnirushkiPageClient } from "./TurnirushkiPageClient";
 
 export const metadata: Metadata = {
   title: "Турнирушки",
-  description: "Турнирушки — серия турниров Вадима Кузмича по интеллектуальным играм в Польше",
+  description: "Турнирушки — серия турниров Вроцлавского Клуба по интеллектуальным играм в Польше",
 };
 
 function TurnirushkiFallback() {

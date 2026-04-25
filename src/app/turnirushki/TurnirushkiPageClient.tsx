@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar, ChevronDown, Trophy } from "lucide-react";
 import {
   TURNIRUSHKI,
   findTurnirushkaBySlug,
-  ratingTournamentUrl,
   turnirushkaLabel,
 } from "@/lib/turnirushki";
 
@@ -41,10 +41,19 @@ export function TurnirushkiPageClient() {
     return () => document.removeEventListener("click", onDocClick);
   }, []);
 
-  const url = ratingTournamentUrl(current.ratingTournamentId);
+  const tParam =
+    current.slug === TURNIRUSHKI[0].slug ? "" : `?t=${current.slug}`;
   const tiles: { emoji: string; title: string; href: string }[] = [
-    { emoji: "🌐", title: "Страница турнира на сайте рейтинга", href: url },
-    { emoji: "❓", title: "Результаты Что? Где? Когда?", href: url },
+    {
+      emoji: "🌐",
+      title: "Страница турнира на сайте рейтинга",
+      href: `/turnirushki/rating-page${tParam}`,
+    },
+    {
+      emoji: "❓",
+      title: "Результаты Что? Где? Когда?",
+      href: `/turnirushki/results-chgk${tParam}`,
+    },
   ];
 
   return (
@@ -57,10 +66,10 @@ export function TurnirushkiPageClient() {
               Турнирушки
             </div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              🦊 {turnirushkaLabel(current)}
+              🦉 {turnirushkaLabel(current)}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Турниры Вадима Кузмича — серия дружеских соревнований по
+              Турниры Вроцлавского Клуба — серия дружеских соревнований по
               интеллектуальным играм в Польше.
             </p>
           </div>
@@ -120,18 +129,16 @@ export function TurnirushkiPageClient() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((tile) => (
-          <a
+          <Link
             key={tile.title}
             href={tile.href}
-            target="_blank"
-            rel="noopener noreferrer"
             className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
           >
             <span className="text-2xl leading-none shrink-0 mt-0.5">{tile.emoji}</span>
             <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
               {tile.title}
             </span>
-          </a>
+          </Link>
         ))}
       </div>
     </div>

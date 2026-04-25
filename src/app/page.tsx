@@ -31,10 +31,10 @@ const leagues = [
   {
     href: "/turnirushki",
     title: "Турнирушки",
-    description: "Турниры Вадима Кузмича",
+    description: "Турниры Вроцлавского Клуба",
     cities: ["Вроцлав", "Познань", "Свебодзин"],
     badgeColor: "bg-orange-50 text-orange-700 border-orange-100",
-    emoji: "🦊",
+    emoji: "🦉",
   },
   {
     href: "/calendar",

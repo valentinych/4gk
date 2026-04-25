@@ -10,7 +10,7 @@ import {
 } from "@/lib/turnirushki";
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
-import { getKsiResults } from "@/lib/turnirushki-ksi";
+import { getKsiAmateurTeamNames, getKsiResults } from "@/lib/turnirushki-ksi";
 import KsiResultsTable from "./KsiResultsTable";
 
 const titles: Record<string, string> = {
@@ -244,7 +244,10 @@ export default async function TurnirushkiSubPage({
       {slug === "rating-page" ? (
         <RatingPage tournamentId={current.ratingTournamentId} />
       ) : slug === "results-chgk" ? (
-        <ChgkRatingApiResults tournamentId={current.ratingTournamentId} />
+        <ChgkRatingApiResults
+          tournamentId={current.ratingTournamentId}
+          amateurTeamNames={getKsiAmateurTeamNames(current.slug)}
+        />
       ) : slug === "ksi" ? (
         (() => {
           const ksi = getKsiResults(current.slug);

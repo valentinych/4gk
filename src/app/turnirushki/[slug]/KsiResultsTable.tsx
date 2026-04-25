@@ -44,16 +44,16 @@ function ScoreCell({ value, isBest }: { value: number | undefined; isBest: boole
 export default function KsiResultsTable({ data }: { data: KsiResults }) {
   const qCount = data.questionCount;
   const colMax = questionColumnMaxima(data.teams, qCount);
-  const legionnaireCount = data.teams.filter((t) => t.legionnaire).length;
+  const amateurCount = data.teams.filter((t) => t.amateur).length;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted">
           Команд: <strong>{data.teams.length}</strong>
-          {legionnaireCount > 0 && (
+          {amateurCount > 0 && (
             <>
-              {" "}· легионеров: <strong>{legionnaireCount}</strong>
+              {" "}· любителей: <strong>{amateurCount}</strong>
             </>
           )}{" "}· вопросов: <strong>{qCount}</strong>
         </p>
@@ -70,7 +70,7 @@ export default function KsiResultsTable({ data }: { data: KsiResults }) {
       <p className="text-xs text-muted leading-relaxed">
         В каждой ячейке — заработанные очки за вопрос. Лучший результат за вопрос
         выделен тёмно-зелёным кружком. Отрицательные значения подсвечены красным.
-        «Л» — команда играла как легионер.
+        «Л» — команда играла в зачёте «Любители».
       </p>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-surface">
@@ -115,10 +115,10 @@ export default function KsiResultsTable({ data }: { data: KsiResults }) {
                     >
                       {teamNameDisplay(t.name)}
                     </span>
-                    {t.legionnaire && (
+                    {t.amateur && (
                       <span
-                        className="inline-flex h-4 min-w-4 items-center justify-center rounded px-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-100"
-                        title="Легионер"
+                        className="inline-flex h-4 min-w-4 items-center justify-center rounded px-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100"
+                        title="Любитель"
                       >
                         Л
                       </span>

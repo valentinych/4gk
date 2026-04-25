@@ -8,7 +8,8 @@ export interface KsiTeam {
   total: number;
   scores: number[];
   tiebreaker?: string;
-  legionnaire?: boolean;
+  /** Команда играла как любители (зачёт «Л»). */
+  amateur?: boolean;
 }
 
 export interface KsiResults {
@@ -29,4 +30,11 @@ export function getKsiResults(tournamentSlug: string): KsiResults | null {
 
 export function hasKsiResults(tournamentSlug: string): boolean {
   return tournamentSlug in ALL;
+}
+
+/** Имена команд, отмеченных как любители (для подсветки на странице ЧГК). */
+export function getKsiAmateurTeamNames(tournamentSlug: string): string[] {
+  const data = ALL[tournamentSlug];
+  if (!data) return [];
+  return data.teams.filter((t) => t.amateur).map((t) => t.name);
 }

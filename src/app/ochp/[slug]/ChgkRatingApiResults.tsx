@@ -1,8 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { ochpRatingPublicUrl } from "@/lib/ochp-seasons";
+
+/**
+ * Нормализация имени команды для сопоставления KSI ↔ rating.chgk.info.
+ * Убираем регистр и все небуквенно-цифровые символы, чтобы «Храп бабули»
+ * совпало с «Храпбабули», а «Треми - Кито» — с «Треми-Кито».
+ */
+function normalizeTeamName(name: string): string {
+  return name.toLocaleLowerCase("ru").replace(/[^\p{L}\p{N}]+/gu, "");
+}
 
 interface TourDef {
   n: number;
@@ -62,8 +71,14 @@ function tourColumnMaxima(teams: TeamRow[], tourCount: number): (number | null)[
 
 export default function ChgkRatingApiResults({
   tournamentId,
+  amateurTeamNames,
 }: {
   tournamentId: number;
+  /**
+   * Если задан — колонка «ЧСт» отображается как «Л» (любители), а подсветка
+   * берётся не из API-флагов, а по совпадению нормализованного имени команды.
+   */
+  amateurTeamNames?: string[];
 }) {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +88,12 @@ export default function ChgkRatingApiResults({
     tourNum: number;
     cells: string[];
   } | null>(null);
+
+  const amateurMode = !!amateurTeamNames && amateurTeamNames.length > 0;
+  const amateurSet = useMemo(
+    () => new Set((amateurTeamNames ?? []).map(normalizeTeamName)),
+    [amateurTeamNames],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -217,9 +238,9 @@ export default function ChgkRatingApiResults({
               </th>
               <th
                 className="px-1 w-9 text-center text-[10px] font-medium normal-case"
-                title="Зачёт ЧСт"
+                title={amateurMode ? "Любители" : "Зачёт ЧСт"}
               >
-                ЧСт
+                {amateurMode ? "Л" : "ЧСт"}
               </th>
               <th className="px-1.5 sm:px-2 py-2.5 text-left font-medium min-w-[100px]">
                 Город
@@ -263,7 +284,17 @@ export default function ChgkRatingApiResults({
                   </a>
                 </td>
                 <td className="px-0.5 py-1.5 text-center">
-                  {team.isChst ? (
+                  {amateurMode ? (
+                    amateurSet.has(normalizeTeamName(team.name)) ? (
+                      <span
+                        className="text-base leading-none"
+                        title="Любитель"
+                        aria-label="Любитель"
+                      >
+                        🌿
+                      </span>
+                    ) : null
+                  ) : team.isChst ? (
                     <span
                       className="inline-block w-3.5 h-3.5 rounded-full border border-border overflow-hidden mx-auto"
                       title="Зачёт ЧСт"

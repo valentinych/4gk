@@ -54,7 +54,7 @@ export const SYRENY_LITE_SCHEDULE: { day: string; items: ScheduleItem[] }[] = [
       { time: "10:30–11:20", title: "Командная «Своя игра» (вторые 10 тем)" },
       {
         time: "11:30–13:50",
-        title: "Второй синхрон «Островок Бесконечности: июнь»",
+        title: "ЧГК, туры 4–6 · синхрон «Островок Бесконечности: июнь»",
         note: "сложность 3,5",
         href: "https://rating.chgk.info/tournament/13008",
       },

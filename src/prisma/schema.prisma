@@ -103,16 +103,23 @@ model EventTeam {
   teamChgkId  Int
   teamName    String
   displayName  String?
+  city         String?
   playersCount Int?
-  addedBy      String
+  addedBy      String?
   selfJoined   Boolean  @default(false)
   addedAt     DateTime @default(now())
   withdrawnAt DateTime?
   withdrawnBy String?
   isReserve   Boolean  @default(false)
 
+  manualEntry     Boolean  @default(false)
+  contactName     String?
+  contactEmail    String?
+  contactTelegram String?
+  withdrawToken   String?  @unique
+
   event       CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  addedByUser User          @relation(fields: [addedBy], references: [id])
+  addedByUser User?         @relation(fields: [addedBy], references: [id])
 
   @@unique([eventId, teamChgkId])
 }

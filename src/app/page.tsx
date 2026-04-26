@@ -44,6 +44,14 @@ const leagues = [
     badgeColor: "bg-lime-50 text-lime-700 border-lime-100",
     emoji: "🌿",
   },
+  {
+    href: "/mazowieckie-syreny-lite",
+    title: "Mazowieckie Syreny Lite",
+    description: "Любительский турнир, 6–7 июня 2026",
+    cities: ["Варшава"],
+    badgeColor: "bg-lime-50 text-lime-700 border-lime-100",
+    emoji: "🧜‍♀️",
+  },
 ];
 
 export default function HomePage() {

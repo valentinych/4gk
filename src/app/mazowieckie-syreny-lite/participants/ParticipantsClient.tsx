@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
+  Copy,
   ExternalLink,
   Loader2,
   Search,
@@ -63,12 +64,23 @@ function fmtTimestamp(iso: string): string {
   return `${dd}.${mm} ${hh}:${mi}`;
 }
 
+function buildWithdrawUrl(id: string, token: string): string {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}/mazowieckie-syreny-lite/withdraw?id=${encodeURIComponent(
+    id,
+  )}&token=${encodeURIComponent(token)}`;
+}
+
 export function ParticipantsClient() {
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [ratingReleaseDate, setRatingReleaseDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [tokens, setTokens] = useState<Record<string, string>>({});
+  const [justRegistered, setJustRegistered] = useState<{
+    id: string;
+    token: string;
+  } | null>(null);
 
   useEffect(() => setTokens(loadTokens()), []);
 
@@ -127,6 +139,12 @@ export function ParticipantsClient() {
 
       {/* Action area */}
       <div className="mb-6">
+        {justRegistered && (
+          <SuccessBanner
+            url={buildWithdrawUrl(justRegistered.id, justRegistered.token)}
+            onClose={() => setJustRegistered(null)}
+          />
+        )}
         {myTeam ? (
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -148,6 +166,7 @@ export function ParticipantsClient() {
               saveToken(id, token);
               setTokens(loadTokens());
               setShowForm(false);
+              setJustRegistered({ id, token });
               refresh();
             }}
             onCancel={() => setShowForm(false)}
@@ -585,5 +604,55 @@ function RegisterForm({
         </button>
       </div>
     </form>
+  );
+}
+
+/* ─── Success banner with permanent withdraw URL ─── */
+
+function SuccessBanner({ url, onClose }: { url: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 font-semibold">
+          <CheckCircle2 className="h-4 w-4" />
+          Заявка принята
+        </div>
+        <button
+          onClick={onClose}
+          className="text-emerald-700/70 hover:text-emerald-900"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <p className="mb-3 text-emerald-800/90">
+        Сохраните эту ссылку — по ней можно отозвать заявку с любого устройства.
+        Ссылка также сохранена в этом браузере, но рекомендуем переслать её себе
+        в мессенджер или email.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <code className="flex-1 min-w-0 truncate rounded-md border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-mono text-emerald-900">
+          {url}
+        </code>
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+        >
+          <Copy className="h-3.5 w-3.5" />
+          {copied ? "Скопировано" : "Скопировать"}
+        </button>
+      </div>
+    </div>
   );
 }

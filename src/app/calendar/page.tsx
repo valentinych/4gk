@@ -36,6 +36,19 @@ import {
   warsawInputValueToIso,
 } from "@/lib/time";
 
+/**
+ * Some events have dedicated landing pages outside /calendar/[id]. Map them here.
+ */
+function eventUrl(
+  eventId: string,
+  action?: "join" | "withdraw",
+): string {
+  if (eventId === "mazowieckie-syreny-lite") {
+    return action ? "/mazowieckie-syreny-lite/participants" : "/mazowieckie-syreny-lite";
+  }
+  return action ? `/calendar/${eventId}?action=${action}` : `/calendar/${eventId}`;
+}
+
 const MONTHS_RU = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
   "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
@@ -1365,7 +1378,7 @@ function EventCard({
             </span>
           </div>
           <Link
-            href={`/calendar/${event.id}`}
+            href={eventUrl(event.id)}
             className="mt-2 block text-sm font-bold leading-snug hover:underline decoration-foreground/30 underline-offset-2"
           >
             {event.title}
@@ -1485,7 +1498,7 @@ function EventCard({
           if (isRegistered) {
             return (
               <Link
-                href={`/calendar/${event.id}?action=withdraw`}
+                href={eventUrl(event.id, "withdraw")}
                 className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
               >
                 <UserMinus className="h-3 w-3" />
@@ -1509,7 +1522,7 @@ function EventCard({
           if (isWithdrawn) {
             return (
               <Link
-                href={`/calendar/${event.id}?action=join`}
+                href={eventUrl(event.id, "join")}
                 className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -1520,7 +1533,7 @@ function EventCard({
 
           return (
             <Link
-              href={`/calendar/${event.id}?action=join`}
+              href={eventUrl(event.id, "join")}
               className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                 willReserve
                   ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"

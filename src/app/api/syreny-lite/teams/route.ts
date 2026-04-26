@@ -13,7 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  await ensureSyrenyLiteEvent();
+  const event = await ensureSyrenyLiteEvent();
 
   const teams = await db.eventTeam.findMany({
     where: { eventId: SYRENY_LITE_EVENT_ID, withdrawnAt: null },
@@ -63,6 +63,8 @@ export async function GET() {
   return NextResponse.json({
     teams: sorted,
     ratingReleaseDate: releaseDate,
+    registrationOpensAt: event.registrationOpensAt?.toISOString() ?? null,
+    registrationClosesAt: event.registrationClosesAt?.toISOString() ?? null,
   });
 }
 

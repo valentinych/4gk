@@ -4,10 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  CalendarClock,
   CheckCircle2,
   Copy,
   ExternalLink,
   Loader2,
+  Lock,
   Search,
   Sparkles,
   UserPlus,
@@ -64,6 +66,35 @@ function fmtTimestamp(iso: string): string {
   return `${dd}.${mm} ${hh}:${mi}`;
 }
 
+function fmtFullDateTime(iso: string): string {
+  const d = new Date(iso);
+  const months = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря",
+  ];
+  const dd = d.getDate();
+  const mm = months[d.getMonth()];
+  const yy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${dd} ${mm} ${yy} в ${hh}:${mi}`;
+}
+
+function fmtCountdown(ms: number): string {
+  if (ms <= 0) return "0 секунд";
+  const totalSec = Math.floor(ms / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} д`);
+  if (hours > 0 || days > 0) parts.push(`${hours} ч`);
+  parts.push(`${mins} мин`);
+  if (days === 0 && hours === 0) parts.push(`${secs} с`);
+  return parts.join(" ");
+}
+
 function buildWithdrawUrl(id: string, token: string): string {
   if (typeof window === "undefined") return "";
   return `${window.location.origin}/mazowieckie-syreny-lite/withdraw?id=${encodeURIComponent(
@@ -74,6 +105,9 @@ function buildWithdrawUrl(id: string, token: string): string {
 export function ParticipantsClient() {
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [ratingReleaseDate, setRatingReleaseDate] = useState<string | null>(null);
+  const [registrationOpensAt, setRegistrationOpensAt] = useState<string | null>(null);
+  const [registrationClosesAt, setRegistrationClosesAt] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [tokens, setTokens] = useState<Record<string, string>>({});
@@ -84,16 +118,29 @@ export function ParticipantsClient() {
 
   useEffect(() => setTokens(loadTokens()), []);
 
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/syreny-lite/teams", { cache: "no-store" });
       const data = await res.json();
       setTeams(data.teams ?? []);
       setRatingReleaseDate(data.ratingReleaseDate ?? null);
+      setRegistrationOpensAt(data.registrationOpensAt ?? null);
+      setRegistrationClosesAt(data.registrationClosesAt ?? null);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const opensAtMs = registrationOpensAt ? new Date(registrationOpensAt).getTime() : null;
+  const closesAtMs = registrationClosesAt ? new Date(registrationClosesAt).getTime() : null;
+  const notYetOpen = opensAtMs !== null && now < opensAtMs;
+  const closedByTime = closesAtMs !== null && now > closesAtMs;
+  const registrationBlocked = notYetOpen || closedByTime;
 
   useEffect(() => {
     refresh();
@@ -160,6 +207,15 @@ export function ParticipantsClient() {
               Отозвать заявку
             </button>
           </div>
+        ) : registrationBlocked ? (
+          <RegistrationClosedBanner
+            notYetOpen={notYetOpen}
+            opensAtMs={opensAtMs}
+            closesAtMs={closesAtMs}
+            now={now}
+            registrationOpensAt={registrationOpensAt}
+            registrationClosesAt={registrationClosesAt}
+          />
         ) : showForm ? (
           <RegisterForm
             onSuccess={(id, token) => {
@@ -605,6 +661,59 @@ function RegisterForm({
       </div>
     </form>
   );
+}
+
+/* ─── Registration closed / not-yet-open banner ─── */
+
+function RegistrationClosedBanner({
+  notYetOpen,
+  opensAtMs,
+  closesAtMs,
+  now,
+  registrationOpensAt,
+  registrationClosesAt,
+}: {
+  notYetOpen: boolean;
+  opensAtMs: number | null;
+  closesAtMs: number | null;
+  now: number;
+  registrationOpensAt: string | null;
+  registrationClosesAt: string | null;
+}) {
+  if (notYetOpen && opensAtMs !== null && registrationOpensAt) {
+    const remaining = opensAtMs - now;
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+        <div className="mb-2 flex items-center gap-2 font-semibold">
+          <CalendarClock className="h-4 w-4" />
+          Приём заявок ещё не открыт
+        </div>
+        <p className="text-amber-800/90">
+          Открытие: <strong>{fmtFullDateTime(registrationOpensAt)}</strong> по
+          варшавскому времени.
+        </p>
+        <p className="mt-2 font-mono text-base font-bold tabular-nums">
+          до открытия: {fmtCountdown(remaining)}
+        </p>
+      </div>
+    );
+  }
+
+  if (closesAtMs !== null && now > closesAtMs && registrationClosesAt) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-900">
+        <div className="mb-2 flex items-center gap-2 font-semibold">
+          <Lock className="h-4 w-4" />
+          Приём заявок закрыт
+        </div>
+        <p className="text-red-800/90">
+          Регистрация была закрыта <strong>{fmtFullDateTime(registrationClosesAt)}</strong>.
+        </p>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 /* ─── Success banner with permanent withdraw URL ─── */

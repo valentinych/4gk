@@ -20,6 +20,8 @@ export const SYRENY_LITE = {
 export interface ScheduleItem {
   time: string;
   title: string;
+  /** Optional second line shown under the title (e.g. linked sync inside an in-person slot) */
+  subtitle?: string;
   href?: string;
   note?: string;
 }
@@ -28,25 +30,31 @@ export const SYRENY_LITE_SCHEDULE: { day: string; items: ScheduleItem[] }[] = [
   {
     day: "Суббота, 6 июня 2026",
     items: [
-      { time: "11:00–12:10", title: "КСИ 1" },
+      { time: "11:00–11:50", title: "Открытие и Командная «Своя игра» (первые 10 тем)" },
       {
-        time: "12:20–14:30",
-        title: "Серия Б-52: сезон 02, эпизод 09",
+        time: "12:00–14:15",
+        title: "ЧГК, туры 1–3 · синхрон «B-52: S02E09»",
         note: "сложность 2,0",
         href: "https://rating.chgk.info/tournament/13292",
       },
-      { time: "14:30–15:30", title: "Обед" },
-      { time: "15:30–18:30", title: "Брейн-Ринг и Эрудит-Квартет" },
-      { time: "19:00–21:00", title: "Чёрное ЧГК" },
+      { time: "14:15–15:30", title: "Обед" },
+      { time: "15:30–17:45", title: "Брэйн-ринг" },
+      {
+        time: "18:15–20:30",
+        title: "Чёрное ЧГК · асинхронный турнир «Сквиртл»",
+        subtitle: "от Максима Мерзлякова. 18+",
+        note: "сложность 3,5",
+        href: "https://rating.chgk.info/tournament/12490",
+      },
     ],
   },
   {
     day: "Воскресенье, 7 июня 2026",
     items: [
-      { time: "10:30–11:40", title: "КСИ 2" },
+      { time: "10:30–11:20", title: "Командная «Своя игра» (вторые 10 тем)" },
       {
-        time: "11:50–14:00",
-        title: "Островок Бесконечности: июнь",
+        time: "11:30–13:50",
+        title: "Второй синхрон «Островок Бесконечности: июнь»",
         note: "сложность 3,5",
         href: "https://rating.chgk.info/tournament/13008",
       },

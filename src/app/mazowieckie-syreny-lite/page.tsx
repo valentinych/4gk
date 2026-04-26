@@ -71,7 +71,7 @@ export default function MazowieckieSyrenyLitePage() {
       </div>
 
       <section>
-        <h2 className="mb-4 text-lg font-bold tracking-tight">Расписание</h2>
+        <h2 className="mb-4 text-lg font-bold tracking-tight">📌 Предварительная программа</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {SYRENY_LITE_SCHEDULE.map((day) => (
             <div key={day.day} className="rounded-xl border border-border bg-surface p-5">
@@ -100,6 +100,9 @@ export default function MazowieckieSyrenyLitePage() {
                         {item.note && (
                           <span className="ml-1 text-xs text-muted">({item.note})</span>
                         )}
+                        {item.subtitle && (
+                          <div className="text-xs text-muted">{item.subtitle}</div>
+                        )}
                       </div>
                     </div>
                   </li>
@@ -107,6 +110,26 @@ export default function MazowieckieSyrenyLitePage() {
               </ul>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 text-sm leading-relaxed text-amber-900 shadow-sm">
+          <p className="mb-3">
+            <span className="mr-1.5">👍</span>
+            Мы сможем принять <strong>16 команд</strong>. При рассмотрении заявок мы
+            будем идти снизу рейтинга — кто ниже, тому больше гарантии участия.
+          </p>
+          <p className="mb-3">
+            <span className="mr-1.5">🤝</span>
+            В рейтинг пойдут 2 синхрона. В зачёт турнира — все 72 вопроса ЧГК с
+            этих синхронов. Награды — за каждую игру.
+          </p>
+          <p>
+            <strong>Стоимость участия:</strong> 70 зл/чел — студенты, 100 зл/чел —
+            не студенты (касаемо оплаты свяжемся с вами отдельно). Также участникам
+            будет предложено горячее питание (около 40 зл/чел).
+          </p>
         </div>
       </section>
     </div>

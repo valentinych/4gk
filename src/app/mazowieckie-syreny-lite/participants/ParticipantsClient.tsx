@@ -275,12 +275,16 @@ export function ParticipantsClient() {
             <tbody>
               {teams.map((t, idx) => {
                 const isMine = !!tokens[t.id];
+                const isReserve = idx >= 16;
+                const rowCls = isMine
+                  ? "bg-emerald-50/60"
+                  : isReserve
+                    ? "bg-red-50"
+                    : "";
                 return (
                   <tr
                     key={t.id}
-                    className={`border-b border-border/50 last:border-0 transition-colors hover:brightness-[0.97] ${
-                      isMine ? "bg-emerald-50/60" : ""
-                    }`}
+                    className={`border-b border-border/50 last:border-0 transition-colors hover:brightness-[0.97] ${rowCls}`}
                   >
                     <td className="px-3 py-2 text-center text-xs font-bold text-muted">
                       {idx + 1}

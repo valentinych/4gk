@@ -51,8 +51,16 @@ export default function MazowieckieSyrenyLitePage() {
               <MapPin className="h-4 w-4 text-muted" />
             </div>
             <div>
-              <p className="text-xs text-muted">Город</p>
-              <p className="text-sm font-bold">{SYRENY_LITE.city}</p>
+              <p className="text-xs text-muted">Место</p>
+              <a
+                href="https://maps.app.goo.gl/oX2NquhWfAFF7Xwt7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-bold hover:text-accent transition-colors"
+              >
+                Варшава, BMH
+                <ExternalLink className="h-3 w-3 opacity-50" />
+              </a>
             </div>
           </div>
         </div>
@@ -115,6 +123,14 @@ export default function MazowieckieSyrenyLitePage() {
 
       <section className="mt-8">
         <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 text-sm leading-relaxed text-amber-900 shadow-sm">
+          <p className="mb-3">
+            <span className="mr-1.5">❗️</span>
+            В турнире могут принимать участие команды <strong>не выше 600-го места</strong>{" "}
+            в общем рейтинге. Легионерами (или участниками сборных команд) могут быть
+            игроки, которые входят в базовые составы команд не выше 600-го места.
+            Игроки, не входящие в базовые составы каких-либо команд, будут
+            рассматриваться отдельными запросами в оргкомитет.
+          </p>
           <p className="mb-3">
             <span className="mr-1.5">👍</span>
             Мы сможем принять <strong>16 команд</strong>. При рассмотрении заявок мы

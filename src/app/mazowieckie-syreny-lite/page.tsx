@@ -53,7 +53,7 @@ export default function MazowieckieSyrenyLitePage() {
             <div>
               <p className="text-xs text-muted">Место</p>
               <a
-                href="https://maps.app.goo.gl/oX2NquhWfAFF7Xwt7"
+                href="https://maps.app.goo.gl/tZb6QtAgYRP9VjwEA"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm font-bold hover:text-accent transition-colors"
@@ -135,6 +135,7 @@ export default function MazowieckieSyrenyLitePage() {
             <span className="mr-1.5">👍</span>
             Мы сможем принять <strong>16 команд</strong>. При рассмотрении заявок мы
             будем идти снизу рейтинга — кто ниже, тому больше гарантии участия.
+            Предварительный список участников будет оглашён <strong>10 мая</strong>.
           </p>
           <p className="mb-3">
             <span className="mr-1.5">🤝</span>

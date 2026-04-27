@@ -28,4 +28,14 @@ export const AMATEUR_TOURNAMENTS: AmateurTournament[] = [
     startDate: "2026-06-06",
     status: "upcoming",
   },
+  {
+    href: "/koziolki-wielkopolskie-lite",
+    emoji: "🐐",
+    title: "Koziołki Wielkopolskie Lite",
+    description: "Однодневный турнир в Познани: КСИ, ЧГК (B-52 + Островок Бесконечности), Брейн-ринг.",
+    cities: ["Познань"],
+    dateLabel: "28 февраля 2026",
+    startDate: "2026-02-28",
+    status: "past",
+  },
 ];

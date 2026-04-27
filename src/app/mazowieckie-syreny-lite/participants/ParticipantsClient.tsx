@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Loader2,
   Lock,
+  Pencil,
   Search,
   Sparkles,
   UserPlus,
@@ -116,6 +117,7 @@ export function ParticipantsClient() {
   const [showForm, setShowForm] = useState(false);
   const [tokens, setTokens] = useState<Record<string, string>>({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [justRegistered, setJustRegistered] = useState<{
     id: string;
     token: string;
@@ -190,6 +192,22 @@ export function ParticipantsClient() {
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Список команд</h1>
       </div>
 
+      {/* Edit form */}
+      {editingId && (
+        <div className="mb-6">
+          <EditForm
+            id={editingId}
+            token={tokens[editingId] ?? null}
+            isAdmin={isAdmin}
+            onSuccess={() => {
+              setEditingId(null);
+              refresh();
+            }}
+            onCancel={() => setEditingId(null)}
+          />
+        </div>
+      )}
+
       {/* Action area */}
       <div className="mb-6">
         {justRegistered && (
@@ -206,8 +224,15 @@ export function ParticipantsClient() {
               {myTeam.city && <span className="text-emerald-700/70"> · {myTeam.city}</span>}
             </span>
             <button
+              onClick={() => setEditingId(myTeam.id)}
+              className="ml-auto inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Изменить
+            </button>
+            <button
               onClick={() => handleWithdraw(myTeam.id)}
-              className="ml-auto inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+              className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
             >
               <X className="h-3.5 w-3.5" />
               Отозвать заявку
@@ -337,15 +362,26 @@ export function ParticipantsClient() {
                       </td>
                     )}
                     <td className="pr-3 text-right">
-                      {isMine && (
-                        <button
-                          onClick={() => handleWithdraw(t.id)}
-                          className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-600"
-                          title="Отозвать заявку"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                      <div className="inline-flex items-center gap-0.5">
+                        {(isMine || isAdmin) && (
+                          <button
+                            onClick={() => setEditingId(t.id)}
+                            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-accent/10 hover:text-accent"
+                            title="Изменить заявку"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {isMine && (
+                          <button
+                            onClick={() => handleWithdraw(t.id)}
+                            className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-600"
+                            title="Отозвать заявку"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -406,6 +442,270 @@ function AdminContacts({
       )}
       {!name && !email && !telegram && <span className="text-muted">—</span>}
     </div>
+  );
+}
+
+/* ─── Edit form ─── */
+
+interface EditableEntry {
+  id: string;
+  teamName: string;
+  teamChgkId: number | null;
+  city: string;
+  manualEntry: boolean;
+  contactName: string;
+  contactEmail: string;
+  contactTelegram: string;
+}
+
+function EditForm({
+  id,
+  token,
+  isAdmin,
+  onSuccess,
+  onCancel,
+}: {
+  id: string;
+  token: string | null;
+  isAdmin: boolean;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [entry, setEntry] = useState<EditableEntry | null>(null);
+  const [teamName, setTeamName] = useState("");
+  const [city, setCity] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactTelegram, setContactTelegram] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+        const res = await fetch(`/api/syreny-lite/teams/${id}${qs}`, { cache: "no-store" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (!cancelled) setError(data.error ?? "Не удалось загрузить заявку");
+          return;
+        }
+        const data: EditableEntry = await res.json();
+        if (cancelled) return;
+        setEntry(data);
+        setTeamName(data.teamName);
+        setCity(data.city);
+        setContactName(data.contactName);
+        setContactEmail(data.contactEmail);
+        setContactTelegram(data.contactTelegram);
+      } catch {
+        if (!cancelled) setError("Ошибка сети");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, token]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!entry) return;
+    setError(null);
+
+    if (!contactName.trim()) {
+      setError("Укажите имя капитана");
+      return;
+    }
+    if (!contactEmail.trim() && !contactTelegram.trim()) {
+      setError("Укажите email или Telegram для связи");
+      return;
+    }
+    if (entry.manualEntry && !teamName.trim()) {
+      setError("Укажите название команды");
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      city: city.trim(),
+      contactName: contactName.trim(),
+      contactEmail: contactEmail.trim(),
+      contactTelegram: contactTelegram.trim(),
+    };
+    if (entry.manualEntry) payload.teamName = teamName.trim();
+
+    setSubmitting(true);
+    try {
+      const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+      const res = await fetch(`/api/syreny-lite/teams/${id}${qs}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error ?? "Ошибка");
+        return;
+      }
+      onSuccess();
+    } catch {
+      setError("Ошибка сети");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center rounded-xl border border-border bg-surface p-6">
+        <Loader2 className="h-5 w-5 animate-spin text-muted" />
+      </div>
+    );
+  }
+
+  if (!entry) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+        {error ?? "Заявка не найдена"}
+        <button
+          onClick={onCancel}
+          className="ml-3 inline-flex items-center gap-1 text-xs underline"
+        >
+          Закрыть
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-5"
+    >
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold">
+          Изменить заявку
+          {isAdmin && !token && (
+            <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+              admin
+            </span>
+          )}
+        </h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-muted hover:text-foreground"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+          Команда
+        </label>
+        {entry.manualEntry ? (
+          <input
+            type="text"
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+          />
+        ) : (
+          <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted">
+            {entry.teamName}
+            {entry.teamChgkId && (
+              <span className="ml-1.5 text-xs">#{entry.teamChgkId}</span>
+            )}
+            <p className="mt-1 text-xs text-muted/80">
+              Чтобы сменить команду, отзовите заявку и подайте новую.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+          Город
+        </label>
+        <input
+          type="text"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          placeholder="Варшава"
+          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+        />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+            Имя капитана *
+          </label>
+          <input
+            type="text"
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+            Email
+          </label>
+          <input
+            type="email"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+            Telegram
+          </label>
+          <input
+            type="text"
+            value={contactTelegram}
+            onChange={(e) => setContactTelegram(e.target.value)}
+            placeholder="@username"
+            className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+          />
+          <p className="mt-1 text-xs text-muted">
+            Email или Telegram — хотя бы одно поле обязательно.
+          </p>
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {submitting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4" />
+          )}
+          Сохранить
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={submitting}
+          className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
+        >
+          Отмена
+        </button>
+      </div>
+    </form>
   );
 }
 

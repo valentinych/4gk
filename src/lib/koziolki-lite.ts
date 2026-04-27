@@ -181,7 +181,7 @@ export interface BrainFinalRow {
 
 /** Брейн-ринг — финал. */
 export const KOZIOLKI_BRAIN_FINAL: BrainFinalRow[] = [
-  { team: "Есть желающие", wins: 4 },
+  { team: "Есть желающие", wins: 5 },
   { team: "Взаимное грехопадение", wins: 4 },
   { team: "Pyramany", wins: 1 },
 ];

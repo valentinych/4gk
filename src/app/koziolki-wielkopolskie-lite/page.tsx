@@ -13,6 +13,14 @@ import {
 
 const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 
+function pluralWins(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "победа";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "победы";
+  return "побед";
+}
+
 export const metadata: Metadata = {
   title: `${KOZIOLKI_LITE.title} | 4GK.pl`,
   description: `Любительский турнир в Познани, ${KOZIOLKI_LITE.date}. Архив результатов: КСИ, ЧГК, Брейн-ринг.`,
@@ -263,7 +271,7 @@ export default function KoziolkiPage() {
                   <td className="px-3 py-2 font-mono text-xs tabular-nums text-muted">{idx + 1}</td>
                   <td className="px-3 py-2 font-medium">{row.team}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums">
-                    {row.wins} {row.wins === 1 ? "победа" : "победы"}
+                    {row.wins} {pluralWins(row.wins)}
                   </td>
                 </tr>
               ))}

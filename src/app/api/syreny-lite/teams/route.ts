@@ -15,6 +15,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const event = await ensureSyrenyLiteEvent();
 
+  // Contact details (name, email, telegram) are sensitive and must only be
+  // exposed to organizers/admins. Everyone else gets the public projection.
+  const session = await getServerSession(authOptions);
+  const role = session?.user?.role;
+  const isAdmin = role === "ADMIN" || role === "ORGANIZER";
+
   const teams = await db.eventTeam.findMany({
     where: { eventId: SYRENY_LITE_EVENT_ID, withdrawnAt: null },
     orderBy: { addedAt: "asc" },
@@ -26,6 +32,11 @@ export async function GET() {
       city: true,
       manualEntry: true,
       addedAt: true,
+      // Contact fields are selected unconditionally but only included in the
+      // response when isAdmin is true (see mapping below).
+      contactName: true,
+      contactEmail: true,
+      contactTelegram: true,
     },
   });
 
@@ -46,6 +57,13 @@ export async function GET() {
       addedAt: t.addedAt.toISOString(),
       ratingPosition: r?.position ?? null,
       ratingScore: r?.score ?? null,
+      ...(isAdmin
+        ? {
+            contactName: t.contactName ?? null,
+            contactEmail: t.contactEmail ?? null,
+            contactTelegram: t.contactTelegram ?? null,
+          }
+        : {}),
     };
   });
 
@@ -65,6 +83,7 @@ export async function GET() {
     ratingReleaseDate: releaseDate,
     registrationOpensAt: event.registrationOpensAt?.toISOString() ?? null,
     registrationClosesAt: event.registrationClosesAt?.toISOString() ?? null,
+    isAdmin,
   });
 }
 

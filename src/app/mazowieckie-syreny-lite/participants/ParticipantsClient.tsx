@@ -26,6 +26,10 @@ interface TeamRow {
   addedAt: string;
   ratingPosition: number | null;
   ratingScore: number | null;
+  /** Admin-only fields. Returned by the API only when the requester is an organizer/admin. */
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactTelegram?: string | null;
 }
 
 interface ChgkTeamResult {
@@ -111,6 +115,7 @@ export function ParticipantsClient() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [tokens, setTokens] = useState<Record<string, string>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
   const [justRegistered, setJustRegistered] = useState<{
     id: string;
     token: string;
@@ -131,6 +136,7 @@ export function ParticipantsClient() {
       setRatingReleaseDate(data.ratingReleaseDate ?? null);
       setRegistrationOpensAt(data.registrationOpensAt ?? null);
       setRegistrationClosesAt(data.registrationClosesAt ?? null);
+      setIsAdmin(!!data.isAdmin);
     } finally {
       setLoading(false);
     }
@@ -269,6 +275,9 @@ export function ParticipantsClient() {
                 <th className="px-3 py-2.5 text-left hidden sm:table-cell">Город</th>
                 <th className="px-3 py-2.5 text-right hidden sm:table-cell">Место</th>
                 <th className="px-3 py-2.5 text-left hidden lg:table-cell">Заявка</th>
+                {isAdmin && (
+                  <th className="px-3 py-2.5 text-left">Контакты (только админам)</th>
+                )}
                 <th className="w-10" />
               </tr>
             </thead>
@@ -318,6 +327,15 @@ export function ParticipantsClient() {
                     <td className="px-3 py-2 text-xs text-muted tabular-nums hidden lg:table-cell whitespace-nowrap">
                       {fmtTimestamp(t.addedAt)}
                     </td>
+                    {isAdmin && (
+                      <td className="px-3 py-2 text-xs">
+                        <AdminContacts
+                          name={t.contactName ?? null}
+                          email={t.contactEmail ?? null}
+                          telegram={t.contactTelegram ?? null}
+                        />
+                      </td>
+                    )}
                     <td className="pr-3 text-right">
                       {isMine && (
                         <button
@@ -341,6 +359,52 @@ export function ParticipantsClient() {
         Сортировка: команды без записи на сайте рейтинга — сверху, далее по месту
         в рейтинге от слабых к сильным. Рейтинг — rating.chgk.gg.
       </p>
+    </div>
+  );
+}
+
+/* ─── Admin contacts cell ─── */
+
+function AdminContacts({
+  name,
+  email,
+  telegram,
+}: {
+  name: string | null;
+  email: string | null;
+  telegram: string | null;
+}) {
+  const tgHandle = telegram?.replace(/^@/, "");
+  return (
+    <div className="space-y-0.5">
+      {name && <div className="font-medium text-foreground">{name}</div>}
+      {email && (
+        <div>
+          <a
+            href={`mailto:${email}`}
+            className="text-muted hover:text-accent transition-colors"
+          >
+            {email}
+          </a>
+        </div>
+      )}
+      {telegram && (
+        <div>
+          {tgHandle ? (
+            <a
+              href={`https://t.me/${tgHandle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted hover:text-accent transition-colors"
+            >
+              @{tgHandle}
+            </a>
+          ) : (
+            <span className="text-muted">{telegram}</span>
+          )}
+        </div>
+      )}
+      {!name && !email && !telegram && <span className="text-muted">—</span>}
     </div>
   );
 }

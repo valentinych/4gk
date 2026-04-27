@@ -58,7 +58,7 @@ export default function MazowieckieSyrenyLitePage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm font-bold hover:text-accent transition-colors"
               >
-                Варшава, BMH
+                Варшава, BMH, Dożynkowa 6a
                 <ExternalLink className="h-3 w-3 opacity-50" />
               </a>
             </div>
@@ -126,7 +126,16 @@ export default function MazowieckieSyrenyLitePage() {
           <p className="mb-3">
             <span className="mr-1.5">❗️</span>
             В турнире могут принимать участие команды <strong>не выше 600-го места</strong>{" "}
-            в общем рейтинге. Легионерами (или участниками сборных команд) могут быть
+            в{" "}
+            <a
+              href="https://rating.chgk.info/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-amber-700/40 underline-offset-2 hover:text-amber-950 hover:decoration-amber-700"
+            >
+              общем рейтинге
+            </a>
+            . Легионерами (или участниками сборных команд) могут быть
             игроки, которые входят в базовые составы команд не выше 600-го места.
             Игроки, не входящие в базовые составы каких-либо команд, будут
             рассматриваться отдельными запросами в оргкомитет.

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, ExternalLink, MapPin, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, CalendarDays, ExternalLink, Image as ImageIcon, MapPin, Medal, Sparkles, Trophy } from "lucide-react";
 import {
   KOZIOLKI_LITE,
   KOZIOLKI_SCHEDULE,
@@ -8,7 +8,10 @@ import {
   KOZIOLKI_BRAIN_GROUPS,
   KOZIOLKI_BRAIN_FINAL,
   KOZIOLKI_CHGK,
+  KOZIOLKI_MEDALS,
 } from "@/lib/koziolki-lite";
+
+const MEDAL_EMOJI = ["🥇", "🥈", "🥉"];
 
 export const metadata: Metadata = {
   title: `${KOZIOLKI_LITE.title} | 4GK.pl`,
@@ -93,6 +96,41 @@ export default function KoziolkiPage() {
               </li>
             ))}
           </ul>
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight">
+          <Medal className="h-5 w-5 text-amber-500" />
+          Призёры
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {KOZIOLKI_MEDALS.map((cat, idx) => (
+            <div
+              key={`${cat.category}-${cat.note ?? ""}-${idx}`}
+              className="rounded-xl border border-border bg-surface p-5"
+            >
+              <div className="mb-3">
+                <h3 className="text-sm font-bold leading-snug">{cat.category}</h3>
+                {cat.note && (
+                  <p className="text-xs text-muted">{cat.note}</p>
+                )}
+              </div>
+              <ol className="space-y-1.5">
+                {cat.medalists.map((m, mIdx) => (
+                  <li key={`${m.team}-${mIdx}`} className="flex items-baseline gap-2 text-sm">
+                    <span className="text-base leading-none" aria-hidden>
+                      {MEDAL_EMOJI[mIdx] ?? ""}
+                    </span>
+                    <span className="font-medium">{m.team}</span>
+                    {m.city && (
+                      <span className="text-xs text-muted">({m.city})</span>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -232,6 +270,30 @@ export default function KoziolkiPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="mb-10">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight">
+          <ImageIcon className="h-5 w-5 text-accent" />
+          Фотоальбом · награждение
+        </h2>
+        <div className="overflow-hidden rounded-xl border border-border bg-surface">
+          <iframe
+            src={`https://drive.google.com/embeddedfolderview?id=${KOZIOLKI_LITE.photoAlbumFolderId}#grid`}
+            title="Фотоальбом награждения"
+            className="block h-[600px] w-full border-0"
+            loading="lazy"
+          />
+        </div>
+        <a
+          href={KOZIOLKI_LITE.photoAlbumUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
+        >
+          Открыть альбом в Google Drive
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
       </section>
     </div>
   );

@@ -19,7 +19,57 @@ export const KOZIOLKI_LITE = {
   venueMapsUrl: "https://maps.app.goo.gl/pjzYQ4K4bBBpFDrW9",
   date: "28 февраля 2026",
   startDate: "2026-02-28",
+  /** Public Google Drive folder with award-ceremony photos. */
+  photoAlbumUrl: "https://drive.google.com/drive/folders/1CFCTZHjaQ5zMCgtK5xoh6y8SEs8tSBu4",
+  photoAlbumFolderId: "1CFCTZHjaQ5zMCgtK5xoh6y8SEs8tSBu4",
 } as const;
+
+export interface Medalist {
+  team: string;
+  city?: string;
+}
+
+export interface MedalCategory {
+  category: string;
+  /** Optional sub-note shown after the category title. */
+  note?: string;
+  /** First place is index 0, etc. Up to 3 entries. */
+  medalists: Medalist[];
+}
+
+export const KOZIOLKI_MEDALS: MedalCategory[] = [
+  {
+    category: "Что? Где? Когда?",
+    medalists: [
+      { team: "БирШава", city: "Варшава" },
+      { team: "Есть Желающие", city: "Вроцлав" },
+      { team: "Бежевое Жабо", city: "Гданьск" },
+    ],
+  },
+  {
+    category: "Что? Где? Когда?",
+    note: "Познаньский зачёт",
+    medalists: [
+      { team: "Pyramany", city: "Познань" },
+    ],
+  },
+  {
+    category: "Командная «Своя игра»",
+    medalists: [
+      { team: "БирШава", city: "Варшава" },
+      { team: "Мокрый Горнонос", city: "Вроцлав" },
+      { team: "Хождение", city: "Варшава" },
+    ],
+  },
+  {
+    category: "Брейн-ринг",
+    medalists: [
+      { team: "Есть Желающие", city: "Вроцлав" },
+      { team: "Взаимное Грехопадение", city: "Гдыня-Варшава" },
+      { team: "Pyramany", city: "Познань" },
+    ],
+  },
+];
 
 export interface ScheduleItem {
   time: string;

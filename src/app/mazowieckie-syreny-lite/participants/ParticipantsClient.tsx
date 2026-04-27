@@ -190,6 +190,9 @@ export function ParticipantsClient() {
           Mazowieckie Syreny Lite — 2026
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Список команд</h1>
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Предварительный список участников будет оглашён <strong>10 мая</strong>.
+        </p>
       </div>
 
       {/* Edit form */}

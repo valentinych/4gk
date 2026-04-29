@@ -14,6 +14,7 @@ interface TeamRow {
   city: string;
   number: string;
   total: number;
+  place: string;
   tours: TourResult[];
 }
 
@@ -135,14 +136,14 @@ export default function PraguePage() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody>
               {data.teams.map((team, rowIdx) => {
                 const teamKey = `${team.team}|${team.city}`;
                 return (
                   <RowFragment
                     key={teamKey}
                     teamKey={teamKey}
-                    place={rowIdx + 1}
+                    rowIdx={rowIdx}
                     team={team}
                     questionsPerTour={data.questionsPerTour}
                     expanded={expanded}
@@ -160,7 +161,7 @@ export default function PraguePage() {
 
 interface RowFragmentProps {
   teamKey: string;
-  place: number;
+  rowIdx: number;
   team: TeamRow;
   questionsPerTour: number;
   expanded: Record<string, boolean>;
@@ -169,7 +170,7 @@ interface RowFragmentProps {
 
 function RowFragment({
   teamKey,
-  place,
+  rowIdx,
   team,
   questionsPerTour,
   expanded,
@@ -179,10 +180,14 @@ function RowFragment({
     .map((_, idx) => idx)
     .filter((idx) => expanded[`${teamKey}::${idx}`]);
 
+  // Alternating red-tinted rows.
+  const stripe =
+    rowIdx % 2 === 0 ? "bg-red-50/60 dark:bg-red-950/20" : "bg-transparent";
+
   return (
     <>
-      <tr className="hover:bg-surface/50">
-        <td className="px-3 py-2.5 font-bold text-muted">{place}</td>
+      <tr className={`${stripe} border-b border-red-100/60 dark:border-red-900/30 hover:bg-red-100/60 dark:hover:bg-red-900/30 transition-colors`}>
+        <td className="px-3 py-2.5 font-bold text-muted whitespace-nowrap">{team.place}</td>
         <td className="px-3 py-2.5 font-medium">{team.team}</td>
         <td className="px-3 py-2.5 text-muted">{team.city}</td>
         <td className="px-3 py-2.5 text-right font-mono font-bold">{team.total}</td>
@@ -193,8 +198,8 @@ function RowFragment({
             <td key={ti} className="px-1 py-1 text-right">
               <button
                 onClick={() => onToggle(key)}
-                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono transition-colors hover:bg-accent/10 ${
-                  isOpen ? "bg-accent/10" : ""
+                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono transition-colors hover:bg-red-200/50 dark:hover:bg-red-800/40 ${
+                  isOpen ? "bg-red-200/60 dark:bg-red-800/50" : ""
                 }`}
                 title={`Раскрыть тур ${ti + 1}`}
               >
@@ -211,35 +216,42 @@ function RowFragment({
       </tr>
       {expandedTours.map((tourIdx) => {
         const tour = team.tours[tourIdx];
+        const baseQuestionNum = tourIdx * questionsPerTour;
         return (
-          <tr key={`${teamKey}-detail-${tourIdx}`} className="bg-surface/30">
+          <tr
+            key={`${teamKey}-detail-${tourIdx}`}
+            className={`${stripe} border-b border-red-100/60 dark:border-red-900/30`}
+          >
             <td colSpan={4 + team.tours.length} className="px-4 py-3">
               <div className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
                 {tour.name} — {tour.total} из {questionsPerTour}
               </div>
               <div className="grid grid-cols-12 gap-1 sm:grid-cols-18">
-                {tour.marks.map((m, qi) => (
-                  <div
-                    key={qi}
-                    className={`flex flex-col items-center rounded px-1 py-1 text-xs font-mono ${
-                      m === true
-                        ? "bg-green-100 text-green-800"
-                        : m === false
-                          ? "bg-red-50 text-red-600"
-                          : "bg-surface text-muted"
-                    }`}
-                    title={`Вопрос ${qi + 1}: ${
-                      m === true ? "взят" : m === false ? "не взят" : "—"
-                    }`}
-                  >
-                    <span className="text-[10px] text-muted leading-none">
-                      {qi + 1}
-                    </span>
-                    <span className="font-bold leading-none">
-                      {m === true ? "+" : m === false ? "−" : "·"}
-                    </span>
-                  </div>
-                ))}
+                {tour.marks.map((m, qi) => {
+                  const qNum = baseQuestionNum + qi + 1;
+                  return (
+                    <div
+                      key={qi}
+                      className={`flex flex-col items-center rounded px-1 py-1 text-xs font-mono ${
+                        m === true
+                          ? "bg-green-100 text-green-800"
+                          : m === false
+                            ? "bg-red-100 text-red-700"
+                            : "bg-surface text-muted"
+                      }`}
+                      title={`Вопрос ${qNum}: ${
+                        m === true ? "взят" : m === false ? "не взят" : "—"
+                      }`}
+                    >
+                      <span className="text-[10px] text-muted leading-none">
+                        {qNum}
+                      </span>
+                      <span className="font-bold leading-none">
+                        {m === true ? "+" : m === false ? "−" : "·"}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </td>
           </tr>

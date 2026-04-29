@@ -42,6 +42,7 @@ interface TeamRow {
   city: string;
   number: string;
   total: number;
+  place: string;
   tours: TourResult[];
 }
 
@@ -169,6 +170,7 @@ function buildPayload(rowsByTour: string[][][]): PraguePayload {
       city: t.city,
       number: t.number,
       total: 0,
+      place: "",
       tours: TOURS.map((tour) => ({
         name: tour.name,
         total: 0,
@@ -213,6 +215,17 @@ function buildPayload(rowsByTour: string[][][]): PraguePayload {
     if (b.total !== a.total) return b.total - a.total;
     return a.team.localeCompare(b.team, "ru");
   });
+
+  // Compute shared places (e.g. "1-5" for ties).
+  for (let i = 0; i < teams.length; ) {
+    let j = i + 1;
+    while (j < teams.length && teams[j].total === teams[i].total) j++;
+    const start = i + 1;
+    const end = j;
+    const label = end > start ? `${start}-${end}` : `${start}`;
+    for (let k = i; k < j; k++) teams[k].place = label;
+    i = j;
+  }
 
   return {
     updatedAt: new Date().toISOString(),

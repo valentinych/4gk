@@ -118,18 +118,18 @@ export default function PraguePage() {
       )}
 
       {data && data.teams.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <div className="overflow-x-auto rounded-xl border-2 border-red-300 dark:border-red-700 shadow-md">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted">
-                <th className="px-3 py-2.5 font-medium w-12">М</th>
-                <th className="px-3 py-2.5 font-medium min-w-[180px]">Команда</th>
-                <th className="px-3 py-2.5 font-medium min-w-[120px]">Город</th>
-                <th className="px-3 py-2.5 text-right font-medium w-16">Σ</th>
+              <tr className="bg-gradient-to-r from-red-600 to-rose-600 text-left text-xs uppercase tracking-wider text-white">
+                <th className="px-3 py-3 font-bold w-12">М</th>
+                <th className="px-3 py-3 font-bold min-w-[180px]">Команда</th>
+                <th className="px-3 py-3 font-bold min-w-[120px]">Город</th>
+                <th className="px-3 py-3 text-right font-bold w-16">Σ</th>
                 {data.tours.map((t, i) => (
                   <th
                     key={i}
-                    className="px-3 py-2.5 text-right font-medium w-16 whitespace-nowrap"
+                    className="px-3 py-3 text-right font-bold w-16 whitespace-nowrap"
                   >
                     {t.name}
                   </th>
@@ -180,17 +180,27 @@ function RowFragment({
     .map((_, idx) => idx)
     .filter((idx) => expanded[`${teamKey}::${idx}`]);
 
-  // Alternating red-tinted rows.
+  // Bright alternating red shades, no grey.
   const stripe =
-    rowIdx % 2 === 0 ? "bg-red-50/60 dark:bg-red-950/20" : "bg-transparent";
+    rowIdx % 2 === 0
+      ? "bg-rose-100 dark:bg-rose-900/40"
+      : "bg-amber-50 dark:bg-amber-900/20";
 
   return (
     <>
-      <tr className={`${stripe} border-b border-red-100/60 dark:border-red-900/30 hover:bg-red-100/60 dark:hover:bg-red-900/30 transition-colors`}>
-        <td className="px-3 py-2.5 font-bold text-muted whitespace-nowrap">{team.place}</td>
-        <td className="px-3 py-2.5 font-medium">{team.team}</td>
-        <td className="px-3 py-2.5 text-muted">{team.city}</td>
-        <td className="px-3 py-2.5 text-right font-mono font-bold">{team.total}</td>
+      <tr
+        className={`${stripe} border-b border-red-200 dark:border-red-800 hover:bg-yellow-200 dark:hover:bg-yellow-800/40 transition-colors`}
+      >
+        <td className="px-3 py-2.5 font-extrabold text-red-700 dark:text-red-300 whitespace-nowrap">
+          {team.place}
+        </td>
+        <td className="px-3 py-2.5 font-semibold text-red-950 dark:text-red-100">
+          {team.team}
+        </td>
+        <td className="px-3 py-2.5 text-rose-700 dark:text-rose-300">{team.city}</td>
+        <td className="px-3 py-2.5 text-right font-mono text-base font-extrabold text-red-700 dark:text-red-200">
+          {team.total}
+        </td>
         {team.tours.map((tour, ti) => {
           const key = `${teamKey}::${ti}`;
           const isOpen = !!expanded[key];
@@ -198,15 +208,15 @@ function RowFragment({
             <td key={ti} className="px-1 py-1 text-right">
               <button
                 onClick={() => onToggle(key)}
-                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono transition-colors hover:bg-red-200/50 dark:hover:bg-red-800/40 ${
-                  isOpen ? "bg-red-200/60 dark:bg-red-800/50" : ""
+                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold text-red-800 dark:text-red-200 transition-colors hover:bg-rose-300 dark:hover:bg-rose-700 ${
+                  isOpen ? "bg-rose-300 dark:bg-rose-700" : ""
                 }`}
                 title={`Раскрыть тур ${ti + 1}`}
               >
                 {isOpen ? (
-                  <ChevronDown className="h-3 w-3 text-muted" />
+                  <ChevronDown className="h-3 w-3" />
                 ) : (
-                  <ChevronRight className="h-3 w-3 text-muted" />
+                  <ChevronRight className="h-3 w-3" />
                 )}
                 <span>{tour.total}</span>
               </button>
@@ -220,10 +230,10 @@ function RowFragment({
         return (
           <tr
             key={`${teamKey}-detail-${tourIdx}`}
-            className={`${stripe} border-b border-red-100/60 dark:border-red-900/30`}
+            className={`${stripe} border-b border-red-200 dark:border-red-800`}
           >
             <td colSpan={4 + team.tours.length} className="px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
+              <div className="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-300 mb-2">
                 {tour.name} — {tour.total} из {questionsPerTour}
               </div>
               <div className="grid grid-cols-12 gap-1 sm:grid-cols-18">
@@ -234,16 +244,16 @@ function RowFragment({
                       key={qi}
                       className={`flex flex-col items-center rounded px-1 py-1 text-xs font-mono ${
                         m === true
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-emerald-400 text-white"
                           : m === false
-                            ? "bg-red-100 text-red-700"
-                            : "bg-surface text-muted"
+                            ? "bg-red-500 text-white"
+                            : "bg-amber-200 text-amber-900"
                       }`}
                       title={`Вопрос ${qNum}: ${
                         m === true ? "взят" : m === false ? "не взят" : "—"
                       }`}
                     >
-                      <span className="text-[10px] text-muted leading-none">
+                      <span className="text-[10px] leading-none opacity-80">
                         {qNum}
                       </span>
                       <span className="font-bold leading-none">

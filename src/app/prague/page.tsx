@@ -117,18 +117,18 @@ export default function PraguePage() {
       )}
 
       {data && data.teams.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border-2 border-red-300 dark:border-red-700 shadow-md">
+        <div className="overflow-x-auto rounded-xl border border-red-200 bg-red-50/40 dark:border-red-900 dark:bg-red-950/20 shadow-sm">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gradient-to-r from-red-600 to-rose-600 text-left text-xs uppercase tracking-wider text-white">
-                <th className="px-3 py-3 font-bold w-12">М</th>
-                <th className="px-3 py-3 font-bold min-w-[180px]">Команда</th>
-                <th className="px-3 py-3 font-bold min-w-[120px]">Город</th>
-                <th className="px-3 py-3 text-right font-bold w-16">Σ</th>
+              <tr className="bg-red-100 text-left text-xs uppercase tracking-wider text-red-900 dark:bg-red-950/60 dark:text-red-100">
+                <th className="px-3 py-3 font-semibold w-12">М</th>
+                <th className="px-3 py-3 font-semibold min-w-[180px]">Команда</th>
+                <th className="px-3 py-3 font-semibold min-w-[120px]">Город</th>
+                <th className="px-3 py-3 text-right font-semibold w-16">Σ</th>
                 {data.tours.map((t, i) => (
                   <th
                     key={i}
-                    className="px-3 py-3 text-right font-bold w-16 whitespace-nowrap"
+                    className="px-3 py-3 text-right font-semibold w-16 whitespace-nowrap"
                   >
                     {t.name}
                   </th>
@@ -187,16 +187,16 @@ function RowFragment({
     .map((_, idx) => idx)
     .filter((idx) => expanded[`${teamKey}::${idx}`]);
 
-  // Bright alternating red shades, no grey.
+  // Soft alternating red palette.
   const stripe =
     rowIdx % 2 === 0
-      ? "bg-rose-100 dark:bg-rose-900/40"
-      : "bg-amber-50 dark:bg-amber-900/20";
+      ? "bg-red-50/60 dark:bg-red-950/20"
+      : "bg-rose-50/40 dark:bg-rose-950/10";
 
   return (
     <>
       <tr
-        className={`${stripe} border-b border-red-200 dark:border-red-800 hover:bg-yellow-200 dark:hover:bg-yellow-800/40 transition-colors`}
+        className={`${stripe} border-b border-red-100 dark:border-red-900/60 hover:bg-red-100/70 dark:hover:bg-red-900/30 transition-colors`}
       >
         <td className="px-3 py-2.5 font-extrabold text-red-950 dark:text-red-100 whitespace-nowrap">
           {team.place}
@@ -225,8 +225,8 @@ function RowFragment({
             <td key={ti} className="px-1 py-1 text-right">
               <button
                 onClick={() => onToggle(key)}
-                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold text-red-950 dark:text-red-100 transition-colors hover:bg-rose-300 dark:hover:bg-rose-700 ${
-                  isOpen ? "bg-rose-300 dark:bg-rose-700" : ""
+                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold text-red-950 dark:text-red-100 transition-colors hover:bg-red-100 dark:hover:bg-red-900/40 ${
+                  isOpen ? "bg-red-100 dark:bg-red-900/40" : ""
                 }`}
                 title={`Раскрыть тур ${ti + 1}`}
               >
@@ -248,10 +248,10 @@ function RowFragment({
         return (
           <tr
             key={`${teamKey}-detail-${tourIdx}`}
-            className={`${stripe} border-b border-red-200 dark:border-red-800`}
+            className={`${stripe} border-b border-red-100 dark:border-red-900/60`}
           >
             <td colSpan={4 + team.tours.length} className="px-4 py-3">
-              <div className="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-300 mb-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-red-800 dark:text-red-200 mb-2">
                 {tour.name} — {tour.total} из {qCount}
               </div>
               <div className="grid grid-cols-12 gap-1 sm:grid-cols-18">
@@ -262,10 +262,10 @@ function RowFragment({
                       key={qi}
                       className={`flex flex-col items-center rounded px-1 py-1 text-xs font-mono ${
                         m === true
-                          ? "bg-emerald-400 text-white"
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
                           : m === false
-                            ? "bg-red-500 text-white"
-                            : "bg-amber-200 text-amber-900"
+                            ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
+                            : "bg-red-50 text-red-400 dark:bg-red-950/30 dark:text-red-500"
                       }`}
                       title={`Вопрос ${qNum}: ${
                         m === true ? "взят" : m === false ? "не взят" : "—"

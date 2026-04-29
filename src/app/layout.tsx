@@ -45,6 +45,16 @@ export default function RootLayout({
   return (
     <html lang="pl" suppressHydrationWarning>
       <head>
+        <meta
+          name="theme-color"
+          content="#ffffff"
+          media="(prefers-color-scheme: light)"
+        />
+        <meta
+          name="theme-color"
+          content="#0d0d11"
+          media="(prefers-color-scheme: dark)"
+        />
         {/* Anti-flash script: sets dark class before React hydration */}
         <script
           dangerouslySetInnerHTML={{

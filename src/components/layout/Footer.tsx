@@ -11,13 +11,13 @@ export function Footer() {
               <Logo size={28} />
               <span className="text-base font-bold tracking-tight">4gk.pl</span>
             </div>
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-sm text-foreground/80">
               Портал результатов интеллектуальных игр в Польше.
             </p>
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted/60">Турниры</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Турниры</h3>
             <ul className="mt-3 space-y-2">
               <li><Link href="/warsaw" className="text-sm text-muted hover:text-foreground transition-colors">Чемпионат Варшавы</Link></li>
               <li><Link href="/ochp" className="text-sm text-muted hover:text-foreground transition-colors">ОЧП</Link></li>
@@ -27,7 +27,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted/60">Портал</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Портал</h3>
             <ul className="mt-3 space-y-2">
               <li><Link href="/news" className="text-sm text-muted hover:text-foreground transition-colors">Новости</Link></li>
               <li><Link href="/auth/signin" className="text-sm text-muted hover:text-foreground transition-colors">Войти</Link></li>
@@ -35,7 +35,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted/60">Информация</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Информация</h3>
             <ul className="mt-3 space-y-2">
               <li><Link href="/privacy" className="text-sm text-muted hover:text-foreground transition-colors">Polityka prywatności</Link></li>
               <li><Link href="/terms" className="text-sm text-muted hover:text-foreground transition-colors">Regulamin</Link></li>
@@ -44,7 +44,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-6 text-center text-xs text-muted/50">
+        <div className="mt-10 border-t border-border pt-6 text-center text-xs text-muted">
           &copy; {new Date().getFullYear()} 4gk.pl
         </div>
       </div>

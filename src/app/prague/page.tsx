@@ -191,14 +191,24 @@ function RowFragment({
       <tr
         className={`${stripe} border-b border-red-200 dark:border-red-800 hover:bg-yellow-200 dark:hover:bg-yellow-800/40 transition-colors`}
       >
-        <td className="px-3 py-2.5 font-extrabold text-red-700 dark:text-red-300 whitespace-nowrap">
+        <td className="px-3 py-2.5 font-extrabold text-red-950 dark:text-red-100 whitespace-nowrap">
           {team.place}
         </td>
         <td className="px-3 py-2.5 font-semibold text-red-950 dark:text-red-100">
-          {team.team}
+          {team.team.length > 30 ? (
+            <span
+              className="block text-xs leading-tight"
+              style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+              title={team.team}
+            >
+              {team.team}
+            </span>
+          ) : (
+            team.team
+          )}
         </td>
-        <td className="px-3 py-2.5 text-rose-700 dark:text-rose-300">{team.city}</td>
-        <td className="px-3 py-2.5 text-right font-mono text-base font-extrabold text-red-700 dark:text-red-200">
+        <td className="px-3 py-2.5 font-semibold text-red-950 dark:text-red-100">{team.city}</td>
+        <td className="px-3 py-2.5 text-right font-mono text-base font-extrabold text-red-950 dark:text-red-100">
           {team.total}
         </td>
         {team.tours.map((tour, ti) => {
@@ -208,7 +218,7 @@ function RowFragment({
             <td key={ti} className="px-1 py-1 text-right">
               <button
                 onClick={() => onToggle(key)}
-                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold text-red-800 dark:text-red-200 transition-colors hover:bg-rose-300 dark:hover:bg-rose-700 ${
+                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold text-red-950 dark:text-red-100 transition-colors hover:bg-rose-300 dark:hover:bg-rose-700 ${
                   isOpen ? "bg-rose-300 dark:bg-rose-700" : ""
                 }`}
                 title={`Раскрыть тур ${ti + 1}`}

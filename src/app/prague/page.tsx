@@ -128,7 +128,7 @@ export default function PraguePage() {
     <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          Пражма. Пражский полумарафон: 15 часов ЧГК
+          Pražma 2026. Пражский полумарафон: 15 часов ЧГК
         </h1>
         <p className="mt-2 text-sm text-muted">
           Результаты обновляются автоматически каждые 30 секунд.
@@ -228,7 +228,7 @@ export default function PraguePage() {
               <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                 <th className={`font-semibold w-12 ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3"}`}>М</th>
                 <th className={`font-semibold ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
-                <th className={`font-semibold ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
+                <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
                 <th className={`text-right font-semibold w-16 ${fullscreen ? "px-2 py-1.5" : "px-3 py-3"}`}>Σ</th>
                 {data.tours.map((t, i) => (
                   <th
@@ -324,7 +324,7 @@ function RowFragment({
             team.team
           )}
         </td>
-        <td className={`font-semibold ${compact ? "px-2 py-1 text-center whitespace-nowrap" : "px-3 py-2.5"}`}>{team.city}</td>
+        <td className={`hidden sm:table-cell font-semibold ${compact ? "px-2 py-1 text-center whitespace-nowrap" : "px-3 py-2.5"}`}>{team.city}</td>
         <td className={`text-right font-mono font-extrabold ${compact ? "px-2 py-1 text-base" : "px-3 py-2.5 text-base"}`}>
           {team.total}
         </td>

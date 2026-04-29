@@ -20,8 +20,7 @@ interface TeamRow {
 
 interface PraguePayload {
   updatedAt: string;
-  questionsPerTour: number;
-  tours: { name: string }[];
+  tours: { name: string; questionCount: number }[];
   teams: TeamRow[];
 }
 
@@ -145,7 +144,7 @@ export default function PraguePage() {
                     teamKey={teamKey}
                     rowIdx={rowIdx}
                     team={team}
-                    questionsPerTour={data.questionsPerTour}
+                    tours={data.tours}
                     expanded={expanded}
                     onToggle={toggle}
                   />
@@ -163,7 +162,7 @@ interface RowFragmentProps {
   teamKey: string;
   rowIdx: number;
   team: TeamRow;
-  questionsPerTour: number;
+  tours: { name: string; questionCount: number }[];
   expanded: Record<string, boolean>;
   onToggle: (key: string) => void;
 }
@@ -172,10 +171,18 @@ function RowFragment({
   teamKey,
   rowIdx,
   team,
-  questionsPerTour,
+  tours,
   expanded,
   onToggle,
 }: RowFragmentProps) {
+  const tourOffsets: number[] = [];
+  {
+    let acc = 0;
+    for (const t of tours) {
+      tourOffsets.push(acc);
+      acc += t.questionCount;
+    }
+  }
   const expandedTours = team.tours
     .map((_, idx) => idx)
     .filter((idx) => expanded[`${teamKey}::${idx}`]);
@@ -236,7 +243,8 @@ function RowFragment({
       </tr>
       {expandedTours.map((tourIdx) => {
         const tour = team.tours[tourIdx];
-        const baseQuestionNum = tourIdx * questionsPerTour;
+        const baseQuestionNum = tourOffsets[tourIdx] ?? 0;
+        const qCount = tours[tourIdx]?.questionCount ?? tour.marks.length;
         return (
           <tr
             key={`${teamKey}-detail-${tourIdx}`}
@@ -244,7 +252,7 @@ function RowFragment({
           >
             <td colSpan={4 + team.tours.length} className="px-4 py-3">
               <div className="text-xs font-bold uppercase tracking-wider text-red-700 dark:text-red-300 mb-2">
-                {tour.name} — {tour.total} из {questionsPerTour}
+                {tour.name} — {tour.total} из {qCount}
               </div>
               <div className="grid grid-cols-12 gap-1 sm:grid-cols-18">
                 {tour.marks.map((m, qi) => {

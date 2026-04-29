@@ -15,17 +15,31 @@ const TOURS: Array<{ name: string; gid: string }> = [
   { name: "Тур 7", gid: "335675469" },
 ];
 
-const QUESTIONS_PER_TOUR = 36;
+const DEFAULT_QUESTIONS_PER_TOUR = 36;
+const MAX_QUESTIONS_PER_TOUR = 200;
 // Sheet layout (0-indexed in parsed CSV):
-//   row 0: header (Команда, N, Город, номер скв, 1..36)
-//   row 1: secondary header (номер тур, 1..36)
+//   row 0: header (Команда, N, Город, номер скв, 1..N)
+//   row 1: secondary header (номер тур, 1..N)
 //   row 2: jury per-question mode mark (+ or −) — "row 3" in the sheet UI
 //   rows 3..N: team list (A=team, B=N, C=city) AND jury input area:
 //              in question columns the cells contain team numbers (N)
 //              that match the row-2 mode for that question.
+const HEADER_ROW_IDX = 1;
 const MARK_ROW_IDX = 2;
 const TEAM_DATA_START_ROW = 3;
 const QUESTIONS_START_COL = 4;
+
+function detectQuestionCount(rows: string[][]): number {
+  // Use row 1 (secondary header with question numbers) to determine length.
+  const headerRow = rows[HEADER_ROW_IDX] || [];
+  let last = -1;
+  for (let c = QUESTIONS_START_COL; c < Math.min(headerRow.length, QUESTIONS_START_COL + MAX_QUESTIONS_PER_TOUR); c++) {
+    const v = (headerRow[c] || "").trim();
+    if (/^\d+$/.test(v)) last = c;
+  }
+  if (last >= QUESTIONS_START_COL) return last - QUESTIONS_START_COL + 1;
+  return DEFAULT_QUESTIONS_PER_TOUR;
+}
 
 type CacheEntry = { ts: number; payload: PraguePayload };
 let cache: CacheEntry | null = null;
@@ -48,8 +62,7 @@ interface TeamRow {
 
 interface PraguePayload {
   updatedAt: string;
-  questionsPerTour: number;
-  tours: { name: string }[];
+  tours: { name: string; questionCount: number }[];
   teams: TeamRow[];
 }
 
@@ -159,6 +172,8 @@ function buildPayload(rowsByTour: string[][][]): PraguePayload {
     if (t.numberInt !== null) teamByNumber.set(t.numberInt, t);
   }
 
+  const questionCounts = rowsByTour.map((rows) => detectQuestionCount(rows));
+
   // teamKey -> tourIdx -> marks[]
   const results = new Map<string, TeamRow>();
   function teamKeyOf(t: CollectedTeam): string {
@@ -171,10 +186,10 @@ function buildPayload(rowsByTour: string[][][]): PraguePayload {
       number: t.number,
       total: 0,
       place: "",
-      tours: TOURS.map((tour) => ({
+      tours: TOURS.map((tour, idx) => ({
         name: tour.name,
         total: 0,
-        marks: Array(QUESTIONS_PER_TOUR).fill(null),
+        marks: Array(questionCounts[idx]).fill(null),
       })),
     });
   }
@@ -182,8 +197,9 @@ function buildPayload(rowsByTour: string[][][]): PraguePayload {
   for (let tourIdx = 0; tourIdx < TOURS.length; tourIdx++) {
     const rows = rowsByTour[tourIdx];
     const markRow = rows[MARK_ROW_IDX] || [];
+    const qCount = questionCounts[tourIdx];
 
-    for (let q = 0; q < QUESTIONS_PER_TOUR; q++) {
+    for (let q = 0; q < qCount; q++) {
       const col = QUESTIONS_START_COL + q;
       const mode = classifyMark(markRow[col]);
       if (mode === "ungraded") continue;
@@ -229,8 +245,7 @@ function buildPayload(rowsByTour: string[][][]): PraguePayload {
 
   return {
     updatedAt: new Date().toISOString(),
-    questionsPerTour: QUESTIONS_PER_TOUR,
-    tours: TOURS.map((t) => ({ name: t.name })),
+    tours: TOURS.map((t, i) => ({ name: t.name, questionCount: questionCounts[i] })),
     teams,
   };
 }

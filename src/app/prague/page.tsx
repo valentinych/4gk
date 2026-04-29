@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -42,6 +42,9 @@ export default function PraguePage() {
   // expanded[`${teamKey}::${tourIdx}`] === true
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [fullscreen, setFullscreen] = useState(false);
+  const fitWrapRef = useRef<HTMLDivElement | null>(null);
+  const fitTableRef = useRef<HTMLTableElement | null>(null);
+  const [fitScale, setFitScale] = useState(1);
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -56,6 +59,39 @@ export default function PraguePage() {
       document.body.style.overflow = prevOverflow;
     };
   }, [fullscreen]);
+
+  // Fit-to-viewport: scale the whole table down so all rows fit on one screen
+  // in fullscreen mode without scrolling.
+  useEffect(() => {
+    if (!fullscreen) {
+      setFitScale(1);
+      return;
+    }
+    const recalc = () => {
+      const wrap = fitWrapRef.current;
+      const tbl = fitTableRef.current;
+      if (!wrap || !tbl) return;
+      const tw = tbl.scrollWidth;
+      const th = tbl.scrollHeight;
+      const cw = wrap.clientWidth;
+      const ch = wrap.clientHeight;
+      if (!tw || !th || !cw || !ch) return;
+      const s = Math.min(1, cw / tw, ch / th);
+      setFitScale(s > 0 ? s : 1);
+    };
+    const raf = requestAnimationFrame(recalc);
+    const t = setTimeout(recalc, 60);
+    const ro = new ResizeObserver(recalc);
+    if (fitWrapRef.current) ro.observe(fitWrapRef.current);
+    if (fitTableRef.current) ro.observe(fitTableRef.current);
+    window.addEventListener("resize", recalc);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+      ro.disconnect();
+      window.removeEventListener("resize", recalc);
+    };
+  }, [fullscreen, data, expanded]);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,21 +203,37 @@ export default function PraguePage() {
             </button>
           </div>
           <div
-            className={`overflow-auto rounded-xl border border-border bg-surface shadow-sm ${
-              fullscreen ? "flex-1" : ""
+            ref={fitWrapRef}
+            className={`rounded-xl border border-border bg-surface shadow-sm ${
+              fullscreen
+                ? "flex-1 overflow-hidden flex justify-center items-start"
+                : "overflow-auto"
             }`}
           >
-          <table className="w-full text-sm">
+          <div
+            style={
+              fullscreen
+                ? {
+                    transform: `scale(${fitScale})`,
+                    transformOrigin: "top center",
+                  }
+                : undefined
+            }
+          >
+          <table
+            ref={fitTableRef}
+            className={fullscreen ? "text-sm" : "w-full text-sm"}
+          >
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                <th className="px-3 py-3 font-semibold w-12">М</th>
-                <th className="px-3 py-3 font-semibold min-w-[180px]">Команда</th>
-                <th className="px-3 py-3 font-semibold min-w-[120px]">Город</th>
-                <th className="px-3 py-3 text-right font-semibold w-16">Σ</th>
+                <th className={`font-semibold w-12 ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3"}`}>М</th>
+                <th className={`font-semibold ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
+                <th className={`font-semibold ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
+                <th className={`text-right font-semibold w-16 ${fullscreen ? "px-2 py-1.5" : "px-3 py-3"}`}>Σ</th>
                 {data.tours.map((t, i) => (
                   <th
                     key={i}
-                    className="px-3 py-3 text-right font-semibold w-16 whitespace-nowrap"
+                    className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-2 py-1.5" : "px-3 py-3"}`}
                   >
                     {t.name}
                   </th>
@@ -200,11 +252,13 @@ export default function PraguePage() {
                     tours={data.tours}
                     expanded={expanded}
                     onToggle={toggle}
+                    compact={fullscreen}
                   />
                 );
               })}
             </tbody>
           </table>
+          </div>
           </div>
         </div>
       )}
@@ -219,6 +273,7 @@ interface RowFragmentProps {
   tours: { name: string; questionCount: number }[];
   expanded: Record<string, boolean>;
   onToggle: (key: string) => void;
+  compact?: boolean;
 }
 
 function RowFragment({
@@ -228,6 +283,7 @@ function RowFragment({
   tours,
   expanded,
   onToggle,
+  compact = false,
 }: RowFragmentProps) {
   const tourOffsets: number[] = [];
   {
@@ -252,11 +308,11 @@ function RowFragment({
       <tr
         className={`${stripe} border-b border-border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
       >
-        <td className="px-3 py-2.5 font-extrabold whitespace-nowrap">
+        <td className={`font-extrabold whitespace-nowrap ${compact ? "px-2 py-1 text-center" : "px-3 py-2.5"}`}>
           {team.place}
         </td>
-        <td className="px-3 py-2.5 font-semibold">
-          {team.team.length > 30 ? (
+        <td className={`font-semibold ${compact ? "px-2 py-1 text-center whitespace-nowrap" : "px-3 py-2.5"}`}>
+          {!compact && team.team.length > 30 ? (
             <span
               className="block text-xs leading-tight"
               style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
@@ -268,20 +324,20 @@ function RowFragment({
             team.team
           )}
         </td>
-        <td className="px-3 py-2.5 font-semibold">{team.city}</td>
-        <td className="px-3 py-2.5 text-right font-mono text-base font-extrabold">
+        <td className={`font-semibold ${compact ? "px-2 py-1 text-center whitespace-nowrap" : "px-3 py-2.5"}`}>{team.city}</td>
+        <td className={`text-right font-mono font-extrabold ${compact ? "px-2 py-1 text-base" : "px-3 py-2.5 text-base"}`}>
           {team.total}
         </td>
         {team.tours.map((tour, ti) => {
           const key = `${teamKey}::${ti}`;
           const isOpen = !!expanded[key];
           return (
-            <td key={ti} className="px-1 py-1 text-right">
+            <td key={ti} className={compact ? "px-1 py-0.5 text-right" : "px-1 py-1 text-right"}>
               <button
                 onClick={() => onToggle(key)}
-                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
-                  isOpen ? "bg-gray-200 dark:bg-gray-700" : ""
-                }`}
+                className={`inline-flex w-full items-center justify-end gap-1 rounded font-mono font-bold transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                  compact ? "px-1.5 py-0.5" : "px-2 py-1"
+                } ${isOpen ? "bg-gray-200 dark:bg-gray-700" : ""}`}
                 title={`Раскрыть тур ${ti + 1}`}
               >
                 {isOpen ? (

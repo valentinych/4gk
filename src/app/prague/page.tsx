@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, ExternalLink, RefreshCw } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+} from "lucide-react";
 
 interface TourResult {
   name: string;
@@ -34,6 +41,21 @@ export default function PraguePage() {
   const [loading, setLoading] = useState(true);
   // expanded[`${teamKey}::${tourIdx}`] === true
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [fullscreen, setFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullscreen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [fullscreen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,10 +139,41 @@ export default function PraguePage() {
       )}
 
       {data && data.teams.length > 0 && (
-        <div className="overflow-x-auto rounded-xl border border-red-200 bg-red-50/40 dark:border-red-900 dark:bg-red-950/20 shadow-sm">
+        <div
+          className={
+            fullscreen
+              ? "fixed inset-0 z-50 flex flex-col bg-background p-4 sm:p-6"
+              : ""
+          }
+        >
+          <div className="mb-2 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setFullscreen((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100 dark:hover:bg-red-900/40 transition-colors"
+              title={fullscreen ? "Свернуть" : "Во весь экран"}
+            >
+              {fullscreen ? (
+                <>
+                  <Minimize2 className="h-3.5 w-3.5" />
+                  Свернуть
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  Во весь экран
+                </>
+              )}
+            </button>
+          </div>
+          <div
+            className={`overflow-auto rounded-xl border border-red-200 bg-red-50/40 dark:border-red-900 dark:bg-red-950/20 shadow-sm ${
+              fullscreen ? "flex-1" : ""
+            }`}
+          >
           <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-red-100 text-left text-xs uppercase tracking-wider text-red-900 dark:bg-red-950/60 dark:text-red-100">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-red-100 text-left text-xs uppercase tracking-wider text-red-900 dark:bg-red-950/80 dark:text-red-100">
                 <th className="px-3 py-3 font-semibold w-12">М</th>
                 <th className="px-3 py-3 font-semibold min-w-[180px]">Команда</th>
                 <th className="px-3 py-3 font-semibold min-w-[120px]">Город</th>
@@ -152,6 +205,7 @@ export default function PraguePage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
@@ -187,11 +241,11 @@ function RowFragment({
     .map((_, idx) => idx)
     .filter((idx) => expanded[`${teamKey}::${idx}`]);
 
-  // Soft alternating red palette.
+  // Soft alternating red palette, slightly more contrast.
   const stripe =
     rowIdx % 2 === 0
-      ? "bg-red-50/60 dark:bg-red-950/20"
-      : "bg-rose-50/40 dark:bg-rose-950/10";
+      ? "bg-red-100/70 dark:bg-red-950/40"
+      : "bg-rose-50 dark:bg-rose-950/15";
 
   return (
     <>

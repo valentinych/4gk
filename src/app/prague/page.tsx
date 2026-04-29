@@ -150,7 +150,7 @@ export default function PraguePage() {
             <button
               type="button"
               onClick={() => setFullscreen((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-900 hover:bg-red-100 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100 dark:hover:bg-red-900/40 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               title={fullscreen ? "Свернуть" : "Во весь экран"}
             >
               {fullscreen ? (
@@ -167,13 +167,13 @@ export default function PraguePage() {
             </button>
           </div>
           <div
-            className={`overflow-auto rounded-xl border border-red-200 bg-red-50/40 dark:border-red-900 dark:bg-red-950/20 shadow-sm ${
+            className={`overflow-auto rounded-xl border border-border bg-surface shadow-sm ${
               fullscreen ? "flex-1" : ""
             }`}
           >
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
-              <tr className="bg-red-100 text-left text-xs uppercase tracking-wider text-red-900 dark:bg-red-950/80 dark:text-red-100">
+              <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                 <th className="px-3 py-3 font-semibold w-12">М</th>
                 <th className="px-3 py-3 font-semibold min-w-[180px]">Команда</th>
                 <th className="px-3 py-3 font-semibold min-w-[120px]">Город</th>
@@ -241,21 +241,21 @@ function RowFragment({
     .map((_, idx) => idx)
     .filter((idx) => expanded[`${teamKey}::${idx}`]);
 
-  // Soft alternating red palette, slightly more contrast.
+  // Neutral alternating gray stripes with default text color.
   const stripe =
     rowIdx % 2 === 0
-      ? "bg-red-100/70 dark:bg-red-950/40"
-      : "bg-rose-50 dark:bg-rose-950/15";
+      ? "bg-white dark:bg-gray-900"
+      : "bg-gray-50 dark:bg-gray-800/50";
 
   return (
     <>
       <tr
-        className={`${stripe} border-b border-red-100 dark:border-red-900/60 hover:bg-red-100/70 dark:hover:bg-red-900/30 transition-colors`}
+        className={`${stripe} border-b border-border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
       >
-        <td className="px-3 py-2.5 font-extrabold text-red-950 dark:text-red-100 whitespace-nowrap">
+        <td className="px-3 py-2.5 font-extrabold whitespace-nowrap">
           {team.place}
         </td>
-        <td className="px-3 py-2.5 font-semibold text-red-950 dark:text-red-100">
+        <td className="px-3 py-2.5 font-semibold">
           {team.team.length > 30 ? (
             <span
               className="block text-xs leading-tight"
@@ -268,8 +268,8 @@ function RowFragment({
             team.team
           )}
         </td>
-        <td className="px-3 py-2.5 font-semibold text-red-950 dark:text-red-100">{team.city}</td>
-        <td className="px-3 py-2.5 text-right font-mono text-base font-extrabold text-red-950 dark:text-red-100">
+        <td className="px-3 py-2.5 font-semibold">{team.city}</td>
+        <td className="px-3 py-2.5 text-right font-mono text-base font-extrabold">
           {team.total}
         </td>
         {team.tours.map((tour, ti) => {
@@ -279,8 +279,8 @@ function RowFragment({
             <td key={ti} className="px-1 py-1 text-right">
               <button
                 onClick={() => onToggle(key)}
-                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold text-red-950 dark:text-red-100 transition-colors hover:bg-red-100 dark:hover:bg-red-900/40 ${
-                  isOpen ? "bg-red-100 dark:bg-red-900/40" : ""
+                className={`inline-flex w-full items-center justify-end gap-1 rounded px-2 py-1 font-mono font-bold transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 ${
+                  isOpen ? "bg-gray-200 dark:bg-gray-700" : ""
                 }`}
                 title={`Раскрыть тур ${ti + 1}`}
               >
@@ -302,10 +302,10 @@ function RowFragment({
         return (
           <tr
             key={`${teamKey}-detail-${tourIdx}`}
-            className={`${stripe} border-b border-red-100 dark:border-red-900/60`}
+            className={`${stripe} border-b border-border`}
           >
             <td colSpan={4 + team.tours.length} className="px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-wider text-red-800 dark:text-red-200 mb-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
                 {tour.name} — {tour.total} из {qCount}
               </div>
               <div className="grid grid-cols-12 gap-1 sm:grid-cols-18">
@@ -319,7 +319,7 @@ function RowFragment({
                           ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
                           : m === false
                             ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
-                            : "bg-red-50 text-red-400 dark:bg-red-950/30 dark:text-red-500"
+                            : "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500"
                       }`}
                       title={`Вопрос ${qNum}: ${
                         m === true ? "взят" : m === false ? "не взят" : "—"

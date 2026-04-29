@@ -59,6 +59,33 @@
 .dark .bg-blue-50  { background-color: #0f1a2a; }
 .dark .bg-green-50, .dark .bg-emerald-50 { background-color: #0f2018; }
 .dark .bg-red-50   { background-color: #2a0f0f; }
+.dark .bg-violet-50 { background-color: #1a132a; }
+.dark .bg-rose-50  { background-color: #2a0f17; }
+.dark .bg-cyan-50  { background-color: #0a2026; }
+.dark .bg-orange-50 { background-color: #2a1810; }
+
+/* Coloured chip/badge text in dark mode: bump 700-shade text up to 300/200 so
+   it stays legible on the dark-tinted *-50 backgrounds above. */
+.dark .text-blue-700    { color: #93c5fd; }
+.dark .text-violet-700  { color: #c4b5fd; }
+.dark .text-emerald-700 { color: #6ee7b7; }
+.dark .text-amber-700   { color: #fcd34d; }
+.dark .text-rose-700    { color: #fda4af; }
+.dark .text-cyan-700    { color: #67e8f9; }
+.dark .text-orange-700  { color: #fdba74; }
+.dark .text-red-700     { color: #fca5a5; }
+.dark .text-green-700   { color: #86efac; }
+.dark .text-emerald-500 { color: #34d399; }
+.dark .text-amber-600   { color: #fbbf24; }
+
+/* In dark mode --accent is near-white, so any element painted with bg-accent
+   must use the *background* colour for text (otherwise hardcoded text-white
+   on bg-accent buttons becomes white-on-white). The compound selector below
+   beats Tailwind's plain .text-white utility by specificity. */
+.dark .bg-accent,
+.dark .hover\:bg-accent-hover:hover {
+  color: var(--background);
+}
 
 /* Form controls inherit the right color scheme automatically via :root /
    .dark color-scheme above. */

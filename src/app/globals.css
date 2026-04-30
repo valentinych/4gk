@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind v4 defaults `dark:` to prefers-color-scheme. We drive colours via
+   `.dark` on <html> (ThemeProvider + inline script). Without this override,
+   OS dark mode still activates dark:* utilities while --foreground stays
+   light — e.g. dark row backgrounds with black text. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
   --background: #ffffff;

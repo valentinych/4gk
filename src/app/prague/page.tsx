@@ -35,6 +35,18 @@ const POLL_INTERVAL_MS = 30_000;
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/16nsdiqD9cd4Uw-XLH1TTrAhmG0EstAHvRCL_bVml0fc/edit?usp=sharing";
 
+/** Fullscreen table: keep one line, trim long names (prefer break at last space). */
+function truncateTeamNameFullscreen(name: string, maxLen = 36): string {
+  if (name.length <= maxLen) return name;
+  const slice = name.slice(0, maxLen);
+  const lastSpace = slice.lastIndexOf(" ");
+  const cut =
+    lastSpace > Math.floor(maxLen * 0.35)
+      ? slice.slice(0, lastSpace).trimEnd()
+      : slice.trimEnd();
+  return `${cut}…`;
+}
+
 export default function PraguePage() {
   const [data, setData] = useState<PraguePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -226,14 +238,14 @@ export default function PraguePage() {
           >
             <thead className="sticky top-0 z-10">
               <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                <th className={`font-semibold w-12 ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3"}`}>М</th>
-                <th className={`font-semibold ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
-                <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-2 py-1.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
-                <th className={`text-right font-semibold w-16 ${fullscreen ? "px-2 py-1.5" : "px-3 py-3"}`}>Σ</th>
+                <th className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}>М</th>
+                <th className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
+                <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
+                <th className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}>Σ</th>
                 {data.tours.map((t, i) => (
                   <th
                     key={i}
-                    className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-2 py-1.5" : "px-3 py-3"}`}
+                    className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-1 py-0.5" : "px-3 py-3"}`}
                   >
                     {t.name}
                   </th>
@@ -308,11 +320,16 @@ function RowFragment({
       <tr
         className={`${stripe} border-b border-border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
       >
-        <td className={`font-extrabold whitespace-nowrap ${compact ? "px-2 py-1 text-center" : "px-3 py-2.5"}`}>
+        <td className={`font-extrabold whitespace-nowrap ${compact ? "px-1 py-0.5 text-center text-sm tabular-nums" : "px-3 py-2.5"}`}>
           {team.place}
         </td>
-        <td className={`font-semibold ${compact ? "px-2 py-1 text-center whitespace-nowrap" : "px-3 py-2.5"}`}>
-          {!compact && team.team.length > 30 ? (
+        <td
+          className={`font-semibold ${compact ? "px-1 py-0.5 text-center text-[17px] leading-snug whitespace-nowrap" : "px-3 py-2.5"}`}
+          title={compact ? team.team : undefined}
+        >
+          {compact ? (
+            truncateTeamNameFullscreen(team.team)
+          ) : team.team.length > 30 ? (
             <span
               className="block text-xs leading-tight"
               style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
@@ -324,8 +341,8 @@ function RowFragment({
             team.team
           )}
         </td>
-        <td className={`hidden sm:table-cell font-semibold ${compact ? "px-2 py-1 text-center whitespace-nowrap" : "px-3 py-2.5"}`}>{team.city}</td>
-        <td className={`text-right font-mono font-extrabold ${compact ? "px-2 py-1 text-base" : "px-3 py-2.5 text-base"}`}>
+        <td className={`hidden sm:table-cell font-semibold ${compact ? "px-1 py-0.5 text-center whitespace-nowrap text-sm" : "px-3 py-2.5"}`}>{team.city}</td>
+        <td className={`text-right font-mono font-extrabold tabular-nums ${compact ? "px-1 py-0.5 text-lg leading-none" : "px-3 py-2.5 text-base"}`}>
           {team.total}
         </td>
         {team.tours.map((tour, ti) => {

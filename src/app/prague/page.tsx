@@ -11,8 +11,8 @@ import {
 } from "lucide-react";
 
 import {
-  buildRatingRanking,
   lastQuestionWithAnyPlus,
+  teamRatingSum,
   type PragueTeamRow,
 } from "@/lib/prague-stats";
 
@@ -55,10 +55,18 @@ export default function PraguePage() {
     [data],
   );
 
-  const ratingRanking = useMemo(
-    () => (data ? buildRatingRanking(data.teams, data.tours) : []),
-    [data],
-  );
+  const ratingByTeamKey = useMemo(() => {
+    if (!data) return new Map<string, number>();
+    const { teams, tours } = data;
+    const m = new Map<string, number>();
+    for (const t of teams) {
+      m.set(
+        `${t.team}|${t.city}`,
+        teamRatingSum(t, teams, tours),
+      );
+    }
+    return m;
+  }, [data]);
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -253,75 +261,19 @@ export default function PraguePage() {
                 : undefined
             }
           >
-          {showRating ? (
-            <table
-              ref={fitTableRef}
-              className={fullscreen ? "text-sm" : "w-full text-sm"}
-            >
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                  <th className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}>М</th>
-                  <th className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
-                  <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
-                  <th className={`text-right font-semibold ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}>Рейтинг</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ratingRanking.map((row, rowIdx) => {
-                  const stripe =
-                    rowIdx % 2 === 0
-                      ? "bg-white dark:bg-gray-900"
-                      : "bg-gray-50 dark:bg-gray-800/50";
-                  return (
-                    <tr
-                      key={`${row.team.team}|${row.team.city}`}
-                      className={`${stripe} border-b border-border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
-                    >
-                      <td className={`font-extrabold whitespace-nowrap ${fullscreen ? "px-1 py-0.5 text-center text-sm tabular-nums" : "px-3 py-2.5"}`}>
-                        {row.place}
-                      </td>
-                      <td
-                        className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-[17px] leading-snug whitespace-nowrap" : "px-3 py-2.5"}`}
-                        title={fullscreen ? row.team.team : undefined}
-                      >
-                        {fullscreen
-                          ? truncateTeamNameFullscreen(row.team.team)
-                          : row.team.team.length > 30
-                            ? (
-                                <span
-                                  className="block text-xs leading-tight"
-                                  style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-                                  title={row.team.team}
-                                >
-                                  {row.team.team}
-                                </span>
-                              )
-                            : (
-                                row.team.team
-                              )}
-                      </td>
-                      <td className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center whitespace-nowrap text-sm" : "px-3 py-2.5"}`}>
-                        {row.team.city}
-                      </td>
-                      <td className={`text-right font-mono font-extrabold tabular-nums ${fullscreen ? "px-1 py-0.5 text-lg leading-none" : "px-3 py-2.5 text-base"}`}>
-                        {row.rating}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            <table
-              ref={fitTableRef}
-              className={fullscreen ? "text-sm" : "w-full text-sm"}
-            >
+          <table
+            ref={fitTableRef}
+            className={fullscreen ? "text-sm" : "w-full text-sm"}
+          >
               <thead className="sticky top-0 z-10">
                 <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                   <th className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}>М</th>
                   <th className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
                   <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
                   <th className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}>Σ</th>
+                  {showRating && (
+                    <th className={`text-right font-semibold ${fullscreen ? "px-1 py-0.5 text-xs tabular-nums font-normal normal-case text-muted" : "px-3 py-3 text-xs font-normal normal-case text-muted"}`}>Рейтинг</th>
+                  )}
                   {data.tours.map((t, i) => (
                     <th
                       key={i}
@@ -345,12 +297,14 @@ export default function PraguePage() {
                       expanded={expanded}
                       onToggle={toggle}
                       compact={fullscreen}
+                      showRating={showRating}
+                      ratingSum={ratingByTeamKey.get(teamKey) ?? 0}
+                      ordinalPlace={rowIdx + 1}
                     />
                   );
                 })}
               </tbody>
-            </table>
-          )}
+          </table>
           </div>
           </div>
         </div>
@@ -367,6 +321,9 @@ interface RowFragmentProps {
   expanded: Record<string, boolean>;
   onToggle: (key: string) => void;
   compact?: boolean;
+  showRating: boolean;
+  ratingSum: number;
+  ordinalPlace: number;
 }
 
 function RowFragment({
@@ -377,6 +334,9 @@ function RowFragment({
   expanded,
   onToggle,
   compact = false,
+  showRating,
+  ratingSum,
+  ordinalPlace,
 }: RowFragmentProps) {
   const tourOffsets: number[] = [];
   {
@@ -402,7 +362,7 @@ function RowFragment({
         className={`${stripe} border-b border-border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
       >
         <td className={`font-extrabold whitespace-nowrap ${compact ? "px-1 py-0.5 text-center text-sm tabular-nums" : "px-3 py-2.5"}`}>
-          {team.place}
+          {showRating ? ordinalPlace : team.place}
         </td>
         <td
           className={`font-semibold ${compact ? "px-1 py-0.5 text-center text-[17px] leading-snug whitespace-nowrap" : "px-3 py-2.5"}`}
@@ -426,6 +386,13 @@ function RowFragment({
         <td className={`text-right font-mono font-extrabold tabular-nums ${compact ? "px-1 py-0.5 text-lg leading-none" : "px-3 py-2.5 text-base"}`}>
           {team.total}
         </td>
+        {showRating && (
+          <td
+            className={`text-right font-mono tabular-nums text-muted ${compact ? "px-1 py-0.5 text-base leading-none" : "px-3 py-2.5 text-sm"}`}
+          >
+            {ratingSum}
+          </td>
+        )}
         {team.tours.map((tour, ti) => {
           const key = `${teamKey}::${ti}`;
           const isOpen = !!expanded[key];
@@ -458,7 +425,10 @@ function RowFragment({
             key={`${teamKey}-detail-${tourIdx}`}
             className={`${stripe} border-b border-border`}
           >
-            <td colSpan={4 + team.tours.length} className="px-4 py-3">
+            <td
+              colSpan={4 + (showRating ? 1 : 0) + team.tours.length}
+              className="px-4 py-3"
+            >
               <div className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
                 {tour.name} — {tour.total} из {qCount}
               </div>

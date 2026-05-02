@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -10,25 +10,16 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-interface TourResult {
-  name: string;
-  total: number;
-  marks: (boolean | null)[];
-}
-
-interface TeamRow {
-  team: string;
-  city: string;
-  number: string;
-  total: number;
-  place: string;
-  tours: TourResult[];
-}
+import {
+  buildRatingRanking,
+  lastQuestionWithAnyPlus,
+  type PragueTeamRow,
+} from "@/lib/prague-stats";
 
 interface PraguePayload {
   updatedAt: string;
   tours: { name: string; questionCount: number }[];
-  teams: TeamRow[];
+  teams: PragueTeamRow[];
 }
 
 const POLL_INTERVAL_MS = 30_000;
@@ -57,6 +48,17 @@ export default function PraguePage() {
   const fitWrapRef = useRef<HTMLDivElement | null>(null);
   const fitTableRef = useRef<HTMLTableElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
+  const [showRating, setShowRating] = useState(false);
+
+  const lastQuestionEntered = useMemo(
+    () => (data ? lastQuestionWithAnyPlus(data.teams, data.tours) : 0),
+    [data],
+  );
+
+  const ratingRanking = useMemo(
+    () => (data ? buildRatingRanking(data.teams, data.tours) : []),
+    [data],
+  );
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -103,7 +105,7 @@ export default function PraguePage() {
       ro.disconnect();
       window.removeEventListener("resize", recalc);
     };
-  }, [fullscreen, data, expanded]);
+  }, [fullscreen, data, expanded, showRating]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,6 +168,11 @@ export default function PraguePage() {
             </span>
           )}
         </div>
+        {data && lastQuestionEntered > 0 && (
+          <p className="mt-3 text-sm font-medium text-foreground">
+            После {lastQuestionEntered} вопроса
+          </p>
+        )}
       </div>
 
       {loading && !data && (
@@ -194,7 +201,21 @@ export default function PraguePage() {
               : ""
           }
         >
-          <div className="mb-2 flex justify-end">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              {fullscreen && lastQuestionEntered > 0 && (
+                <span className="text-sm font-medium text-foreground">
+                  После {lastQuestionEntered} вопроса
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowRating((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                {showRating ? "Скрыть рейтинг" : "Показать рейтинг"}
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setFullscreen((v) => !v)}
@@ -232,44 +253,104 @@ export default function PraguePage() {
                 : undefined
             }
           >
-          <table
-            ref={fitTableRef}
-            className={fullscreen ? "text-sm" : "w-full text-sm"}
-          >
-            <thead className="sticky top-0 z-10">
-              <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                <th className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}>М</th>
-                <th className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
-                <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
-                <th className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}>Σ</th>
-                {data.tours.map((t, i) => (
-                  <th
-                    key={i}
-                    className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-1 py-0.5" : "px-3 py-3"}`}
-                  >
-                    {t.name}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.teams.map((team, rowIdx) => {
-                const teamKey = `${team.team}|${team.city}`;
-                return (
-                  <RowFragment
-                    key={teamKey}
-                    teamKey={teamKey}
-                    rowIdx={rowIdx}
-                    team={team}
-                    tours={data.tours}
-                    expanded={expanded}
-                    onToggle={toggle}
-                    compact={fullscreen}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
+          {showRating ? (
+            <table
+              ref={fitTableRef}
+              className={fullscreen ? "text-sm" : "w-full text-sm"}
+            >
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  <th className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}>М</th>
+                  <th className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
+                  <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
+                  <th className={`text-right font-semibold ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}>Рейтинг</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ratingRanking.map((row, rowIdx) => {
+                  const stripe =
+                    rowIdx % 2 === 0
+                      ? "bg-white dark:bg-gray-900"
+                      : "bg-gray-50 dark:bg-gray-800/50";
+                  return (
+                    <tr
+                      key={`${row.team.team}|${row.team.city}`}
+                      className={`${stripe} border-b border-border hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors`}
+                    >
+                      <td className={`font-extrabold whitespace-nowrap ${fullscreen ? "px-1 py-0.5 text-center text-sm tabular-nums" : "px-3 py-2.5"}`}>
+                        {row.place}
+                      </td>
+                      <td
+                        className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-[17px] leading-snug whitespace-nowrap" : "px-3 py-2.5"}`}
+                        title={fullscreen ? row.team.team : undefined}
+                      >
+                        {fullscreen
+                          ? truncateTeamNameFullscreen(row.team.team)
+                          : row.team.team.length > 30
+                            ? (
+                                <span
+                                  className="block text-xs leading-tight"
+                                  style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+                                  title={row.team.team}
+                                >
+                                  {row.team.team}
+                                </span>
+                              )
+                            : (
+                                row.team.team
+                              )}
+                      </td>
+                      <td className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center whitespace-nowrap text-sm" : "px-3 py-2.5"}`}>
+                        {row.team.city}
+                      </td>
+                      <td className={`text-right font-mono font-extrabold tabular-nums ${fullscreen ? "px-1 py-0.5 text-lg leading-none" : "px-3 py-2.5 text-base"}`}>
+                        {row.rating}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <table
+              ref={fitTableRef}
+              className={fullscreen ? "text-sm" : "w-full text-sm"}
+            >
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  <th className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}>М</th>
+                  <th className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}>Команда</th>
+                  <th className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}>Город</th>
+                  <th className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}>Σ</th>
+                  {data.tours.map((t, i) => (
+                    <th
+                      key={i}
+                      className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-1 py-0.5" : "px-3 py-3"}`}
+                    >
+                      {t.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.teams.map((team, rowIdx) => {
+                  const teamKey = `${team.team}|${team.city}`;
+                  return (
+                    <RowFragment
+                      key={teamKey}
+                      teamKey={teamKey}
+                      rowIdx={rowIdx}
+                      team={team}
+                      tours={data.tours}
+                      expanded={expanded}
+                      onToggle={toggle}
+                      compact={fullscreen}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
           </div>
           </div>
         </div>
@@ -281,7 +362,7 @@ export default function PraguePage() {
 interface RowFragmentProps {
   teamKey: string;
   rowIdx: number;
-  team: TeamRow;
+  team: PragueTeamRow;
   tours: { name: string; questionCount: number }[];
   expanded: Record<string, boolean>;
   onToggle: (key: string) => void;

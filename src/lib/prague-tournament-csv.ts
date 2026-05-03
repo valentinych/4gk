@@ -25,6 +25,83 @@ export const PRAGUE_TOURNAMENT_SEGMENTS = [
   { tourNum: 6, start: 193, end: 235 },
 ] as const;
 
+/**
+ * Официальные Team ID и порядок строк как в шаблоне tournament-tours (Pražma).
+ * Номер в CSV всегда берётся отсюда, а не из поля number в таблице.
+ */
+export const PRAGUE_TOURNAMENT_TEMPLATE_ROWS: readonly {
+  id: string;
+  team: string;
+  city: string;
+}[] = [
+  { id: "71710", team: "Bedla Jedla", city: "Прага" },
+  { id: "70149", team: "Nevím", city: "Прага" },
+  { id: "4032", team: "X-promt", city: "Рига" },
+  { id: "65268", team: "В гостях у Кафки", city: "Прага" },
+  { id: "105954", team: "Весло Открытий", city: "сборная" },
+  { id: "86951", team: "Даша в Зоопарке", city: "Вена" },
+  { id: "55486", team: "Два слова на букву К", city: "Мёрфельден-Вальдорф" },
+  { id: "86290", team: "или вася", city: "Прага" },
+  { id: "4130", team: "Как-то так", city: "Прага" },
+  { id: "105175", team: "Команда Ř", city: "Прага" },
+  { id: "106060", team: "Летучий Голландец", city: "сборная" },
+  { id: "90039", team: "мртвы крт", city: "Берлин" },
+  { id: "108122", team: "Невероятно выразительное кря", city: "сборная" },
+  { id: "330", team: "Проти вiтру", city: "Дюссельдорф" },
+  {
+    id: "108117",
+    team: "Риск встретить медведя в Татрах продолжает расти",
+    city: "сборная",
+  },
+  { id: "86769", team: "Самая большая лягушка", city: "Варшава" },
+  { id: "93821", team: "Сборная того или иного рода", city: "Рига" },
+  { id: "85037", team: "Странные агенты", city: "Берлин" },
+  { id: "65703", team: "Хмели сумели", city: "Прага" },
+  { id: "86754", team: "Хы", city: "Мюнхен" },
+  { id: "48303", team: "Человек-снежинка", city: "Таллинн" },
+  { id: "87193", team: "Чилийские степные белки", city: "Нюрнберг" },
+];
+
+function normPart(s: string): string {
+  return s.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function teamCityKey(team: string, city: string): string {
+  return `${normPart(team)}|${normPart(city)}`;
+}
+
+/** Team ID из шаблона по паре «название + город»; иначе номер из данных. */
+export function templateTeamIdFor(team: PragueCsvTeam): string {
+  const key = teamCityKey(team.team, team.city);
+  const row = PRAGUE_TOURNAMENT_TEMPLATE_ROWS.find(
+    (r) => teamCityKey(r.team, r.city) === key,
+  );
+  if (row) return row.id;
+  return team.number?.trim() ?? "";
+}
+
+/** Сначала строки в порядке шаблона, затем команды, которых нет в шаблоне. */
+export function orderTeamsLikeTemplate(teams: PragueCsvTeam[]): PragueCsvTeam[] {
+  const byKey = new Map<string, PragueCsvTeam>();
+  for (const t of teams) {
+    byKey.set(teamCityKey(t.team, t.city), t);
+  }
+  const out: PragueCsvTeam[] = [];
+  const used = new Set<string>();
+  for (const row of PRAGUE_TOURNAMENT_TEMPLATE_ROWS) {
+    const t = byKey.get(teamCityKey(row.team, row.city));
+    if (t) {
+      out.push(t);
+      used.add(teamCityKey(t.team, t.city));
+    }
+  }
+  for (const t of teams) {
+    const k = teamCityKey(t.team, t.city);
+    if (!used.has(k)) out.push(t);
+  }
+  return out;
+}
+
 function csvEscape(field: string): string {
   if (/[",\n\r]/.test(field)) return `"${field.replace(/"/g, '""')}"`;
   return field;
@@ -53,7 +130,8 @@ function markAtGlobalQuestion(
 
 /** Построить CSV целиком (без BOM — BOM добавляет route). */
 export function buildPragueTournamentToursCsv(payload: PragueCsvPayload): string {
-  const { teams, tours: toursMeta } = payload;
+  const { teams: rawTeams, tours: toursMeta } = payload;
+  const teams = orderTeamsLikeTemplate(rawTeams);
   const lines: string[] = [];
 
   for (let si = 0; si < PRAGUE_TOURNAMENT_SEGMENTS.length; si++) {
@@ -74,7 +152,7 @@ export function buildPragueTournamentToursCsv(payload: PragueCsvPayload): string
 
     for (const team of teams) {
       const row: string[] = [
-        team.number?.trim() ?? "",
+        templateTeamIdFor(team),
         team.team,
         team.city,
         String(seg.tourNum),

@@ -12,8 +12,10 @@ const TOURS: Array<{ name: string; gid: string }> = [
   { name: "Тур 4", gid: "2035071153" },
   { name: "Тур 5", gid: "282065552" },
   { name: "Тур 6", gid: "689794601" },
-  { name: "Тур 7", gid: "335675469" },
 ];
+
+/** Последний учитываемый глобальный номер вопроса — 235 (без тура 7 и двух лишних колонок в туре 6). */
+const TOUR6_QUESTION_TRIM = 2;
 
 const DEFAULT_QUESTIONS_PER_TOUR = 36;
 const MAX_QUESTIONS_PER_TOUR = 200;
@@ -173,6 +175,13 @@ function buildPayload(rowsByTour: string[][][]): PraguePayload {
   }
 
   const questionCounts = rowsByTour.map((rows) => detectQuestionCount(rows));
+  const tour6Idx = TOURS.length - 1;
+  if (tour6Idx >= 0 && questionCounts[tour6Idx] != null) {
+    questionCounts[tour6Idx] = Math.max(
+      1,
+      questionCounts[tour6Idx] - TOUR6_QUESTION_TRIM,
+    );
+  }
 
   // teamKey -> tourIdx -> marks[]
   const results = new Map<string, TeamRow>();

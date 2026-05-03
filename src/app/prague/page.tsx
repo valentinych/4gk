@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   ChevronDown,
   ChevronRight,
+  Download,
   ExternalLink,
   Maximize2,
   Minimize2,
@@ -39,6 +41,8 @@ function truncateTeamNameFullscreen(name: string, maxLen = 36): string {
 }
 
 export default function PraguePage() {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   const [data, setData] = useState<PraguePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -174,6 +178,15 @@ export default function PraguePage() {
                 second: "2-digit",
               })}
             </span>
+          )}
+          {isAdmin && (
+            <a
+              href="/api/admin/prague-tournament-csv"
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2.5 py-1 font-semibold text-accent transition-colors hover:bg-surface-hover"
+            >
+              <Download className="h-3 w-3" />
+              Скачать CSV (шаблон турниров)
+            </a>
           )}
         </div>
         {data && lastQuestionEntered > 0 && (

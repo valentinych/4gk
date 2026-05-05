@@ -15,6 +15,14 @@ const DS_BOTH_TEAMS = new Set([
   62709,  // hardfix: Есть желающие — participated in both DS
 ]);
 
+/**
+ * Teams invited by organizers (ВК) that aren't yet flagged as such in the
+ * Google Sheet — overrides the sheet category for these team IDs.
+ */
+const VK_OVERRIDE_TEAMS = new Set<number>([
+  102668, // Прокрастинация
+]);
+
 export type ParticipantCategory = "time" | "vk" | "rating" | "ds2" | "none";
 
 export interface DsParticipant {
@@ -96,7 +104,11 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
     const teamId = parseInt(cells[3] ?? "0") || 0;
     const rawRating = parseInt(cells[4] ?? "0") || 0;
     const rating = rawRating === 0 || rawRating === 9999 ? null : rawRating;
-    const { category, label } = parseCategory(cells[5] ?? "", cells[6] ?? "");
+    let { category, label } = parseCategory(cells[5] ?? "", cells[6] ?? "");
+    if (VK_OVERRIDE_TEAMS.has(teamId)) {
+      category = "vk";
+      label = "ВК";
+    }
 
     rawParticipants.push({
       team,

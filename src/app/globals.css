@@ -72,6 +72,21 @@
 .dark .bg-sky-50   { background-color: #0f1a2a; }
 .dark .bg-sky-100  { background-color: #1c2c3f; }
 
+/* Dark mode chip/badge backgrounds. The Tailwind 100-shades are bright
+   pastels that wash out completely against light text in dark mode (text
+   utilities are remapped to 200/300 shades below). Match each *-100 with a
+   darker tinted surface so chip text stays readable. */
+.dark .bg-blue-100    { background-color: #1c2c3f; }
+.dark .bg-violet-100  { background-color: #2a1f48; }
+.dark .bg-emerald-100,
+.dark .bg-green-100   { background-color: #14322a; }
+.dark .bg-amber-100,
+.dark .bg-yellow-100  { background-color: #3a2a10; }
+.dark .bg-orange-100  { background-color: #3a2210; }
+.dark .bg-rose-100    { background-color: #3a1424; }
+.dark .bg-red-100     { background-color: #3a1414; }
+.dark .bg-cyan-100    { background-color: #103038; }
+
 /* Alpha-modifier (/60) variants used by row tints — without explicit overrides,
    bright Tailwind 50-shades blend with the dark surface to a mid-tone that
    kills contrast with text-muted. Mirror the solid overrides at 60% opacity. */

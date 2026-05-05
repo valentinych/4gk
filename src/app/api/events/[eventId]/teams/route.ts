@@ -51,6 +51,7 @@ export async function GET(_req: Request, { params }: Params) {
       venueMapUrl: event.venueMapUrl,
       description: event.description,
       registrationLink: event.registrationLink,
+      ratingUrl: event.ratingUrl,
       mediaLink: event.mediaLink,
       mediaLinkLabel: event.mediaLinkLabel,
       registrationOpensAt: event.registrationOpensAt?.toISOString() ?? null,

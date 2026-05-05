@@ -182,6 +182,7 @@ const emptyForm = {
   venueMapUrl: "",
   description: "",
   registrationLink: "",
+  ratingUrl: "",
   mediaLink: "",
   mediaLinkLabel: "",
   registrationOpensAt: "",
@@ -200,6 +201,7 @@ interface Template {
   venueMapUrl?: string | null;
   description?: string | null;
   registrationLink?: string | null;
+  ratingUrl?: string | null;
   mediaLink?: string | null;
   mediaLinkLabel?: string | null;
   startTime?: string | null;
@@ -218,6 +220,24 @@ export default function CalendarPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  // Restore last selected day from sessionStorage on mount, and re-focus the
+  // month accordingly so the user sees the same view they left.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = sessionStorage.getItem("calendar-selected-day");
+    if (!saved) return;
+    setSelectedDay(saved);
+    const d = parseDate(saved);
+    setYear(d.getFullYear());
+    setMonth(d.getMonth());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (selectedDay === null) sessionStorage.removeItem("calendar-selected-day");
+    else sessionStorage.setItem("calendar-selected-day", selectedDay);
+  }, [selectedDay]);
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -338,6 +358,21 @@ export default function CalendarPage() {
   const eventMap = useMemo(() => buildEventMap(filteredEvents), [filteredEvents]);
   const cells = useMemo(() => getMonthDays(year, month), [year, month]);
 
+  const todayStartMs = useMemo(
+    () => new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime(),
+    // `today` is fresh on every render but its date portion is stable per session
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const isPastEvent = useCallback(
+    (ev: CalendarEvent) => {
+      const endStr = ev.endDate ?? ev.startDate;
+      return parseDate(endStr).getTime() < todayStartMs;
+    },
+    [todayStartMs],
+  );
+
   const monthEvents = useMemo(() => {
     const seen = new Set<string>();
     const result: CalendarEvent[] = [];
@@ -354,10 +389,16 @@ export default function CalendarPage() {
         }
       }
     }
-    return result.sort(
-      (a, b) => parseDate(a.startDate).getTime() - parseDate(b.startDate).getTime()
-    );
-  }, [filteredEvents, year, month]);
+    // Upcoming events first (asc by start date), past events at the bottom
+    // (desc – most recently finished first) so they fade out chronologically.
+    const upcoming = result
+      .filter((ev) => !isPastEvent(ev))
+      .sort((a, b) => parseDate(a.startDate).getTime() - parseDate(b.startDate).getTime());
+    const past = result
+      .filter((ev) => isPastEvent(ev))
+      .sort((a, b) => parseDate(b.startDate).getTime() - parseDate(a.startDate).getTime());
+    return [...upcoming, ...past];
+  }, [filteredEvents, year, month, isPastEvent]);
 
   const selectedEvents = selectedDay ? (eventMap.get(selectedDay) ?? []) : [];
 
@@ -387,6 +428,7 @@ export default function CalendarPage() {
       venueMapUrl: ev.venueMapUrl ?? "",
       description: ev.description ?? "",
       registrationLink: ev.registrationLink ?? "",
+      ratingUrl: ev.ratingUrl ?? "",
       mediaLink: ev.mediaLink ?? "",
       mediaLinkLabel: ev.mediaLinkLabel ?? "",
       registrationOpensAt: isoToWarsawInputValue(ev.registrationOpensAt),
@@ -464,6 +506,7 @@ export default function CalendarPage() {
       venueMapUrl: t.venueMapUrl ?? "",
       description: t.description ?? "",
       registrationLink: t.registrationLink ?? "",
+      ratingUrl: t.ratingUrl ?? "",
       mediaLink: t.mediaLink ?? "",
       mediaLinkLabel: t.mediaLinkLabel ?? "",
       startTime: t.startTime ?? "",
@@ -489,6 +532,7 @@ export default function CalendarPage() {
       venueMapUrl: t.venueMapUrl ?? "",
       description: t.description ?? "",
       registrationLink: t.registrationLink ?? "",
+      ratingUrl: t.ratingUrl ?? "",
       mediaLink: t.mediaLink ?? "",
       mediaLinkLabel: t.mediaLinkLabel ?? "",
       registrationOpensAt: "",
@@ -763,15 +807,27 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="sm:w-1/2">
-              <label className="mb-1 block text-xs font-medium text-muted">Название медиа-ссылки</label>
-              <input
-                type="text"
-                value={templateForm.mediaLinkLabel}
-                onChange={(e) => setTemplateForm({ ...templateForm, mediaLinkLabel: e.target.value })}
-                placeholder="Telegram-группа"
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Название медиа-ссылки</label>
+                <input
+                  type="text"
+                  value={templateForm.mediaLinkLabel}
+                  onChange={(e) => setTemplateForm({ ...templateForm, mediaLinkLabel: e.target.value })}
+                  placeholder="Telegram-группа"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Ссылка на синхрон/турнир на сайте рейтинга</label>
+                <input
+                  type="url"
+                  value={templateForm.ratingUrl}
+                  onChange={(e) => setTemplateForm({ ...templateForm, ratingUrl: e.target.value })}
+                  placeholder="https://rating.chgk.info/tournament/..."
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -1006,15 +1062,27 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="sm:w-1/2">
-              <label className="mb-1 block text-xs font-medium text-muted">Название медиа-ссылки</label>
-              <input
-                type="text"
-                value={form.mediaLinkLabel}
-                onChange={(e) => setForm({ ...form, mediaLinkLabel: e.target.value })}
-                placeholder="Telegram-группа"
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Название медиа-ссылки</label>
+                <input
+                  type="text"
+                  value={form.mediaLinkLabel}
+                  onChange={(e) => setForm({ ...form, mediaLinkLabel: e.target.value })}
+                  placeholder="Telegram-группа"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted">Ссылка на синхрон/турнир на сайте рейтинга</label>
+                <input
+                  type="url"
+                  value={form.ratingUrl}
+                  onChange={(e) => setForm({ ...form, ratingUrl: e.target.value })}
+                  placeholder="https://rating.chgk.info/tournament/..."
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
             </div>
 
             {/* Registration window */}
@@ -1280,9 +1348,19 @@ export default function CalendarPage() {
 
           {/* Sidebar */}
           <div className="space-y-3">
+            {selectedDay && (
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+              >
+                <X className="h-3 w-3" />
+                Сбросить фильтр дня · показать весь месяц
+              </button>
+            )}
+
             <h3 className="text-sm font-bold text-muted">
               {selectedDay
-                ? `События ${parseDate(selectedDay).getDate()} ${MONTHS_RU[month].toLowerCase()}`
+                ? `События ${parseDate(selectedDay).getDate()} ${MONTHS_RU[parseDate(selectedDay).getMonth()].toLowerCase()}`
                 : `События за ${MONTHS_RU[month].toLowerCase()}`}
             </h3>
 
@@ -1292,31 +1370,29 @@ export default function CalendarPage() {
                 <p className="mt-2 text-xs text-muted/60">Нет событий</p>
               </div>
             ) : (
-              (selectedDay ? selectedEvents : monthEvents).map((ev) => (
-                <EventCard
-                  key={ev.id}
-                  event={ev}
-                  canManage={canManageEvents}
-                  deleting={deleting === ev.id}
-                  onDelete={() => handleDelete(ev.id)}
-                  onEdit={() => handleEdit(ev)}
-                  isLoggedIn={!!role}
-                  hasMyRoster={myRosterEventIds.includes(ev.id)}
-                  isRegistered={myRegisteredEventIds.includes(ev.id)}
-                  isWithdrawn={myWithdrawnEventIds.includes(ev.id)}
-                  rosterCount={rosterCounts[ev.id] ?? 0}
-                  teamCount={teamCounts[ev.id] ?? 0}
-                />
-              ))
-            )}
-
-            {selectedDay && (
-              <button
-                onClick={() => setSelectedDay(null)}
-                className="w-full rounded-lg py-2 text-center text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
-              >
-                Показать все события месяца
-              </button>
+              (selectedDay ? selectedEvents : monthEvents).map((ev) => {
+                const past = isPastEvent(ev);
+                return (
+                  <div
+                    key={ev.id}
+                    className={past ? "opacity-50 grayscale transition-opacity hover:opacity-100 hover:grayscale-0" : ""}
+                  >
+                    <EventCard
+                      event={ev}
+                      canManage={canManageEvents}
+                      deleting={deleting === ev.id}
+                      onDelete={() => handleDelete(ev.id)}
+                      onEdit={() => handleEdit(ev)}
+                      isLoggedIn={!!role}
+                      hasMyRoster={myRosterEventIds.includes(ev.id)}
+                      isRegistered={myRegisteredEventIds.includes(ev.id)}
+                      isWithdrawn={myWithdrawnEventIds.includes(ev.id)}
+                      rosterCount={rosterCounts[ev.id] ?? 0}
+                      teamCount={teamCounts[ev.id] ?? 0}
+                    />
+                  </div>
+                );
+              })
             )}
           </div>
         </div>
@@ -1475,6 +1551,17 @@ function EventCard({
           >
             <Megaphone className="h-3 w-3" />
             {event.mediaLinkLabel || "Медиа"}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+        {event.ratingUrl && (
+          <a
+            href={event.ratingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+          >
+            Сайт рейтинга
             <ExternalLink className="h-3 w-3" />
           </a>
         )}

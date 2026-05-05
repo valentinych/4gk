@@ -82,6 +82,7 @@ interface EventData {
   venueMapUrl?: string | null;
   description?: string | null;
   registrationLink?: string | null;
+  ratingUrl?: string | null;
   mediaLink?: string | null;
   mediaLinkLabel?: string | null;
   registrationOpensAt?: string | null;
@@ -641,7 +642,7 @@ export default function EventDetailPage() {
           </div>
         )}
 
-        {(event.registrationLink || event.mediaLink) && (
+        {(event.registrationLink || event.mediaLink || event.ratingUrl) && (
           <div className="mt-4 flex flex-wrap gap-2">
             {event.registrationLink && (
               <a
@@ -662,6 +663,16 @@ export default function EventDetailPage() {
               >
                 <Megaphone className="h-3 w-3" />
                 {event.mediaLinkLabel || "Медиа"} <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+            {event.ratingUrl && (
+              <a
+                href={event.ratingUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+              >
+                Сайт рейтинга <ExternalLink className="h-3 w-3" />
               </a>
             )}
           </div>

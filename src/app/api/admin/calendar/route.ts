@@ -46,6 +46,7 @@ export async function POST(req: Request) {
       venueMapUrl: body.venueMapUrl?.trim() || null,
       description: body.description?.trim() || null,
       registrationLink: body.registrationLink?.trim() || null,
+      ratingUrl: body.ratingUrl?.trim() || null,
       mediaLink: body.mediaLink?.trim() || null,
       mediaLinkLabel: body.mediaLinkLabel?.trim() || null,
       registrationOpensAt: body.registrationOpensAt ? new Date(body.registrationOpensAt) : null,

@@ -84,6 +84,7 @@ model CalendarEvent {
   venueMapUrl      String?
   description      String?
   registrationLink String?
+  ratingUrl        String?
   mediaLink        String?
   mediaLinkLabel   String?
   registrationOpensAt  DateTime?
@@ -165,6 +166,7 @@ model CalendarTemplate {
   venueMapUrl      String?
   description      String?
   registrationLink String?
+  ratingUrl        String?
   mediaLink        String?
   mediaLinkLabel   String?
   startTime        String?

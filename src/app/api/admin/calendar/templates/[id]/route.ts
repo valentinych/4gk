@@ -28,6 +28,7 @@ export async function PATCH(req: Request, { params }: Params) {
       venueMapUrl: body.venueMapUrl?.trim() || null,
       description: body.description?.trim() || null,
       registrationLink: body.registrationLink?.trim() || null,
+      ratingUrl: body.ratingUrl?.trim() || null,
       mediaLink: body.mediaLink?.trim() || null,
       mediaLinkLabel: body.mediaLinkLabel?.trim() || null,
       startTime: body.startTime?.trim() || null,

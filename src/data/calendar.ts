@@ -13,6 +13,7 @@ export interface CalendarEvent {
   venueMapUrl?: string | null;
   description?: string | null;
   registrationLink?: string | null;
+  ratingUrl?: string | null;
   mediaLink?: string | null;
   mediaLinkLabel?: string | null;
   registrationOpensAt?: string | null;

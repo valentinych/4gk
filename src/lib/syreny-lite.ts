@@ -4,7 +4,7 @@ export const SYRENY_LITE_EVENT_ID = "mazowieckie-syreny-lite";
 
 export const SYRENY_LITE = {
   id: SYRENY_LITE_EVENT_ID,
-  title: "Mazowieckie Syreny Lite",
+  title: "Syrenki Mazowieckie Lite",
   city: "Варшава",
   year: 2026,
   /** Saturday 6 June 2026 */

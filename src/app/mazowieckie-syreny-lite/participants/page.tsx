@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { ParticipantsClient } from "./ParticipantsClient";
 
 export const metadata: Metadata = {
-  title: "Список команд | Mazowieckie Syreny Lite",
-  description: "Список заявленных команд на Mazowieckie Syreny Lite — 6–7 июня 2026, Варшава",
+  title: "Список команд | Syrenki Mazowieckie Lite",
+  description: "Список заявленных команд на Syrenki Mazowieckie Lite — 6–7 июня 2026, Варшава",
 };
 
 export const dynamic = "force-dynamic";

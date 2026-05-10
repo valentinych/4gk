@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarDays, ExternalLink, MapPin, Sparkles, Users } from "
 import { SYRENY_LITE, SYRENY_LITE_SCHEDULE } from "@/lib/syreny-lite";
 
 export const metadata: Metadata = {
-  title: "Mazowieckie Syreny Lite",
+  title: "Syrenki Mazowieckie Lite",
   description:
     "Любительский турнир для начинающих команд: 6–7 июня 2026, Варшава. КСИ, Б-52, Брейн-Ринг, ЭК, Чёрное ЧГК, Островок Бесконечности.",
 };
@@ -141,10 +141,16 @@ export default function MazowieckieSyrenyLitePage() {
             рассматриваться отдельными запросами в оргкомитет.
           </p>
           <p className="mb-3">
-            <span className="mr-1.5">👍</span>
-            Мы сможем принять <strong>16 команд</strong>. При рассмотрении заявок мы
-            будем идти снизу рейтинга — кто ниже, тому больше гарантии участия.
-            Предварительный список участников будет оглашён <strong>10 мая</strong>.
+            <span className="mr-1.5">🫶</span>
+            Так как активность команд (после 600 места) пока не особо, мы открываем
+            заявки для всех желающих команд (вне зависимости от рейтинга) и разделим
+            игры на несколько зачётов (в том числе и кнопки).
+          </p>
+          <p className="mb-3">
+            <span className="mr-1.5">👉</span>
+            Следующий термин подтверждения участия — <strong>24 мая</strong>. До этого
+            дня при выборе участников мы будем смотреть на рейтинг команд, а после —
+            уже нет.
           </p>
           <p className="mb-3">
             <span className="mr-1.5">🤝</span>

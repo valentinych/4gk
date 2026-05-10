@@ -21,7 +21,7 @@ export const AMATEUR_TOURNAMENTS: AmateurTournament[] = [
   {
     href: "/mazowieckie-syreny-lite",
     emoji: "🧜‍♀️",
-    title: "Mazowieckie Syreny Lite",
+    title: "Syrenki Mazowieckie Lite",
     description: "Двухдневный турнир для начинающих команд: КСИ, Б-52, Брейн-Ринг, ЭК, Чёрное ЧГК, Островок Бесконечности.",
     cities: ["Варшава"],
     dateLabel: "6–7 июня 2026",

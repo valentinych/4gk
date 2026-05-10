@@ -181,13 +181,13 @@ export function ParticipantsClient() {
         className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Mazowieckie Syreny Lite
+        Syrenki Mazowieckie Lite
       </Link>
 
       <div className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-lime-100 bg-lime-50 px-3 py-1 text-xs font-semibold text-lime-700">
           <Sparkles className="h-3.5 w-3.5" />
-          Mazowieckie Syreny Lite — 2026
+          Syrenki Mazowieckie Lite — 2026
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Список команд</h1>
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">

@@ -86,7 +86,7 @@ export function WithdrawClient() {
         <div className="rounded-xl border border-border bg-surface p-5 text-sm">
           <p className="mb-4 text-muted">
             Подтвердите отзыв заявки команды с турнира{" "}
-            <strong className="text-foreground">Mazowieckie Syreny Lite</strong>.
+            <strong className="text-foreground">Syrenki Mazowieckie Lite</strong>.
           </p>
           {error && (
             <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700">

@@ -109,11 +109,11 @@ function buildWithdrawUrl(id: string, token: string): string {
 
 /**
  * Teams ranked below 600th place (or with no rating yet) that registered before
- * the cutoff are guaranteed a slot. Cutoff = end of day 13 May 2026 Warsaw
- * (CEST = UTC+2), i.e. 14 May 00:00 local == 13 May 22:00 UTC.
+ * the cutoff are guaranteed a slot. Cutoff = end of day 10 May 2026 Warsaw
+ * (CEST = UTC+2), i.e. 11 May 00:00 local == 10 May 22:00 UTC.
  */
 const GUARANTEED_RATING_THRESHOLD = 600;
-const GUARANTEED_REG_CUTOFF_MS = Date.UTC(2026, 4, 13, 22, 0, 0);
+const GUARANTEED_REG_CUTOFF_MS = Date.UTC(2026, 4, 10, 22, 0, 0);
 
 function isGuaranteed(t: TeamRow): boolean {
   const lowRated = t.ratingPosition === null || t.ratingPosition > GUARANTEED_RATING_THRESHOLD;
@@ -299,7 +299,7 @@ export function ParticipantsClient() {
         )}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          Гарантировано — команды ниже 600 места, заявившиеся до 13 мая
+          Гарантировано — команды ниже 600 места, заявившиеся до 10 мая
         </span>
       </div>
 
@@ -339,7 +339,7 @@ export function ParticipantsClient() {
                     : "";
                 const guaranteedBadge = guaranteed && (
                   <span
-                    title="Гарантированное участие: ниже 600 места и заявка до 13 мая"
+                    title="Гарантированное участие: ниже 600 места и заявка до 10 мая"
                     className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
                   >
                     <CheckCircle2 className="h-3 w-3" />

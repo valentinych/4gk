@@ -107,6 +107,20 @@ function buildWithdrawUrl(id: string, token: string): string {
   )}&token=${encodeURIComponent(token)}`;
 }
 
+/**
+ * Teams ranked below 600th place (or with no rating yet) that registered before
+ * the cutoff are guaranteed a slot. Cutoff = end of day 13 May 2026 Warsaw
+ * (CEST = UTC+2), i.e. 14 May 00:00 local == 13 May 22:00 UTC.
+ */
+const GUARANTEED_RATING_THRESHOLD = 600;
+const GUARANTEED_REG_CUTOFF_MS = Date.UTC(2026, 4, 13, 22, 0, 0);
+
+function isGuaranteed(t: TeamRow): boolean {
+  const lowRated = t.ratingPosition === null || t.ratingPosition > GUARANTEED_RATING_THRESHOLD;
+  const earlyReg = new Date(t.addedAt).getTime() < GUARANTEED_REG_CUTOFF_MS;
+  return lowRated && earlyReg;
+}
+
 export function ParticipantsClient() {
   const [teams, setTeams] = useState<TeamRow[]>([]);
   const [ratingReleaseDate, setRatingReleaseDate] = useState<string | null>(null);
@@ -191,7 +205,7 @@ export function ParticipantsClient() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Список команд</h1>
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Предварительный список участников будет оглашён <strong>10 мая</strong>.
+          Следующий термин подтверждения участия — <strong>24 мая</strong>.
         </p>
       </div>
 
@@ -283,6 +297,10 @@ export function ParticipantsClient() {
             <span className="font-semibold text-foreground">{ratingReleaseDate}</span>
           </span>
         )}
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Гарантировано — команды ниже 600 места, заявившиеся до 13 мая
+        </span>
       </div>
 
       {loading ? (
@@ -313,11 +331,21 @@ export function ParticipantsClient() {
               {teams.map((t, idx) => {
                 const isMine = !!tokens[t.id];
                 const isReserve = idx >= 16;
+                const guaranteed = isGuaranteed(t);
                 const rowCls = isMine
                   ? "bg-emerald-50/60"
                   : isReserve
                     ? "bg-red-50"
                     : "";
+                const guaranteedBadge = guaranteed && (
+                  <span
+                    title="Гарантированное участие: ниже 600 места и заявка до 13 мая"
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
+                  >
+                    <CheckCircle2 className="h-3 w-3" />
+                    Гарантировано
+                  </span>
+                );
                 return (
                   <tr
                     key={t.id}
@@ -328,21 +356,25 @@ export function ParticipantsClient() {
                     </td>
                     <td className="px-3 py-2 font-medium">
                       {t.teamChgkId ? (
-                        <a
-                          href={`https://rating.chgk.info/teams/${t.teamChgkId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 hover:text-accent transition-colors"
-                        >
-                          {t.teamName}
-                          <ExternalLink className="h-3 w-3 opacity-40 shrink-0" />
-                        </a>
+                        <span className="inline-flex flex-wrap items-center gap-1.5">
+                          <a
+                            href={`https://rating.chgk.info/teams/${t.teamChgkId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 hover:text-accent transition-colors"
+                          >
+                            {t.teamName}
+                            <ExternalLink className="h-3 w-3 opacity-40 shrink-0" />
+                          </a>
+                          {guaranteedBadge}
+                        </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5">
+                        <span className="inline-flex flex-wrap items-center gap-1.5">
                           {t.teamName}
                           <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
                             Впервые
                           </span>
+                          {guaranteedBadge}
                         </span>
                       )}
                     </td>

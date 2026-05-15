@@ -4,6 +4,19 @@ import { fetchChgkGgRatings } from "./chgk-gg";
 const SHEET_ID = "1muLzibrQamNZxNk-fA7gCvrLLXqzVhJXMT_f1UCZ_nU";
 
 /**
+ * Final rating release used for slot allocation. Frozen — rating is no longer
+ * recomputed against newer releases. Any registrations submitted after this
+ * date are still evaluated against the 14.05.2026 rating snapshot.
+ */
+const RATING_LOCK_DATE = "14.05.2026";
+
+// Slot quotas for confirmed participation.
+const TIME_SLOTS = 10;
+const VK_SLOTS = 7;
+const RATING_SLOTS = 15;
+const DS2_SLOTS = 10;
+
+/**
  * Team IDs that participated in BOTH previous Dziki Sopot tournaments:
  * DS'24 (id=11247) and DS'25 (id=12462)
  * Fetched via: https://api.rating.chgk.info/tournaments/{id}/results.json
@@ -21,6 +34,7 @@ const DS_BOTH_TEAMS = new Set([
  */
 const VK_OVERRIDE_TEAMS = new Set<number>([
   102668, // Прокрастинация
+  54152,  // Пражские горцы
 ]);
 
 export type ParticipantCategory = "time" | "vk" | "rating" | "ds2" | "none";
@@ -42,6 +56,8 @@ export interface DsParticipant {
   registeredAt: string;
   /** True if team played in both previous Dziki Sopot tournaments */
   inBothDs: boolean;
+  /** True if team is on the waiting list (did not get a confirmed slot) */
+  inWaitlist: boolean;
 }
 
 function parseCsvLine(line: string): string[] {
@@ -94,7 +110,7 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
   });
 
   const lines = text.split("\n").filter((l) => l.trim().length > 0);
-  const rawParticipants: Omit<DsParticipant, "ratingPosition" | "ratingScore" | "inBothDs">[] = [];
+  const rawParticipants: Omit<DsParticipant, "ratingPosition" | "ratingScore" | "inBothDs" | "inWaitlist">[] = [];
 
   for (let i = 1; i < lines.length; i++) {
     const cells = parseCsvLine(lines[i]);
@@ -122,9 +138,12 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
     });
   }
 
-  // Fetch current ratings from rating.chgk.gg in parallel
+  // Fetch ratings from rating.chgk.gg pinned to the lock date
   const teamIds = rawParticipants.map((p) => p.teamId);
-  const { map: ratingsMap, releaseDate: ratingReleaseDate } = await fetchChgkGgRatings(teamIds);
+  const { map: ratingsMap, releaseDate: ratingReleaseDate } = await fetchChgkGgRatings(
+    teamIds,
+    RATING_LOCK_DATE,
+  );
 
   const withLive = rawParticipants.map((p) => {
     const live = ratingsMap.get(p.teamId) ?? null;
@@ -133,32 +152,63 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
       ratingPosition: live?.position ?? null,
       ratingScore: live?.score ?? null,
       inBothDs: DS_BOTH_TEAMS.has(p.teamId),
+      inWaitlist: false,
     };
   });
 
-  // Confirmed slots: "time" and "vk" keep their order and category
-  const confirmed = withLive.filter((p) => p.category === "time" || p.category === "vk");
+  // Time slots: keep first TIME_SLOTS teams flagged "Время" in sheet order.
+  const timeTeams = withLive.filter((p) => p.category === "time").slice(0, TIME_SLOTS);
 
-  // Remaining teams sorted by current rating position (null → sheet position → end), then by score desc
+  // VK slots: keep first VK_SLOTS teams flagged "ВК" in sheet order.
+  const vkTeams = withLive.filter((p) => p.category === "vk").slice(0, VK_SLOTS);
+
+  const reservedIds = new Set([...timeTeams, ...vkTeams].map((p) => p.teamId));
+
+  // Remaining teams sorted by rating position (lower is better; missing → end),
+  // then by score desc as tiebreaker.
+  const sortByRating = (
+    a: (typeof withLive)[number],
+    b: (typeof withLive)[number],
+  ) => {
+    const posA = a.ratingPosition ?? a.rating ?? Infinity;
+    const posB = b.ratingPosition ?? b.rating ?? Infinity;
+    if (posA !== posB) return posA - posB;
+    return (b.ratingScore ?? 0) - (a.ratingScore ?? 0);
+  };
+
   const rest = withLive
-    .filter((p) => p.category !== "time" && p.category !== "vk")
-    .sort((a, b) => {
-      const posA = a.ratingPosition ?? a.rating ?? Infinity;
-      const posB = b.ratingPosition ?? b.rating ?? Infinity;
-      if (posA !== posB) return posA - posB;
-      // Fallback: higher live score first, then sheet rating as proxy
-      const scoreA = a.ratingScore ?? 0;
-      const scoreB = b.ratingScore ?? 0;
-      return scoreB - scoreA;
-    });
+    .filter((p) => !reservedIds.has(p.teamId))
+    .sort(sortByRating);
 
-  // Top 15 of rest get "Рейтинг N" label; the rest get "none"
-  const ranked = rest.map((p, i) => {
-    if (i < 15) {
-      return { ...p, category: "rating" as ParticipantCategory, categoryLabel: `Рейтинг ${i + 1}` };
-    }
-    return { ...p, category: "none" as ParticipantCategory, categoryLabel: "" };
-  });
+  // Top RATING_SLOTS by rating get "rating" category.
+  const ratingTeams = rest.slice(0, RATING_SLOTS).map((p, i) => ({
+    ...p,
+    category: "rating" as ParticipantCategory,
+    categoryLabel: `Рейтинг ${i + 1}`,
+  }));
 
-  return { participants: [...confirmed, ...ranked], ratingReleaseDate };
+  // From the remainder, take up to DS2_SLOTS inBothDs teams (already sorted by rating).
+  const afterRating = rest.slice(RATING_SLOTS);
+  const ds2Picked = afterRating.filter((p) => p.inBothDs).slice(0, DS2_SLOTS);
+  const ds2Ids = new Set(ds2Picked.map((p) => p.teamId));
+  const ds2Teams = ds2Picked.map((p, i) => ({
+    ...p,
+    category: "ds2" as ParticipantCategory,
+    categoryLabel: `Участие в 2 ДС ${i + 1}`,
+  }));
+
+  // Everyone else → waitlist, sorted by rating.
+  const waitlistTeams = afterRating
+    .filter((p) => !ds2Ids.has(p.teamId))
+    .map((p) => ({
+      ...p,
+      category: "none" as ParticipantCategory,
+      categoryLabel: "",
+      inWaitlist: true,
+    }));
+
+  return {
+    participants: [...timeTeams, ...vkTeams, ...ratingTeams, ...ds2Teams, ...waitlistTeams],
+    ratingReleaseDate,
+  };
 }

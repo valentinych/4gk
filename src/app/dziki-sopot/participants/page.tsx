@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Fragment, Suspense } from "react";
 import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { fetchDsParticipants } from "@/lib/ds-participants";
 import type { DsParticipantsResult, ParticipantCategory } from "@/lib/ds-participants";
@@ -12,6 +12,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const RATING_LOCK_DATE_LABEL = "14.05.2026";
 
 
 // ─── Category config ──────────────────────────────────────────────────────────
@@ -36,7 +38,7 @@ const CAT_CONFIG: Record<
   },
   rating: {
     label: "Рейтинг",
-    description: "Предварительно проходят по рейтингу",
+    description: "Проходят по рейтингу",
     rowCls: "bg-emerald-50/60",
     badgeCls: "bg-emerald-100 text-emerald-700",
     dotCls: "bg-emerald-400",
@@ -72,35 +74,17 @@ function fmtTimestamp(raw: string): string {
 }
 
 /**
- * Green solid  = confirmed: Время or ВК (regardless of 2DS)
- * Orange blink = preliminary: Рейтинг (with or without 2DS),
- *                              or inBothDs as the only factor (category "none")
- * Empty        = no indicator
+ * Green solid = confirmed slot (time / vk / rating / ds2)
+ * Empty       = waitlist (category "none")
  */
-function TrafficLight({ cat, inBothDs }: { cat: ParticipantCategory; inBothDs: boolean }) {
-  if (cat === "time" || cat === "vk") {
-    return (
-      <span
-        className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]"
-        title="Участие подтверждено"
-      />
-    );
-  }
-  if (cat === "rating" || inBothDs) {
-    return (
-      <span
-        className="animate-traffic-pulse inline-block h-3 w-3 rounded-full"
-        title={
-          cat === "rating" && inBothDs
-            ? "Предварительно проходят по рейтингу · Участие в 2 ДС"
-            : cat === "rating"
-              ? "Предварительно проходят по рейтингу"
-              : "Участие в 2 ДС"
-        }
-      />
-    );
-  }
-  return <span className="inline-block h-3 w-3" />;
+function TrafficLight({ cat }: { cat: ParticipantCategory }) {
+  if (cat === "none") return <span className="inline-block h-3 w-3" />;
+  return (
+    <span
+      className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]"
+      title="Участие подтверждено"
+    />
+  );
 }
 
 // ─── Page shell (renders instantly) ───────────────────────────────────────────
@@ -207,29 +191,28 @@ async function fetchParticipantsData(): Promise<DsParticipantsResult> {
 async function ParticipantsSection() {
   const { participants, ratingReleaseDate } = await fetchParticipantsData();
 
+  const confirmed = participants.filter((p) => !p.inWaitlist);
+  const waitlist = participants.filter((p) => p.inWaitlist);
+
   const counts = {
-    time:        participants.filter((p) => p.category === "time").length,
-    vk:          participants.filter((p) => p.category === "vk").length,
-    rating:      participants.filter((p) => p.category === "rating" && !p.inBothDs).length,
-    ds2:         participants.filter((p) => p.category === "ds2").length,
-    none:        participants.filter((p) => p.category === "none" && !p.inBothDs).length,
-    confirmed:   participants.filter((p) => p.category === "time" || p.category === "vk").length,
-    preliminary: participants.filter(
-      (p) => (p.category === "rating" || p.inBothDs) && p.category !== "time" && p.category !== "vk"
-    ).length,
-    inBothDs:    participants.filter((p) => p.inBothDs).length,
+    time:      participants.filter((p) => p.category === "time").length,
+    vk:        participants.filter((p) => p.category === "vk").length,
+    rating:    participants.filter((p) => p.category === "rating").length,
+    ds2:       participants.filter((p) => p.category === "ds2").length,
+    confirmed: confirmed.length,
+    waitlist:  waitlist.length,
   };
 
   return (
     <>
       <div className="mb-6 -mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
         <span>{participants.length} команд</span>
-        {ratingReleaseDate && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium shadow-sm">
-            Рейтинг по состоянию релиза{" "}
-            <span className="font-semibold text-foreground">{ratingReleaseDate}</span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium shadow-sm">
+          Рейтинг зафиксирован на релиз{" "}
+          <span className="font-semibold text-foreground">
+            {ratingReleaseDate ?? RATING_LOCK_DATE_LABEL}
           </span>
-        )}
+        </span>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-3">
@@ -240,21 +223,22 @@ async function ParticipantsSection() {
             {counts.confirmed}
           </span>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm">
-          <span className="animate-traffic-pulse inline-block h-3 w-3 rounded-full" />
-          <span>Предварительно проходят</span>
-          <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
-            {counts.preliminary}
-          </span>
-        </div>
+        {counts.waitlist > 0 && (
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm">
+            <span className="inline-block h-3 w-3 rounded-full bg-gray-300" />
+            <span>Лист ожидания</span>
+            <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-bold text-gray-700">
+              {counts.waitlist}
+            </span>
+          </div>
+        )}
 
         {(
           [
             { cat: "time",   count: counts.time },
             { cat: "vk",     count: counts.vk },
             { cat: "rating", count: counts.rating },
-            { cat: "ds2",    count: counts.inBothDs },
-            { cat: "none",   count: counts.none },
+            { cat: "ds2",    count: counts.ds2 },
           ] as { cat: ParticipantCategory; count: number }[]
         ).map(({ cat, count }) => {
           const cfg = CAT_CONFIG[cat];
@@ -265,11 +249,9 @@ async function ParticipantsSection() {
               className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm"
             >
               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cfg.badgeCls}`}>
-                {cat === "ds2" ? "Участие в 2 ДС" : cfg.label}
+                {cfg.label}
               </span>
-              {cat !== "none" && (
-                <span className="text-muted">— {cfg.description}</span>
-              )}
+              <span className="text-muted">— {cfg.description}</span>
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${cfg.badgeCls}`}>
                 {count}
               </span>
@@ -299,19 +281,33 @@ async function ParticipantsSection() {
             <tbody>
               {participants.map((p, idx) => {
                 const cfg = CAT_CONFIG[p.category];
-                const rowCls =
-                  p.category === "none" && p.inBothDs ? "bg-amber-50/60" : cfg.rowCls;
+                const rowCls = p.inWaitlist ? "bg-gray-50/60" : cfg.rowCls;
+                const prev = idx > 0 ? participants[idx - 1] : null;
+                const isFirstWaitlist = p.inWaitlist && (!prev || !prev.inWaitlist);
                 return (
+                  <Fragment key={idx}>
+                    {isFirstWaitlist && (
+                      <tr className="bg-muted/15">
+                        <td
+                          colSpan={7}
+                          className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted"
+                        >
+                          Лист ожидания — {counts.waitlist}{" "}
+                          <span className="font-normal normal-case">
+                            (по рейтингу на {ratingReleaseDate ?? RATING_LOCK_DATE_LABEL})
+                          </span>
+                        </td>
+                      </tr>
+                    )}
                   <tr
-                    key={idx}
                     className={`border-b border-border/50 last:border-0 transition-colors hover:brightness-[0.97] ${rowCls}`}
                   >
                     <td className="px-3 py-2 text-center">
-                      <TrafficLight cat={p.category} inBothDs={p.inBothDs} />
+                      <TrafficLight cat={p.category} />
                     </td>
 
                     <td className="px-3 py-2 text-center text-xs font-bold text-muted">
-                      {idx + 1}
+                      {p.inWaitlist ? idx + 1 - counts.confirmed : idx + 1}
                     </td>
 
                     <td className="px-3 py-2 font-medium">
@@ -350,24 +346,25 @@ async function ParticipantsSection() {
 
                     <td className="px-3 py-2">
                       <div className="flex flex-col gap-0.5 items-start">
-                        {p.category !== "none" && !(p.inBothDs && p.category === "ds2") && (
+                        {p.category !== "none" && (
                           <span
                             className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${cfg.badgeCls}`}
                           >
                             {p.categoryLabel}
                           </span>
                         )}
-                        {p.inBothDs && (
+                        {p.inBothDs && p.category !== "ds2" && (
                           <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-amber-100 text-amber-700">
                             Участие в 2 ДС
                           </span>
                         )}
-                        {!p.inBothDs && p.category === "none" && (
+                        {p.category === "none" && !p.inBothDs && (
                           <span className="text-muted text-xs">—</span>
                         )}
                       </div>
                     </td>
                   </tr>
+                  </Fragment>
                 );
               })}
             </tbody>

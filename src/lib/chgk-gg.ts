@@ -6,14 +6,18 @@ export interface ChgkGgRating {
 }
 
 /**
- * Fetches the current rating position and score for a team from rating.chgk.gg.
- * Parses the first non-empty row of the team's release history table.
+ * Fetches the rating position and score for a team from rating.chgk.gg.
+ * Parses the team's release history table.
  *
  * Example URL: https://rating.chgk.gg/b/team/65510/
- * Returns { position: 32, score: 13274 } for the latest release.
+ *
+ * If `targetDate` (DD.MM.YYYY) is provided, returns the row whose release date
+ * is exactly `targetDate` or, if missing, the most recent release at or before
+ * `targetDate`. Otherwise returns the most recent release.
  */
 export async function fetchChgkGgRating(
   teamId: number,
+  targetDate?: string,
 ): Promise<ChgkGgRating | null> {
   if (!teamId || teamId <= 0) return null;
 
@@ -26,19 +30,17 @@ export async function fetchChgkGgRating(
 
     const html = await res.text();
 
-    // Find all <tr class="...rating-table-row..."> rows
     const rowRegex =
       /<tr[^>]*class="[^"]*rating-table-row[^"]*"[^>]*>([\s\S]*?)<\/tr>/g;
+    const rows: ChgkGgRating[] = [];
     let match: RegExpExecArray | null;
 
     while ((match = rowRegex.exec(html)) !== null) {
       const rowHtml = match[1];
-      // Extract <td> cells
       const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
       const cells: string[] = [];
       let cellMatch: RegExpExecArray | null;
       while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-        // Strip all HTML tags and trim
         const text = cellMatch[1]
           .replace(/<[^>]+>/g, " ")
           .replace(/&nbsp;/g, " ")
@@ -46,24 +48,32 @@ export async function fetchChgkGgRating(
         cells.push(text);
       }
 
-      // A valid release row has: [date, position, rating, ...]
-      // date looks like "DD.MM.YYYY", position is a number, rating is a number
       if (cells.length >= 3) {
         const dateStr = cells[0];
-        const posStr = cells[1].split(/\s/)[0]; // first token (ignore sub-rows)
-        const scoreStr = cells[2].split(/\s/)[0]; // first token (ignore +/- change)
+        const posStr = cells[1].split(/\s/)[0];
+        const scoreStr = cells[2].split(/\s/)[0];
 
         const isDate = /^\d{2}\.\d{2}\.\d{4}$/.test(dateStr);
         const pos = parseInt(posStr);
         const score = parseInt(scoreStr);
 
         if (isDate && !isNaN(pos) && pos > 0 && !isNaN(score) && score > 0) {
-          return { position: pos, score, releaseDate: dateStr };
+          rows.push({ position: pos, score, releaseDate: dateStr });
         }
       }
     }
 
-    return null;
+    if (rows.length === 0) return null;
+
+    if (!targetDate) return rows[0];
+
+    const targetIso = toIso(targetDate);
+    // Rows are newest-first; pick first whose date <= target
+    for (const row of rows) {
+      if (toIso(row.releaseDate) <= targetIso) return row;
+    }
+    // No release at or before target — fall back to oldest available
+    return rows[rows.length - 1];
   } catch {
     return null;
   }
@@ -81,10 +91,14 @@ export interface ChgkGgRatingsResult {
  */
 export async function fetchChgkGgRatings(
   teamIds: number[],
+  targetDate?: string,
 ): Promise<ChgkGgRatingsResult> {
   const unique = [...new Set(teamIds.filter((id) => id > 0))];
   const results = await Promise.all(
-    unique.map(async (id) => ({ id, rating: await fetchChgkGgRating(id) })),
+    unique.map(async (id) => ({
+      id,
+      rating: await fetchChgkGgRating(id, targetDate),
+    })),
   );
   const map = new Map<number, ChgkGgRating | null>();
   let releaseDate: string | null = null;

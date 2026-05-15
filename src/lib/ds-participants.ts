@@ -162,7 +162,8 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
   // VK slots: keep first VK_SLOTS teams flagged "ВК" in sheet order.
   const vkTeams = withLive.filter((p) => p.category === "vk").slice(0, VK_SLOTS);
 
-  const reservedIds = new Set([...timeTeams, ...vkTeams].map((p) => p.teamId));
+  // Reserve by object identity (some teams share teamId=0 when not on rating.chgk).
+  const reserved = new Set<(typeof withLive)[number]>([...timeTeams, ...vkTeams]);
 
   // Remaining teams sorted by rating position (lower is better; missing → end),
   // then by score desc as tiebreaker.
@@ -176,9 +177,7 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
     return (b.ratingScore ?? 0) - (a.ratingScore ?? 0);
   };
 
-  const rest = withLive
-    .filter((p) => !reservedIds.has(p.teamId))
-    .sort(sortByRating);
+  const rest = withLive.filter((p) => !reserved.has(p)).sort(sortByRating);
 
   // Top RATING_SLOTS by rating get "rating" category.
   const ratingTeams = rest.slice(0, RATING_SLOTS).map((p, i) => ({
@@ -189,9 +188,10 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
 
   // From the remainder, take up to DS2_SLOTS inBothDs teams (already sorted by rating).
   const afterRating = rest.slice(RATING_SLOTS);
-  const ds2Picked = afterRating.filter((p) => p.inBothDs).slice(0, DS2_SLOTS);
-  const ds2Ids = new Set(ds2Picked.map((p) => p.teamId));
-  const ds2Teams = ds2Picked.map((p) => ({
+  const ds2Picked = new Set(
+    afterRating.filter((p) => p.inBothDs).slice(0, DS2_SLOTS),
+  );
+  const ds2Teams = [...ds2Picked].map((p) => ({
     ...p,
     category: "ds2" as ParticipantCategory,
     categoryLabel: "Участие в 2 DS",
@@ -199,7 +199,7 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
 
   // Everyone else → waitlist, sorted by rating.
   const waitlistTeams = afterRating
-    .filter((p) => !ds2Ids.has(p.teamId))
+    .filter((p) => !ds2Picked.has(p))
     .map((p) => ({
       ...p,
       category: "none" as ParticipantCategory,

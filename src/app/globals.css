@@ -94,6 +94,7 @@
 .dark .bg-violet-50\/60  { background-color: rgb(26 19 42 / 0.6); }
 .dark .bg-emerald-50\/60 { background-color: rgb(15 32 24 / 0.6); }
 .dark .bg-amber-50\/60   { background-color: rgb(42 31 16 / 0.6); }
+.dark .bg-gray-50\/60    { background-color: rgb(30 30 40 / 0.6); }
 
 /* Coloured chip/badge text in dark mode: bump 700-shade text up to 300/200 so
    it stays legible on the dark-tinted *-50 backgrounds above. */

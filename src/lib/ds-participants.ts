@@ -90,7 +90,7 @@ function parseCategory(
 
   if (f5.startsWith("Время"))   return { category: "time", label: f5 };
   if (f5 === "ВК")              return { category: "vk",   label: "ВК" };
-  // "Рейтинг" and "Участие в 2 ДС" are reassigned dynamically after live data arrives
+  // "Рейтинг" and "Участие в 2 DS" are reassigned dynamically after live data arrives
   void f6;
   return { category: "none", label: "" };
 }
@@ -191,10 +191,10 @@ export async function fetchDsParticipants(): Promise<DsParticipantsResult> {
   const afterRating = rest.slice(RATING_SLOTS);
   const ds2Picked = afterRating.filter((p) => p.inBothDs).slice(0, DS2_SLOTS);
   const ds2Ids = new Set(ds2Picked.map((p) => p.teamId));
-  const ds2Teams = ds2Picked.map((p, i) => ({
+  const ds2Teams = ds2Picked.map((p) => ({
     ...p,
     category: "ds2" as ParticipantCategory,
-    categoryLabel: `Участие в 2 ДС ${i + 1}`,
+    categoryLabel: "Участие в 2 DS",
   }));
 
   // Everyone else → waitlist, sorted by rating.

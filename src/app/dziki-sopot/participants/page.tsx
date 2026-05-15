@@ -44,8 +44,8 @@ const CAT_CONFIG: Record<
     dotCls: "bg-emerald-400",
   },
   ds2: {
-    label: "Участие в 2 ДС",
-    description: "Участвовали в двух предыдущих ДС",
+    label: "Участие в 2 DS",
+    description: "Участвовали в двух предыдущих DS",
     rowCls: "bg-amber-50/60",
     badgeCls: "bg-amber-100 text-amber-700",
     dotCls: "bg-amber-400",
@@ -355,7 +355,7 @@ async function ParticipantsSection() {
                         )}
                         {p.inBothDs && p.category !== "ds2" && (
                           <span className="inline-block rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap bg-amber-100 text-amber-700">
-                            Участие в 2 ДС
+                            Участие в 2 DS
                           </span>
                         )}
                         {p.category === "none" && !p.inBothDs && (

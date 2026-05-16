@@ -26,7 +26,6 @@ const DS_BOTH_TEAMS = new Set([
   87884, 89616, 89632, 90063, 90965, 91851, 91852, 98470, 98974, 100058, 100059,
   101287, // hardfix: Цифра 3 — participated in both DS
   62709,  // hardfix: Есть желающие — participated in both DS
-  87436,  // hardfix: Хождение — participated in both DS
 ]);
 
 /**

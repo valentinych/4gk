@@ -378,9 +378,6 @@ export function ParticipantsClient() {
                       ) : (
                         <span className="inline-flex flex-wrap items-center gap-1.5">
                           {t.teamName}
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                            Впервые
-                          </span>
                           {guaranteedBadge}
                         </span>
                       )}

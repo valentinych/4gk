@@ -12,6 +12,18 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Display-side overrides applied without touching DB rows. Names are matched
+ * case-insensitively against `displayName ?? teamName`.
+ */
+const HIDDEN_TEAM_NAMES = new Set<string>(["коробка"]);
+const RENAMED_TEAM_NAMES = new Map<string, string>([
+  ["кучин айленд", "Коробучин"],
+  ["кучин айланд", "Коробучин"],
+]);
+
+const norm = (s: string) => s.trim().toLowerCase();
+
 export async function GET() {
   const event = await ensureSyrenyLiteEvent();
 
@@ -21,7 +33,7 @@ export async function GET() {
   const role = session?.user?.role;
   const isAdmin = role === "ADMIN" || role === "ORGANIZER";
 
-  const teams = await db.eventTeam.findMany({
+  const rawTeams = await db.eventTeam.findMany({
     where: { eventId: SYRENY_LITE_EVENT_ID, withdrawnAt: null },
     orderBy: { addedAt: "asc" },
     select: {
@@ -39,6 +51,15 @@ export async function GET() {
       contactTelegram: true,
     },
   });
+
+  // Apply display-side hide / rename overrides.
+  const teams = rawTeams
+    .filter((t) => !HIDDEN_TEAM_NAMES.has(norm(t.displayName ?? t.teamName)))
+    .map((t) => {
+      const current = t.displayName ?? t.teamName;
+      const renamed = RENAMED_TEAM_NAMES.get(norm(current));
+      return renamed ? { ...t, displayName: renamed } : t;
+    });
 
   const realIds = teams
     .filter((t) => !t.manualEntry && t.teamChgkId > 0)

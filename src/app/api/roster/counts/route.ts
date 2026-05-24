@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchPlayerCurrentTeam } from "@/lib/chgk";
+import {
+  SYRENY_LITE_EVENT_ID,
+  SYRENY_LITE_HIDDEN_TEAM_NAMES,
+  normalizeSyrenyLiteName,
+} from "@/lib/syreny-lite";
 
 const TEAM_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -75,6 +80,24 @@ export async function GET() {
   });
   for (const g of teamGrouped) {
     result.teamCounts[g.eventId] = g._count.id;
+  }
+
+  // Syrenki Mazowieckie Lite hides certain teams display-side
+  // (see /api/syreny-lite/teams). Mirror that here so the calendar
+  // count matches the visible participants list.
+  if (result.teamCounts[SYRENY_LITE_EVENT_ID]) {
+    const hiddenActive = await db.eventTeam.findMany({
+      where: { eventId: SYRENY_LITE_EVENT_ID, withdrawnAt: null },
+      select: { teamName: true, displayName: true },
+    });
+    const hiddenCount = hiddenActive.filter((t) =>
+      SYRENY_LITE_HIDDEN_TEAM_NAMES.has(
+        normalizeSyrenyLiteName(t.displayName ?? t.teamName),
+      ),
+    ).length;
+    if (hiddenCount > 0) {
+      result.teamCounts[SYRENY_LITE_EVENT_ID] -= hiddenCount;
+    }
   }
 
   if (isOrganizer) {

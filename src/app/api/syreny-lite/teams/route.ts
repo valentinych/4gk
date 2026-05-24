@@ -6,8 +6,10 @@ import { db } from "@/lib/db";
 import { fetchChgkGgRatings } from "@/lib/chgk-gg";
 import {
   SYRENY_LITE_EVENT_ID,
+  SYRENY_LITE_HIDDEN_TEAM_NAMES,
   allocateManualTeamChgkId,
   ensureSyrenyLiteEvent,
+  normalizeSyrenyLiteName,
 } from "@/lib/syreny-lite";
 
 export const dynamic = "force-dynamic";
@@ -16,13 +18,12 @@ export const dynamic = "force-dynamic";
  * Display-side overrides applied without touching DB rows. Names are matched
  * case-insensitively against `displayName ?? teamName`.
  */
-const HIDDEN_TEAM_NAMES = new Set<string>(["коробка"]);
 const RENAMED_TEAM_NAMES = new Map<string, string>([
   ["кучин айленд", "Коробучин"],
   ["кучин айланд", "Коробучин"],
 ]);
 
-const norm = (s: string) => s.trim().toLowerCase();
+const norm = normalizeSyrenyLiteName;
 
 export async function GET() {
   const event = await ensureSyrenyLiteEvent();
@@ -54,7 +55,7 @@ export async function GET() {
 
   // Apply display-side hide / rename overrides.
   const teams = rawTeams
-    .filter((t) => !HIDDEN_TEAM_NAMES.has(norm(t.displayName ?? t.teamName)))
+    .filter((t) => !SYRENY_LITE_HIDDEN_TEAM_NAMES.has(norm(t.displayName ?? t.teamName)))
     .map((t) => {
       const current = t.displayName ?? t.teamName;
       const renamed = RENAMED_TEAM_NAMES.get(norm(current));

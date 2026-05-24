@@ -2,6 +2,18 @@ import { db } from "./db";
 
 export const SYRENY_LITE_EVENT_ID = "mazowieckie-syreny-lite";
 
+/**
+ * Team display-name overrides applied at the API boundary (no DB writes).
+ * Names are matched case-insensitively against `displayName ?? teamName`.
+ *
+ * Kept in shared lib so any place that reports "team count" for this event
+ * (e.g. /api/roster/counts) can apply the same hiding rules and stay
+ * consistent with the participants list.
+ */
+export const SYRENY_LITE_HIDDEN_TEAM_NAMES = new Set<string>(["коробка"]);
+
+export const normalizeSyrenyLiteName = (s: string) => s.trim().toLowerCase();
+
 export const SYRENY_LITE = {
   id: SYRENY_LITE_EVENT_ID,
   title: "Syrenki Mazowieckie Lite",

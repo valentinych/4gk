@@ -212,7 +212,7 @@ export function ParticipantsClient() {
         </div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Список команд</h1>
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Следующий термин подтверждения участия — <strong>24 мая</strong>.
+          Мы ждём до <strong>31 мая</strong> включительно команды из 600 минус. После 31 мая финализируем всех.
         </p>
       </div>
 

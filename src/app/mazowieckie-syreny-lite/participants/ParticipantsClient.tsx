@@ -108,14 +108,13 @@ function buildWithdrawUrl(id: string, token: string): string {
 }
 
 /**
- * Teams ranked below 600th place (or with no rating yet) that registered before
- * the cutoff are guaranteed a slot. Cutoff = end of day 10 May 2026 Warsaw
- * (CEST = UTC+2), i.e. 11 May 00:00 local == 10 May 22:00 UTC.
+ * Snapshot rule: every team registered before this cutoff is guaranteed a slot,
+ * regardless of CHGK rating. Cutoff = 28 May 2026 00:00 Warsaw == 27 May 22:00 UTC.
+ * Future registrations after this point are not auto-guaranteed.
  */
-const GUARANTEED_RATING_THRESHOLD = 600;
-const GUARANTEED_REG_CUTOFF_MS = Date.UTC(2026, 4, 10, 22, 0, 0);
+const GUARANTEED_REG_CUTOFF_MS = Date.UTC(2026, 4, 27, 22, 0, 0);
 
-/** Teams unconditionally guaranteed a slot regardless of rating/registration date. */
+/** Teams unconditionally guaranteed a slot regardless of registration date. */
 const ALWAYS_GUARANTEED_NAMES = new Set<string>([
   "хождение",
   "кроманьонцы штурмуют эскалатор",
@@ -123,9 +122,7 @@ const ALWAYS_GUARANTEED_NAMES = new Set<string>([
 
 function isGuaranteed(t: TeamRow): boolean {
   if (ALWAYS_GUARANTEED_NAMES.has(t.teamName.trim().toLowerCase())) return true;
-  const lowRated = t.ratingPosition === null || t.ratingPosition > GUARANTEED_RATING_THRESHOLD;
-  const earlyReg = new Date(t.addedAt).getTime() < GUARANTEED_REG_CUTOFF_MS;
-  return lowRated && earlyReg;
+  return new Date(t.addedAt).getTime() < GUARANTEED_REG_CUTOFF_MS;
 }
 
 export function ParticipantsClient() {

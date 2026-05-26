@@ -21,6 +21,7 @@ export const dynamic = "force-dynamic";
 const RENAMED_TEAM_NAMES = new Map<string, string>([
   ["кучин айленд", "Коробучин"],
   ["кучин айланд", "Коробучин"],
+  ["домкрат гагарина", "Домкрат - пять гривен"],
 ]);
 
 const norm = normalizeSyrenyLiteName;

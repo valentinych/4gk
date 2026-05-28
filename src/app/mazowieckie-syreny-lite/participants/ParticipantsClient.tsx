@@ -179,15 +179,16 @@ export function ParticipantsClient() {
 
   async function handleWithdraw(id: string) {
     const token = tokens[id];
-    if (!token) return;
+    // Admins are authorised by session and don't need a withdraw token.
+    if (!token && !isAdmin) return;
     if (!confirm("Отозвать заявку команды?")) return;
-    const res = await fetch(
-      `/api/syreny-lite/teams/${id}?token=${encodeURIComponent(token)}`,
-      { method: "DELETE" },
-    );
+    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    const res = await fetch(`/api/syreny-lite/teams/${id}${qs}`, { method: "DELETE" });
     if (res.ok) {
-      dropToken(id);
-      setTokens(loadTokens());
+      if (token) {
+        dropToken(id);
+        setTokens(loadTokens());
+      }
       refresh();
     }
   }
@@ -259,7 +260,7 @@ export function ParticipantsClient() {
               Отозвать заявку
             </button>
           </div>
-        ) : registrationBlocked ? (
+        ) : registrationBlocked && !isAdmin ? (
           <RegistrationClosedBanner
             notYetOpen={notYetOpen}
             opensAtMs={opensAtMs}
@@ -270,11 +271,14 @@ export function ParticipantsClient() {
           />
         ) : showForm ? (
           <RegisterForm
+            isAdmin={isAdmin}
             onSuccess={(id, token) => {
-              saveToken(id, token);
-              setTokens(loadTokens());
+              if (!isAdmin) {
+                saveToken(id, token);
+                setTokens(loadTokens());
+                setJustRegistered({ id, token });
+              }
               setShowForm(false);
-              setJustRegistered({ id, token });
               refresh();
             }}
             onCancel={() => setShowForm(false)}
@@ -285,7 +289,7 @@ export function ParticipantsClient() {
             className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
           >
             <UserPlus className="h-4 w-4" />
-            Заявиться
+            {isAdmin ? "Добавить команду" : "Заявиться"}
           </button>
         )}
       </div>
@@ -408,11 +412,11 @@ export function ParticipantsClient() {
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                         )}
-                        {isMine && (
+                        {(isMine || isAdmin) && (
                           <button
                             onClick={() => handleWithdraw(t.id)}
                             className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-50 hover:text-red-600"
-                            title="Отозвать заявку"
+                            title={isMine ? "Отозвать заявку" : "Удалить заявку (admin)"}
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
@@ -748,9 +752,11 @@ function EditForm({
 /* ─── Register form ─── */
 
 function RegisterForm({
+  isAdmin = false,
   onSuccess,
   onCancel,
 }: {
+  isAdmin?: boolean;
   onSuccess: (id: string, token: string) => void;
   onCancel: () => void;
 }) {
@@ -878,7 +884,9 @@ function RegisterForm({
       className="space-y-4 rounded-xl border border-accent/20 bg-accent/5 p-5"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold">Заявка на турнир</h3>
+        <h3 className="text-sm font-bold">
+          {isAdmin ? "Добавить команду (admin)" : "Заявка на турнир"}
+        </h3>
         <button
           type="button"
           onClick={onCancel}
@@ -1052,7 +1060,7 @@ function RegisterForm({
           ) : (
             <CheckCircle2 className="h-4 w-4" />
           )}
-          Подтвердить заявку
+          {isAdmin ? "Добавить" : "Подтвердить заявку"}
         </button>
         <button
           type="button"

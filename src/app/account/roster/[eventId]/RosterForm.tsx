@@ -8,8 +8,6 @@ import {
   Search,
   Plus,
   Trash2,
-  ChevronUp,
-  ChevronDown,
   CheckCircle2,
   Loader2,
   ArrowLeft,
@@ -251,16 +249,6 @@ export default function RosterForm({
     setPlayers((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
   };
 
-  const movePlayer = (idx: number, dir: -1 | 1) => {
-    const next = idx + dir;
-    if (next < 0 || next >= players.length) return;
-    setPlayers((prev) => {
-      const arr = [...prev];
-      [arr[idx], arr[next]] = [arr[next], arr[idx]];
-      return arr.map((p, i) => ({ ...p, sortOrder: i }));
-    });
-  };
-
   const handleSave = async () => {
     setError(null);
     if (!teamName.trim()) { setError("Укажите название команды"); return; }
@@ -450,9 +438,6 @@ export default function RosterForm({
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
             Игроки ({players.length})
           </h2>
-          <span className="text-xs text-muted">
-            <Star className="mr-0.5 inline h-3 w-3 text-blue-500" /> — базовый состав
-          </span>
         </div>
 
         {/* Player search */}
@@ -512,23 +497,6 @@ export default function RosterForm({
           {players.map((p, idx) => (
             <div key={idx} className="rounded-xl border border-border bg-surface p-3 transition-shadow hover:shadow-sm">
               <div className="flex items-start gap-2">
-                {/* Order controls */}
-                <div className="flex flex-col gap-0.5 pt-0.5">
-                  <button
-                    type="button" onClick={() => movePlayer(idx, -1)} disabled={idx === 0}
-                    className="rounded p-0.5 text-muted transition-colors hover:text-foreground disabled:opacity-20"
-                  >
-                    <ChevronUp className="h-3.5 w-3.5" />
-                  </button>
-                  <span className="text-center text-xs font-mono text-muted">{idx + 1}</span>
-                  <button
-                    type="button" onClick={() => movePlayer(idx, 1)} disabled={idx === players.length - 1}
-                    className="rounded p-0.5 text-muted transition-colors hover:text-foreground disabled:opacity-20"
-                  >
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="grid grid-cols-3 gap-2">
                     <input
@@ -549,15 +517,15 @@ export default function RosterForm({
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-3">
                     {p.chgkId && <span className="text-xs font-mono text-muted">ID: {p.chgkId}</span>}
-                    <label className="flex cursor-pointer items-center gap-1.5 text-xs">
-                      <input
-                        type="checkbox" checked={p.isBase}
-                        onChange={() => updatePlayer(idx, { isBase: !p.isBase })}
-                        className="h-3.5 w-3.5 accent-blue-500"
-                      />
-                      <Star className="h-3 w-3 text-blue-500" />
-                      Базовый состав
-                    </label>
+                    {p.isBase ? (
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        Базовый состав
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        Легионер
+                      </span>
+                    )}
                   </div>
                 </div>
 

@@ -108,21 +108,12 @@ function buildWithdrawUrl(id: string, token: string): string {
 }
 
 /**
- * Snapshot rule: every team registered before this cutoff is guaranteed a slot,
- * regardless of CHGK rating. Cutoff = 28 May 2026 00:00 Warsaw == 27 May 22:00 UTC.
- * Future registrations after this point are not auto-guaranteed.
+ * Tournament target audience is "600 minus": teams ranked below 600th place
+ * on rating.chgk.info (or without a rating record) compete in the main standings.
+ * Teams ranked 600th or higher play out of competition.
  */
-const GUARANTEED_REG_CUTOFF_MS = Date.UTC(2026, 4, 27, 22, 0, 0);
-
-/** Teams unconditionally guaranteed a slot regardless of registration date. */
-const ALWAYS_GUARANTEED_NAMES = new Set<string>([
-  "хождение",
-  "кроманьонцы штурмуют эскалатор",
-]);
-
-function isGuaranteed(t: TeamRow): boolean {
-  if (ALWAYS_GUARANTEED_NAMES.has(t.teamName.trim().toLowerCase())) return true;
-  return new Date(t.addedAt).getTime() < GUARANTEED_REG_CUTOFF_MS;
+function isMainStandings(t: TeamRow): boolean {
+  return t.ratingPosition === null || t.ratingPosition > 600;
 }
 
 export function ParticipantsClient() {
@@ -194,7 +185,7 @@ export function ParticipantsClient() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <div id="page-syreny-lite-participants" className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <Link
         href="/mazowieckie-syreny-lite"
         className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
@@ -203,7 +194,7 @@ export function ParticipantsClient() {
         Syrenki Mazowieckie Lite
       </Link>
 
-      <div className="mb-8">
+      <div id="page-syreny-lite-participants-header" className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-lime-100 bg-lime-50 px-3 py-1 text-xs font-semibold text-lime-700">
           <Sparkles className="h-3.5 w-3.5" />
           Syrenki Mazowieckie Lite — 2026
@@ -307,7 +298,10 @@ export function ParticipantsClient() {
         )}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
           <CheckCircle2 className="h-3.5 w-3.5" />
-          Гарантировано
+          Основной зачёт
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-0.5 text-xs font-medium text-zinc-700">
+          Вне зачёта
         </span>
       </div>
 
@@ -339,19 +333,26 @@ export function ParticipantsClient() {
               {teams.map((t, idx) => {
                 const isMine = !!tokens[t.id];
                 const isReserve = idx >= 16;
-                const guaranteed = isGuaranteed(t);
+                const mainStandings = isMainStandings(t);
                 const rowCls = isMine
                   ? "bg-emerald-50/60"
                   : isReserve
                     ? "bg-red-50"
                     : "";
-                const guaranteedBadge = guaranteed && (
+                const standingsBadge = mainStandings ? (
                   <span
-                    title="Гарантированное участие"
+                    title="Основной зачёт (600 минус)"
                     className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700"
                   >
                     <CheckCircle2 className="h-3 w-3" />
-                    Гарантировано
+                    Основной зачёт
+                  </span>
+                ) : (
+                  <span
+                    title="Вне зачёта (место выше 600)"
+                    className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600"
+                  >
+                    Вне зачёта
                   </span>
                 );
                 return (
@@ -374,12 +375,12 @@ export function ParticipantsClient() {
                             {t.teamName}
                             <ExternalLink className="h-3 w-3 opacity-40 shrink-0" />
                           </a>
-                          {guaranteedBadge}
+                          {standingsBadge}
                         </span>
                       ) : (
                         <span className="inline-flex flex-wrap items-center gap-1.5">
                           {t.teamName}
-                          {guaranteedBadge}
+                          {standingsBadge}
                         </span>
                       )}
                     </td>

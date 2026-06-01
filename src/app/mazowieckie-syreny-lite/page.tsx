@@ -124,7 +124,6 @@ export default function MazowieckieSyrenyLitePage() {
       <section className="mt-8">
         <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 text-sm leading-relaxed text-amber-900 shadow-sm">
           <p className="mb-3">
-            <span className="mr-1.5">❗️</span>
             В турнире могут принимать участие команды <strong>не выше 600-го места</strong>{" "}
             в{" "}
             <a
@@ -140,27 +139,51 @@ export default function MazowieckieSyrenyLitePage() {
             Игроки, не входящие в базовые составы каких-либо команд, будут
             рассматриваться отдельными запросами в оргкомитет.
           </p>
+
+          <div className="mb-3">
+            <p className="mb-1 font-semibold">Зачёты турнира:</p>
+            <ul className="ml-5 list-disc space-y-0.5">
+              <li><strong>Основной</strong> — команды ниже 600 места рейтинга</li>
+              <li><strong>Любительский</strong> — команды выше 600 места рейтинга</li>
+            </ul>
+          </div>
+
+          <ul className="mb-3 ml-5 list-disc space-y-2">
+            <li>
+              <strong>ЧГК:</strong> 72 вопроса (синхронные турниры «B-52: S02E09» (2,0) +
+              «Островок Бесконечности: июнь» (3,5))
+            </li>
+            <li>
+              <strong>БР:</strong>
+              <ul className="ml-5 mt-1 list-disc space-y-0.5">
+                <li>Основной зачёт: группы по 5 команд, далее 2 лучшие из каждой группы играют финальные игры.</li>
+                <li>Любительский: группа из 5 команд и всё.</li>
+              </ul>
+            </li>
+            <li><strong>КСИ</strong> (20 тем)</li>
+            <li>
+              <strong>Чёрное ЧГК:</strong> асинхронный турнир «Сквиртл» (3,5)
+            </li>
+          </ul>
+
           <p className="mb-3">
-            <span className="mr-1.5">🫶</span>
-            Так как активность команд (после 600 места) пока не особо, мы открываем
-            заявки для всех желающих команд (вне зависимости от рейтинга) и разделим
-            игры на несколько зачётов (в том числе и кнопки).
+            Победители <strong>основного</strong> зачёта получают медали в каждой из игр.
+            Победители <strong>любительского</strong> зачёта — утешительные призы.
           </p>
-          <p className="mb-3">
-            <span className="mr-1.5">👉</span>
-            Следующий термин подтверждения участия — <strong>24 мая</strong>. До этого
-            дня при выборе участников мы будем смотреть на рейтинг команд, а после —
-            уже нет.
-          </p>
-          <p className="mb-3">
-            <span className="mr-1.5">🤝</span>
-            В рейтинг пойдут 2 синхрона. В зачёт турнира — все 72 вопроса ЧГК с
-            этих синхронов. Награды — за каждую игру.
-          </p>
+
           <p>
             <strong>Стоимость участия:</strong> 70 зл/чел — студенты, 100 зл/чел —
-            не студенты (касаемо оплаты свяжемся с вами отдельно). Также участникам
-            будет предложено горячее питание (около 40 зл/чел).
+            не студенты. Также участникам будет предложено горячее питание (40 зл/чел).
+            Заказ питания на 06.06 (заявки до обеда 03.06) —{" "}
+            <a
+              href="https://t.me/Syrenki/13"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-amber-700/40 underline-offset-2 hover:text-amber-950 hover:decoration-amber-700"
+            >
+              https://t.me/Syrenki/13
+            </a>
+            .
           </p>
         </div>
       </section>

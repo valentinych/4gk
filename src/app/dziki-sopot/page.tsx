@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 function Fallback() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+    <div id="page-dziki-sopot-fallback" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <div className="h-40 animate-pulse rounded-xl bg-surface" />
     </div>
   );

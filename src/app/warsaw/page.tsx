@@ -180,8 +180,8 @@ export default function WarsawPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <div className="mb-8">
+    <div id="page-warsaw" className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <div id="page-warsaw-header" className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
           <Trophy className="h-3.5 w-3.5" />
           Сезон 2025/2026
@@ -214,7 +214,7 @@ export default function WarsawPage() {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div id="page-warsaw-info-cards" className="mb-6 grid gap-4 sm:grid-cols-3">
         <InfoCard icon={<MapPin className="h-4 w-4 text-muted" />} label="Город" value="Варшава" />
         <InfoCard icon={<Calendar className="h-4 w-4 text-muted" />} label="Сезон" value="2025/2026" />
         <InfoCard
@@ -224,7 +224,7 @@ export default function WarsawPage() {
         />
       </div>
 
-      <div className="mb-6 flex gap-1 rounded-xl border border-border bg-surface p-1">
+      <div id="page-warsaw-tabs" className="mb-6 flex gap-1 rounded-xl border border-border bg-surface p-1">
         <TabButton active={tab === "chgk"} onClick={() => switchTab("chgk")}>ЧГК</TabButton>
         <TabButton active={tab === "ksi"} onClick={() => switchTab("ksi")}>КСИ</TabButton>
         <TabButton active={tab === "isi"} onClick={() => switchTab("isi")}>ИСИ</TabButton>

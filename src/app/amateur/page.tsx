@@ -14,8 +14,8 @@ export default function AmateurPage() {
   const past = AMATEUR_TOURNAMENTS.filter((t) => t.status === "past");
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <div className="mb-10">
+    <div id="page-amateur" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div id="page-amateur-header" className="mb-10">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-lime-100 bg-lime-50 px-3 py-1 text-xs font-semibold text-lime-700">
           <Sparkles className="h-3.5 w-3.5" />
           Любительские турниры
@@ -34,7 +34,7 @@ export default function AmateurPage() {
       {past.length > 0 && <Section title="Прошедшие" tournaments={past} />}
 
       {AMATEUR_TOURNAMENTS.length === 0 && (
-        <div className="rounded-xl border-2 border-dashed border-border p-12 text-center text-sm text-muted">
+        <div id="page-amateur-empty" className="rounded-xl border-2 border-dashed border-border p-12 text-center text-sm text-muted">
           Турниры пока не анонсированы
         </div>
       )}

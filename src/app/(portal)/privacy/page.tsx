@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <div id="page-privacy" className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <Link
         href="/"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
@@ -21,8 +21,8 @@ export default function PrivacyPage() {
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Polityka prywatności</h1>
       <p className="mt-2 text-sm text-muted">Ostatnia aktualizacja: 20 marca 2026 r.</p>
 
-      <div className="mt-8 space-y-8 text-sm leading-relaxed text-muted">
-        <section>
+      <div id="page-privacy-sections" className="mt-8 space-y-8 text-sm leading-relaxed text-muted">
+        <section id="page-privacy-sec-1-administrator">
           <h2 className="text-base font-bold text-foreground">1. Administrator danych</h2>
           <p className="mt-2">
             Administratorem danych osobowych zbieranych za pośrednictwem serwisu <strong>4gk.pl</strong> jest
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-2-legal-basis">
           <h2 className="text-base font-bold text-foreground">2. Podstawa prawna przetwarzania</h2>
           <p className="mt-2">Dane osobowe przetwarzane są na podstawie:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-3-scope">
           <h2 className="text-base font-bold text-foreground">3. Zakres zbieranych danych</h2>
           <p className="mt-2">Serwis zbiera następujące dane:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-4-purpose">
           <h2 className="text-base font-bold text-foreground">4. Cel przetwarzania danych</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Uwierzytelnianie użytkowników i zarządzanie kontami;</li>
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-5-cookies">
           <h2 className="text-base font-bold text-foreground">5. Pliki cookie</h2>
           <p className="mt-2">Serwis wykorzystuje następujące rodzaje plików cookie:</p>
           <div className="mt-3 overflow-x-auto">
@@ -103,7 +103,7 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-6-sharing">
           <h2 className="text-base font-bold text-foreground">6. Udostępnianie danych</h2>
           <p className="mt-2">Dane osobowe mogą być udostępniane następującym podmiotom:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -116,7 +116,7 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-7-retention">
           <h2 className="text-base font-bold text-foreground">7. Okres przechowywania</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Dane konta — do momentu usunięcia konta przez użytkownika;</li>
@@ -125,7 +125,7 @@ export default function PrivacyPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-8-user-rights">
           <h2 className="text-base font-bold text-foreground">8. Prawa użytkownika</h2>
           <p className="mt-2">Zgodnie z RODO przysługują Ci następujące prawa:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -144,7 +144,7 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-9-security">
           <h2 className="text-base font-bold text-foreground">9. Bezpieczeństwo</h2>
           <p className="mt-2">
             Administrator stosuje odpowiednie środki techniczne i organizacyjne w celu ochrony danych osobowych,
@@ -153,7 +153,7 @@ export default function PrivacyPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-privacy-sec-10-changes">
           <h2 className="text-base font-bold text-foreground">10. Zmiany polityki prywatności</h2>
           <p className="mt-2">
             Administrator zastrzega sobie prawo do wprowadzenia zmian w niniejszej Polityce Prywatności.

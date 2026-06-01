@@ -5,9 +5,9 @@ import { Logo } from "@/components/Logo";
 
 export default function SignInPage() {
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
+    <div id="page-signin" className="flex min-h-[80vh] items-center justify-center px-4">
+      <div id="page-signin-card" className="w-full max-w-sm">
+        <div id="page-signin-header" className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
             <Logo size={48} />
           </div>
@@ -17,7 +17,7 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div id="page-signin-form" className="rounded-xl border border-border bg-surface p-6">
           <button
             onClick={() => signIn("google", { callbackUrl: "/" })}
             className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-surface"

@@ -151,8 +151,8 @@ export default function PraguePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <div className="mb-8">
+    <div id="page-prague" className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <div id="page-prague-header" className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           Pražma 2026. Пражский полумарафон: 15 часов ЧГК
         </h1>
@@ -197,32 +197,33 @@ export default function PraguePage() {
       </div>
 
       {loading && !data && (
-        <div className="rounded-xl border border-border bg-surface p-6 text-sm text-muted">
+        <div id="page-prague-loading" className="rounded-xl border border-border bg-surface p-6 text-sm text-muted">
           Загрузка результатов...
         </div>
       )}
 
       {error && !data && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <div id="page-prague-error" className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
           Не удалось загрузить данные: {error}
         </div>
       )}
 
       {data && data.teams.length === 0 && (
-        <div className="rounded-xl border border-border bg-surface p-6 text-sm text-muted">
+        <div id="page-prague-empty" className="rounded-xl border border-border bg-surface p-6 text-sm text-muted">
           Нет данных о командах.
         </div>
       )}
 
       {data && data.teams.length > 0 && (
         <div
+          id="page-prague-results"
           className={
             fullscreen
               ? "fixed inset-0 z-50 flex flex-col bg-background p-4 sm:p-6"
               : ""
           }
         >
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div id="page-prague-results-toolbar" className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-3">
               {fullscreen && lastQuestionEntered > 0 && (
                 <span className="text-sm font-medium text-foreground">

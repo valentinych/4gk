@@ -310,7 +310,7 @@ export default function RosterForm({
   const pendingSuggestions = recentSuggestions.filter((p) => !addedChgkIds.has(p.id));
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
+    <div id="page-roster" className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <Link
         href="/calendar"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
@@ -346,7 +346,7 @@ export default function RosterForm({
       )}
 
       {/* Team section */}
-      <section className="mt-8">
+      <section id="page-roster-team-section" className="mt-8">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Команда</h2>
         <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
           <div>
@@ -445,7 +445,7 @@ export default function RosterForm({
       </section>
 
       {/* Players list */}
-      <section className="mt-6">
+      <section id="page-roster-players-section" className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">
             Игроки ({players.length})
@@ -618,7 +618,7 @@ export default function RosterForm({
         <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-danger">{error}</p>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <div id="page-roster-actions" className="mt-6 flex flex-wrap items-center gap-3">
         <button
           type="button" onClick={handleSave} disabled={saving}
           className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-60"

@@ -127,7 +127,7 @@ export default function BuzzerPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-12 sm:py-20">
+    <div id="page-buzzer" className="mx-auto max-w-lg px-4 py-12 sm:py-20">
       <Link
         href="/online-games"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
@@ -136,7 +136,7 @@ export default function BuzzerPage() {
         Онлайн-игры
       </Link>
 
-      <div className="text-center mb-10">
+      <div id="page-buzzer-header" className="text-center mb-10">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500 shadow-lg">
           <Zap className="h-8 w-8 text-white" />
         </div>
@@ -148,7 +148,7 @@ export default function BuzzerPage() {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div id="page-buzzer-actions" className="space-y-6">
         {isLoading ? (
           <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <div className="h-5 w-5 mx-auto animate-spin rounded-full border-2 border-accent border-t-transparent" />
@@ -176,7 +176,7 @@ export default function BuzzerPage() {
             </button>
 
             {rooms.length > 0 && (
-              <div className="rounded-xl border border-border bg-surface p-5">
+              <div id="page-buzzer-my-rooms" className="rounded-xl border border-border bg-surface p-5">
                 <h2 className="text-sm font-bold mb-3">Ваши комнаты</h2>
                 <div className="space-y-2">
                   {rooms.map((r) => (
@@ -236,7 +236,7 @@ export default function BuzzerPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div id="page-buzzer-join-form" className="rounded-xl border border-border bg-surface p-6">
           <h2 className="text-sm font-bold mb-4">Войти в игру по коду</h2>
           <div className="space-y-3">
             <div>

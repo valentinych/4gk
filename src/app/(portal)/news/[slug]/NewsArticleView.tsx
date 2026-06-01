@@ -149,8 +149,8 @@ export default function NewsArticleView({ article: initial }: { article: Article
   const paragraphs = article.content.split("\n\n");
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
-      <div className="mb-6 flex items-center justify-between">
+    <div id="page-news-article" className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+      <div id="page-news-article-toolbar" className="mb-6 flex items-center justify-between">
         <Link
           href="/news"
           className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
@@ -188,7 +188,7 @@ export default function NewsArticleView({ article: initial }: { article: Article
       </div>
 
       {editing ? (
-        <div className="rounded-xl border border-border bg-surface p-5">
+        <div id="page-news-article-edit-form" className="rounded-xl border border-border bg-surface p-5">
           <h3 className="text-sm font-bold">Редактирование новости</h3>
 
           {error && (
@@ -285,7 +285,7 @@ export default function NewsArticleView({ article: initial }: { article: Article
             </div>
           )}
 
-          <article>
+          <article id="page-news-article-content">
             <div className="flex items-center gap-3">
               <span className={`rounded-md border px-2.5 py-1 text-xs font-medium ${cat.color}`}>
                 {cat.label}
@@ -326,7 +326,7 @@ export default function NewsArticleView({ article: initial }: { article: Article
             </div>
           </article>
 
-          <div className="mt-12 border-t border-border pt-6">
+          <div id="page-news-article-footer" className="mt-12 border-t border-border pt-6">
             <Link
               href="/news"
               className="text-sm font-medium text-muted hover:text-foreground"

@@ -199,7 +199,7 @@ export default function GameRoom({
 
   if (role === "loading") {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div id="page-buzzer-room-loading" className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
       </div>
     );
@@ -207,7 +207,7 @@ export default function GameRoom({
 
   if (role === "join") {
     return (
-      <div className="mx-auto max-w-sm px-4 py-12 sm:py-20">
+      <div id="page-buzzer-room-join" className="mx-auto max-w-sm px-4 py-12 sm:py-20">
         <Link href="/buzzer" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" /> Назад
         </Link>
@@ -230,7 +230,7 @@ export default function GameRoom({
 
   if (!gameState) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div id="page-buzzer-room-waiting" className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
       </div>
     );
@@ -301,7 +301,7 @@ function AdminView({
   const isActive = gs.phase === "reading" || gs.phase === "countdown";
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+    <div id="page-buzzer-room-host" className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
       <Link href="/buzzer" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Назад
       </Link>
@@ -787,7 +787,7 @@ function PlayerView({
   const myPlayer = gs.players.find((p) => p.id === myId);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100dvh-3.5rem)] px-4 py-6 select-none">
+    <div id="page-buzzer-room-player" className="flex flex-col items-center justify-center min-h-[calc(100dvh-3.5rem)] px-4 py-6 select-none">
       {/* Top info */}
       <div className="flex items-center gap-3 mb-2 text-xs text-muted">
         <span className="font-mono font-bold tracking-wider">{code}</span>

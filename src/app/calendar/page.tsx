@@ -622,8 +622,8 @@ export default function CalendarPage() {
     selectedCities === null || selectedCities.has(city);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <div className="mb-10 flex items-start justify-between gap-4">
+    <div id="page-calendar" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div id="page-calendar-header" className="mb-10 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Календарь
@@ -666,7 +666,7 @@ export default function CalendarPage() {
 
       {/* Template form */}
       {canManageEvents && showTemplateForm && (
-        <div className="mb-8 rounded-xl border border-dashed border-accent/40 bg-accent/5 p-5">
+        <div id="page-calendar-template-form" className="mb-8 rounded-xl border border-dashed border-accent/40 bg-accent/5 p-5">
           <h3 className="text-sm font-bold">{editingTemplateId ? "Редактирование шаблона" : "Новый шаблон"}</h3>
 
           {error && (
@@ -853,7 +853,7 @@ export default function CalendarPage() {
 
       {/* Event form */}
       {canManageEvents && showForm && (
-        <div className="mb-8 rounded-xl border border-border bg-surface p-5">
+        <div id="page-calendar-event-form" className="mb-8 rounded-xl border border-border bg-surface p-5">
           {/* Template tiles */}
           {templates.length > 0 && !editingId && (
             <div className="mb-4">
@@ -1201,7 +1201,7 @@ export default function CalendarPage() {
 
       {/* City filter */}
       {usedCities.length > 0 && (
-        <div className="mb-6">
+        <div id="page-calendar-city-filter" className="mb-6">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-muted">Площадки:</span>
             {usedCities.map((city) => {
@@ -1255,13 +1255,13 @@ export default function CalendarPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
+        <div id="page-calendar-loading" className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted" />
         </div>
       ) : (
-        <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+        <div id="page-calendar-main" className="grid gap-8 lg:grid-cols-[1fr_340px]">
           {/* Calendar grid */}
-          <div className="rounded-xl border border-border bg-surface">
+          <div id="page-calendar-grid" className="rounded-xl border border-border bg-surface">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <button
                 onClick={prevMonth}
@@ -1347,7 +1347,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-3">
+          <div id="page-calendar-sidebar" className="space-y-3">
             {selectedDay && (
               <button
                 onClick={() => setSelectedDay(null)}

@@ -295,9 +295,9 @@ function PocCalculatorInner() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <div id="page-poc" className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       {/* Header */}
-      <div className="mb-8">
+      <div id="page-poc-header" className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
           <BarChart3 className="h-3.5 w-3.5" />
           Рейтинг
@@ -314,7 +314,7 @@ function PocCalculatorInner() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="mb-8">
+      <form id="page-poc-form" onSubmit={handleSubmit} className="mb-8">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex-1">
             <input
@@ -359,14 +359,14 @@ function PocCalculatorInner() {
 
       {/* Error */}
       {error && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div id="page-poc-error" className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {/* Loading */}
       {loading && (
-        <div className="space-y-4">
+        <div id="page-poc-loading" className="space-y-4">
           <div className="h-6 w-48 rounded-md bg-muted/20 animate-pulse" />
           <div className="h-48 rounded-xl bg-muted/10 animate-pulse" />
         </div>
@@ -374,7 +374,7 @@ function PocCalculatorInner() {
 
       {/* Results */}
       {result && !loading && (
-        <div className="space-y-10">
+        <div id="page-poc-results" className="space-y-10">
           {result.poc.length === 0 ? (
             <div className="text-sm text-muted">
               Не найдено данных о матчах. Убедитесь, что таблица в правильном формате и открыта для чтения.

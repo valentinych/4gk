@@ -3,10 +3,10 @@ import { Logo } from "@/components/Logo";
 
 export function Footer() {
   return (
-    <footer className="border-t border-border bg-surface/50">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
+    <footer id="cmp-footer" className="border-t border-border bg-surface/50">
+      <div id="cmp-footer-inner" className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+        <div id="cmp-footer-grid" className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div id="cmp-footer-brand">
             <div className="flex items-center gap-2.5">
               <Logo size={28} />
               <span className="text-base font-bold tracking-tight">4gk.pl</span>
@@ -16,7 +16,7 @@ export function Footer() {
             </p>
           </div>
 
-          <div>
+          <div id="cmp-footer-col-tournaments">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Турниры</h3>
             <ul className="mt-3 space-y-2">
               <li><Link href="/warsaw" className="text-sm text-muted hover:text-foreground transition-colors">Чемпионат Варшавы</Link></li>
@@ -26,7 +26,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          <div id="cmp-footer-col-portal">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Портал</h3>
             <ul className="mt-3 space-y-2">
               <li><Link href="/news" className="text-sm text-muted hover:text-foreground transition-colors">Новости</Link></li>
@@ -34,7 +34,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+          <div id="cmp-footer-col-info">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-foreground/70">Информация</h3>
             <ul className="mt-3 space-y-2">
               <li><Link href="/privacy" className="text-sm text-muted hover:text-foreground transition-colors">Polityka prywatności</Link></li>
@@ -44,7 +44,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-6 text-center text-xs text-muted">
+        <div id="cmp-footer-copyright" className="mt-10 border-t border-border pt-6 text-center text-xs text-muted">
           &copy; {new Date().getFullYear()} 4gk.pl
         </div>
       </div>

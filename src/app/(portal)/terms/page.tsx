@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <div id="page-terms" className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <Link
         href="/"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
@@ -21,8 +21,8 @@ export default function TermsPage() {
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Regulamin serwisu</h1>
       <p className="mt-2 text-sm text-muted">Ostatnia aktualizacja: 20 marca 2026 r.</p>
 
-      <div className="mt-8 space-y-8 text-sm leading-relaxed text-muted">
-        <section>
+      <div id="page-terms-sections" className="mt-8 space-y-8 text-sm leading-relaxed text-muted">
+        <section id="page-terms-sec-1-general">
           <h2 className="text-base font-bold text-foreground">1. Postanowienia ogólne</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
@@ -38,7 +38,7 @@ export default function TermsPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-terms-sec-2-character">
           <h2 className="text-base font-bold text-foreground">2. Charakter Serwisu</h2>
           <p className="mt-2">
             Serwis 4gk.pl jest portalem informacyjnym poświęconym grom intelektualnym w Polsce.
@@ -47,7 +47,7 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-terms-sec-3-registration">
           <h2 className="text-base font-bold text-foreground">3. Rejestracja i konto</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Rejestracja w Serwisie odbywa się wyłącznie za pośrednictwem logowania kontem Google (OAuth 2.0).</li>
@@ -59,7 +59,7 @@ export default function TermsPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-terms-sec-4-usage-rules">
           <h2 className="text-base font-bold text-foreground">4. Zasady korzystania</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Użytkownik zobowiązuje się do korzystania z Serwisu zgodnie z obowiązującym prawem i dobrymi obyczajami.</li>
@@ -69,7 +69,7 @@ export default function TermsPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-terms-sec-5-roles">
           <h2 className="text-base font-bold text-foreground">5. Role użytkowników</h2>
           <p className="mt-2">W Serwisie funkcjonują następujące role:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
@@ -83,7 +83,7 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-terms-sec-6-ip">
           <h2 className="text-base font-bold text-foreground">6. Własność intelektualna</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Treści publikowane w Serwisie (teksty, grafiki, logotypy) stanowią własność Usługodawcy lub podmiotów uprawnionych.</li>
@@ -92,7 +92,7 @@ export default function TermsPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-terms-sec-7-liability">
           <h2 className="text-base font-bold text-foreground">7. Odpowiedzialność</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Serwis jest udostępniany w stanie „takim, jaki jest" (as is), bez gwarancji dostępności ani bezbłędnego działania.</li>
@@ -102,7 +102,7 @@ export default function TermsPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="page-terms-sec-8-data-protection">
           <h2 className="text-base font-bold text-foreground">8. Ochrona danych osobowych</h2>
           <p className="mt-2">
             Zasady przetwarzania danych osobowych są opisane w{" "}
@@ -111,7 +111,7 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-terms-sec-9-complaints">
           <h2 className="text-base font-bold text-foreground">9. Reklamacje</h2>
           <p className="mt-2">
             Reklamacje dotyczące funkcjonowania Serwisu można składać drogą elektroniczną na adres{" "}
@@ -120,7 +120,7 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-terms-sec-10-changes">
           <h2 className="text-base font-bold text-foreground">10. Zmiany Regulaminu</h2>
           <p className="mt-2">
             Usługodawca zastrzega sobie prawo do zmiany niniejszego Regulaminu. O istotnych zmianach
@@ -130,7 +130,7 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section>
+        <section id="page-terms-sec-11-governing-law">
           <h2 className="text-base font-bold text-foreground">11. Prawo właściwe</h2>
           <p className="mt-2">
             W sprawach nieuregulowanych niniejszym Regulaminem zastosowanie mają przepisy prawa polskiego,

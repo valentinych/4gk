@@ -141,8 +141,8 @@ export default function NewsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <div className="mb-8 flex items-start justify-between gap-4">
+    <div id="page-news" className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+      <div id="page-news-header" className="mb-8 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Новости</h1>
           <p className="mt-1 text-sm text-muted">Последние обновления и события портала</p>
@@ -162,7 +162,7 @@ export default function NewsPage() {
       </div>
 
       {isAdmin && showForm && (
-        <div className="mb-8 rounded-xl border border-border bg-surface p-5">
+        <div id="page-news-admin-form" className="mb-8 rounded-xl border border-border bg-surface p-5">
           <h3 className="text-sm font-bold">
             {editingId ? "Редактирование новости" : "Новая новость"}
           </h3>
@@ -261,15 +261,15 @@ export default function NewsPage() {
       )}
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
+        <div id="page-news-loading" className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted" />
         </div>
       ) : articles.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface/50 p-12 text-center">
+        <div id="page-news-empty" className="rounded-xl border border-dashed border-border bg-surface/50 p-12 text-center">
           <p className="text-sm text-muted">Новостей пока нет</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div id="page-news-list" className="space-y-4">
           {articles.map((article) => {
             const cat = getCategoryStyle(article.category);
             const dateStr = article.publishedAt

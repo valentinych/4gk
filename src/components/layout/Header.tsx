@@ -19,14 +19,14 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-lg">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5">
+    <header id="cmp-header" className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-lg">
+      <div id="cmp-header-inner" className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <Link id="cmp-header-logo" href="/" className="flex items-center gap-2.5">
           <Logo size={28} />
           <span className="text-base font-bold tracking-tight">4gk.pl</span>
         </Link>
 
-        <nav className="hidden items-center gap-0.5 md:flex">
+        <nav id="cmp-header-nav-desktop" className="hidden items-center gap-0.5 md:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -38,12 +38,13 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1">
+        <div id="cmp-header-actions" className="flex items-center gap-1">
           <ThemeToggle />
-          <div className="hidden sm:block">
+          <div id="cmp-header-user-desktop" className="hidden sm:block">
             <UserMenu />
           </div>
           <button
+            id="cmp-header-burger"
             onClick={() => setMobileOpen(!mobileOpen)}
             className="rounded-lg p-2 text-muted hover:bg-surface md:hidden"
           >
@@ -53,7 +54,7 @@ export function Header() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-border bg-background px-4 pb-4 md:hidden">
+        <div id="cmp-header-nav-mobile" className="border-t border-border bg-background px-4 pb-4 md:hidden">
           {navItems.map((item) => (
             <Link
               key={item.href}

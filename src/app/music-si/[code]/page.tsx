@@ -117,7 +117,7 @@ export default function MusicSIRoom() {
 
   if (!state) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div id="page-music-si-room-loading" className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
       </div>
     );
@@ -251,7 +251,7 @@ function AdminView({
   const totalPlayers = state.teams.reduce((s, t) => s + t.players.length, 0);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
+    <div id="page-music-si-room-host" className="mx-auto max-w-4xl px-4 py-6">
       <audio ref={audioRef} onEnded={handleTrackEnded} preload="auto" />
 
       {/* Header */}
@@ -678,7 +678,7 @@ function PlayerView({
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh]">
+    <div id="page-music-si-room-player" className="flex flex-col min-h-[100dvh]">
       <audio ref={audioRef} preload="auto" />
 
       {/* Top bar */}

@@ -48,11 +48,11 @@ const leagues = [
 
 export default function HomePage() {
   return (
-    <div>
+    <div id="page-home">
       {/* Hero */}
-      <section className="border-b border-border">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-          <div className="mx-auto max-w-2xl text-center">
+      <section id="page-home-hero" className="border-b border-border">
+        <div id="page-home-hero-inner" className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <div id="page-home-hero-content" className="mx-auto max-w-2xl text-center">
             <p className="mb-3 text-xs font-medium tracking-widest uppercase text-muted">
               Интеллектуальные игры в Польше
             </p>
@@ -68,13 +68,13 @@ export default function HomePage() {
       </section>
 
       {/* Leagues */}
-      <section className="py-12">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-7 text-center">
+      <section id="page-home-leagues" className="py-12">
+        <div id="page-home-leagues-inner" className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div id="page-home-leagues-header" className="mb-7 text-center">
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Лиги и чемпионаты</h2>
             <p className="mt-2 text-muted">Актуальные соревнования сезона 2025/2026</p>
           </div>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div id="page-home-leagues-grid" className="flex flex-wrap justify-center gap-3">
             {leagues.map((league, i) => (
               <Fragment key={league.title}>
                 <Link
@@ -110,9 +110,9 @@ export default function HomePage() {
       </section>
 
       {/* Info */}
-      <section className="border-y border-border bg-surface/50 py-10">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="grid gap-8 text-center sm:grid-cols-3">
+      <section id="page-home-info" className="border-y border-border bg-surface/50 py-10">
+        <div id="page-home-info-inner" className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div id="page-home-info-grid" className="grid gap-8 text-center sm:grid-cols-3">
             {[
               { icon: Trophy, label: "Турниры", description: "Регулярные соревнования в нескольких городах Польши" },
               { icon: Calendar, label: "Сезон 2025/2026", description: "Актуальные результаты и турнирные таблицы" },

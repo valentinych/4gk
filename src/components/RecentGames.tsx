@@ -71,7 +71,7 @@ export default function RecentGames() {
 
   if (status === "loading") {
     return (
-      <section className="py-20">
+      <section id="cmp-recent-games-loading-session" className="py-20">
         <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
           <div className="h-8 w-8 mx-auto animate-spin rounded-full border-2 border-border border-t-accent" />
         </div>
@@ -81,7 +81,7 @@ export default function RecentGames() {
 
   if (!isLoggedIn) {
     return (
-      <section className="py-20">
+      <section id="cmp-recent-games-cta-signin" className="py-20">
         <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Присоединяйся
@@ -103,7 +103,7 @@ export default function RecentGames() {
 
   if (!chgkId) {
     return (
-      <section className="py-20">
+      <section id="cmp-recent-games-cta-link-chgk" className="py-20">
         <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Привяжи рейтинг ЧГК
@@ -125,7 +125,7 @@ export default function RecentGames() {
 
   if (loading) {
     return (
-      <section className="py-20">
+      <section id="cmp-recent-games-loading-data" className="py-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Мои последние игры</h2>
           <p className="mt-2 text-muted">Загрузка результатов…</p>
@@ -144,7 +144,7 @@ export default function RecentGames() {
 
   if (!games.length) {
     return (
-      <section className="py-20">
+      <section id="cmp-recent-games-empty" className="py-20">
         <div className="mx-auto max-w-xl px-4 text-center sm:px-6">
           <Trophy className="mx-auto h-10 w-10 text-muted" />
           <h2 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">Пока нет игр</h2>
@@ -157,15 +157,15 @@ export default function RecentGames() {
   }
 
   return (
-    <section className="py-20">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <div className="flex items-center justify-between">
+    <section id="cmp-recent-games" className="py-20">
+      <div id="cmp-recent-games-inner" className="mx-auto max-w-3xl px-4 sm:px-6">
+        <div id="cmp-recent-games-header" className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Мои последние игры</h2>
           </div>
         </div>
 
-        <div className="mt-6 space-y-3">
+        <div id="cmp-recent-games-list" className="mt-6 space-y-3">
           {games.map((game) => (
             <a
               key={game.tournamentId}

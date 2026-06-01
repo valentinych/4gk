@@ -839,7 +839,7 @@ export default async function OchpSubPage({
       : "/ochp";
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div id="page-ochp-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <Link
         href={ochpBackHref}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
@@ -847,7 +847,7 @@ export default async function OchpSubPage({
         <ArrowLeft className="h-4 w-4" />
         {slug.startsWith("results-brain-") ? "Назад к Брэйн-Рингу" : "Назад к ОЧП"}
       </Link>
-      <div className="flex items-center justify-between gap-4 mb-6">
+      <div id="page-ochp-slug-header" className="flex items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         <Image
           src="/ochp-logo.png"
@@ -916,7 +916,7 @@ export default async function OchpSubPage({
         </div>
       )}
 
-      <div className="mt-12 flex justify-center">
+      <div id="page-ochp-slug-sponsors" className="mt-12 flex justify-center">
         <Image
           src="/ochp-sponsors.png"
           alt="Партнёры ОЧП'26"

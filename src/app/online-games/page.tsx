@@ -31,8 +31,8 @@ const games = [
 
 export default function OnlineGamesPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <div className="mb-8">
+    <div id="page-online-games" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+      <div id="page-online-games-header" className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-violet-100 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
           <Gamepad2 className="h-3.5 w-3.5" />
           Инструменты
@@ -45,7 +45,7 @@ export default function OnlineGamesPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div id="page-online-games-grid" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {games.map((game) => (
           <Link
             key={game.href}

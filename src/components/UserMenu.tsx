@@ -42,8 +42,9 @@ export function UserMenu() {
     : "U";
 
   return (
-    <div className="relative" ref={ref}>
+    <div id="cmp-user-menu" className="relative" ref={ref}>
       <button
+        id="cmp-user-menu-trigger"
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-surface"
       >
@@ -66,12 +67,12 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
-          <div className="border-b border-border px-4 py-3">
+        <div id="cmp-user-menu-dropdown" className="absolute right-0 top-full z-50 mt-1.5 w-56 overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+          <div id="cmp-user-menu-dropdown-header" className="border-b border-border px-4 py-3">
             <p className="text-sm font-semibold truncate">{user.name}</p>
             <p className="text-xs text-muted truncate">{user.email}</p>
           </div>
-          <div className="p-1.5">
+          <div id="cmp-user-menu-dropdown-items" className="p-1.5">
             <Link
               href="/account"
               onClick={() => setOpen(false)}
@@ -122,8 +123,8 @@ export function UserMenuMobile() {
   const user = session.user;
 
   return (
-    <div className="space-y-1 border-t border-border pt-3 mt-2">
-      <div className="flex items-center gap-2.5 px-3 py-2">
+    <div id="cmp-user-menu-mobile" className="space-y-1 border-t border-border pt-3 mt-2">
+      <div id="cmp-user-menu-mobile-profile" className="flex items-center gap-2.5 px-3 py-2">
         {user.image ? (
           <Image src={user.image} alt={user.name ?? ""} width={24} height={24} className="rounded-full" />
         ) : (

@@ -9,15 +9,15 @@ export const metadata: Metadata = {
 
 export default function GamesPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <div className="mb-10">
+    <div id="page-games" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+      <div id="page-games-header" className="mb-10">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Другие игры</h1>
         <p className="mt-2 text-sm text-muted">
           Интеллектуальные игры и турниры, в которых можно принять участие
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div id="page-games-list" className="space-y-4">
         {[
           {
             href: "/warsaw",
@@ -60,7 +60,7 @@ export default function GamesPage() {
         ))}
       </div>
 
-      <div className="mt-10 rounded-xl border-2 border-dashed border-border bg-surface/50 p-12 text-center">
+      <div id="page-games-coming-soon" className="mt-10 rounded-xl border-2 border-dashed border-border bg-surface/50 p-12 text-center">
         <p className="text-sm font-medium text-muted/60">Скоро здесь появятся новые турниры и лиги</p>
       </div>
     </div>

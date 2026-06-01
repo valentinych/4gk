@@ -226,7 +226,7 @@ export default async function TurnirushkiSubPage({
   const title = titles[slug];
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div id="page-turnirushki-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <Link
         href={backHref}
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
@@ -234,7 +234,7 @@ export default async function TurnirushkiSubPage({
         <ArrowLeft className="h-4 w-4" />
         Назад к Турнирушкам
       </Link>
-      <div className="mb-6">
+      <div id="page-turnirushki-slug-header" className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         <p className="mt-1 text-sm text-muted">
           {turnirushkaLabel(current)} · {current.dateLabel}

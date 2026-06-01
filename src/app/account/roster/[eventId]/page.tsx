@@ -32,7 +32,7 @@ export default async function RosterPage({ params }: Props) {
   if (!session?.user?.id) {
     const callbackUrl = encodeURIComponent(`/account/roster/${eventId}`);
     return (
-      <main className="mx-auto max-w-lg px-4 py-16 text-center">
+      <main id="page-roster-signin" className="mx-auto max-w-lg px-4 py-16 text-center">
         <p className="mb-6 text-lg">Войдите, чтобы подать состав команды.</p>
         <Link
           href={`/auth/signin?callbackUrl=${callbackUrl}`}

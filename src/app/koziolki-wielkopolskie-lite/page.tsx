@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function KoziolkiPage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+    <div id="page-koziolki" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <Link
         href="/amateur"
         className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
@@ -29,7 +29,7 @@ export default function KoziolkiPage() {
         Любительские турниры
       </Link>
 
-      <div className="mb-10">
+      <div id="page-koziolki-header" className="mb-10">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-semibold text-zinc-700">
           <Sparkles className="h-3.5 w-3.5" />
           Архив · прошедший турнир
@@ -42,7 +42,7 @@ export default function KoziolkiPage() {
         </p>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2">
+      <div id="page-koziolki-info-cards" className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
@@ -75,7 +75,7 @@ export default function KoziolkiPage() {
         </div>
       </div>
 
-      <section className="mb-10">
+      <section id="page-koziolki-schedule" className="mb-10">
         <h2 className="mb-4 text-lg font-bold tracking-tight">📌 Расписание</h2>
         <div className="rounded-xl border border-border bg-surface p-5">
           <ul className="space-y-2.5">
@@ -99,7 +99,7 @@ export default function KoziolkiPage() {
         </div>
       </section>
 
-      <section className="mb-10">
+      <section id="page-koziolki-medals" className="mb-10">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight">
           <Medal className="h-5 w-5 text-amber-500" />
           Призёры
@@ -134,7 +134,7 @@ export default function KoziolkiPage() {
         </div>
       </section>
 
-      <section className="mb-10">
+      <section id="page-koziolki-chgk" className="mb-10">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight">
           <Trophy className="h-5 w-5 text-accent" />
           ЧГК · итоги
@@ -172,7 +172,7 @@ export default function KoziolkiPage() {
         </div>
       </section>
 
-      <section className="mb-10">
+      <section id="page-koziolki-ksi" className="mb-10">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight">
           <Trophy className="h-5 w-5 text-accent" />
           Командная «Своя игра» · итоги
@@ -211,7 +211,7 @@ export default function KoziolkiPage() {
         </div>
       </section>
 
-      <section className="mb-10">
+      <section id="page-koziolki-brain-ring" className="mb-10">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight">
           <Trophy className="h-5 w-5 text-accent" />
           Брейн-ринг · группы
@@ -272,7 +272,7 @@ export default function KoziolkiPage() {
         </div>
       </section>
 
-      <section className="mb-10">
+      <section id="page-koziolki-photos" className="mb-10">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-bold tracking-tight">
           <ImageIcon className="h-5 w-5 text-accent" />
           Фотоальбом · награждение

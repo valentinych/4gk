@@ -105,7 +105,7 @@ export default function AdminPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div id="page-admin-loading" className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted" />
       </div>
     );
@@ -113,7 +113,7 @@ export default function AdminPage() {
 
   if (session?.user?.role !== "ADMIN") {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+      <div id="page-admin-forbidden" className="flex min-h-[60vh] flex-col items-center justify-center px-4">
         <h1 className="text-xl font-bold">Доступ запрещён</h1>
         <p className="mt-2 text-sm text-muted">У вас нет прав администратора</p>
         <Link
@@ -127,8 +127,8 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <div className="flex items-center gap-3">
+    <div id="page-admin" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div id="page-admin-header" className="flex items-center gap-3">
         <Link href="/account" className="rounded-lg p-1.5 text-muted hover:bg-surface hover:text-foreground transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </Link>
@@ -145,7 +145,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
+      <div id="page-admin-roles-info" className="mt-6 rounded-xl border border-border bg-surface p-4">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Shield className="h-4 w-4 text-muted" />
           Роли и права
@@ -183,7 +183,7 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-4 relative">
+      <div id="page-admin-search" className="mt-4 relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         <input
           type="text"
@@ -194,7 +194,7 @@ export default function AdminPage() {
         />
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-surface">
+      <div id="page-admin-users-table" className="mt-4 overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left text-xs text-muted uppercase tracking-wider">

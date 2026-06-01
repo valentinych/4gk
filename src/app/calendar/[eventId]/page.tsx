@@ -514,7 +514,7 @@ export default function EventDetailPage() {
 
   if (pageLoading) {
     return (
-      <div className="flex items-center justify-center py-32">
+      <div id="page-event-loading" className="flex items-center justify-center py-32">
         <Loader2 className="h-6 w-6 animate-spin text-muted" />
       </div>
     );
@@ -522,7 +522,7 @@ export default function EventDetailPage() {
 
   if (pageError || !event) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+      <div id="page-event-error" className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-muted">{pageError ?? "Событие не найдено"}</p>
         <Link href="/calendar" className="mt-4 inline-flex items-center gap-1 text-sm text-accent hover:underline">
           <ArrowLeft className="h-4 w-4" /> Назад к календарю
@@ -564,9 +564,10 @@ export default function EventDetailPage() {
         : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div id="page-event" className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       {/* Back */}
       <Link
+        id="page-event-back-link"
         href="/calendar"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
       >
@@ -575,7 +576,7 @@ export default function EventDetailPage() {
       </Link>
 
       {/* Event header */}
-      <div className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">
+      <div id="page-event-header" className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span
             className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${c.bg} ${c.text} ${c.border}`}
@@ -680,8 +681,8 @@ export default function EventDetailPage() {
       </div>
 
       {/* Teams section */}
-      <div className="rounded-2xl border border-border bg-surface shadow-sm">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+      <div id="page-event-teams" className="rounded-2xl border border-border bg-surface shadow-sm">
+        <div id="page-event-teams-header" className="flex items-center justify-between border-b border-border px-5 py-4">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted" />
             <h2 className="font-bold">Команды</h2>
@@ -712,7 +713,7 @@ export default function EventDetailPage() {
 
         {/* ─── Admin/Organizer: add team ─── */}
         {isOrganizer && (
-          <div className="border-b border-border px-5 py-4">
+          <div id="page-event-add-team" className="border-b border-border px-5 py-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
               Добавить команду
             </p>
@@ -818,7 +819,7 @@ export default function EventDetailPage() {
 
         {/* ─── Player: join ─── */}
         {!isOrganizer && userId && (
-          <div className="border-b border-border px-5 py-4">
+          <div id="page-event-player-join" className="border-b border-border px-5 py-4">
             {alreadyJoined ? (
               <div className="flex items-center gap-2 text-sm text-emerald-700">
                 <CheckCircle2 className="h-4 w-4" />
@@ -953,7 +954,7 @@ export default function EventDetailPage() {
 
         {/* ─── Not logged in ─── */}
         {!userId && (
-          <div className="border-b border-border px-5 py-4">
+          <div id="page-event-signin-cta" className="border-b border-border px-5 py-4">
             <Link
               href={`/auth/signin?callbackUrl=/calendar/${event.id}`}
               className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
@@ -966,12 +967,12 @@ export default function EventDetailPage() {
 
         {/* ─── Teams list ─── */}
         {teams.length === 0 ? (
-          <div className="px-5 py-12 text-center">
+          <div id="page-event-teams-empty" className="px-5 py-12 text-center">
             <Users className="mx-auto mb-2 h-8 w-8 text-muted/30" />
             <p className="text-sm text-muted">Пока нет зарегистрированных команд</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div id="page-event-teams-table-wrap" className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted">
@@ -1163,7 +1164,7 @@ export default function EventDetailPage() {
         )}
 
         {teams.length > 0 && (
-          <div className="border-t border-border px-5 py-3 text-xs text-muted">
+          <div id="page-event-teams-footer" className="border-t border-border px-5 py-3 text-xs text-muted">
             {activeTeamsCount} {teamCountWord(activeTeamsCount)}
             {event.participantLimit != null && (
               <span className="ml-1 text-muted/70">/ {event.participantLimit}</span>

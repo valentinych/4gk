@@ -34,7 +34,7 @@ export default function AccountPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <div id="page-account-loading" className="flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" />
       </div>
     );
@@ -42,7 +42,7 @@ export default function AccountPage() {
 
   if (!session?.user) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+      <div id="page-account-unauthorized" className="flex min-h-[60vh] flex-col items-center justify-center px-4">
         <h1 className="text-xl font-bold">Вы не авторизованы</h1>
         <p className="mt-2 text-sm text-muted">Войдите чтобы увидеть свой профиль</p>
         <Link
@@ -58,12 +58,12 @@ export default function AccountPage() {
   const user = session.user;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+    <div id="page-account" className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Аккаунт</h1>
       <p className="mt-1 text-sm text-muted">Управление профилем</p>
 
       {/* Profile Card */}
-      <div className="mt-8 rounded-xl border border-border bg-surface p-6">
+      <div id="page-account-profile-card" className="mt-8 rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center gap-4">
           {user.image ? (
             <Image
@@ -86,7 +86,7 @@ export default function AccountPage() {
       </div>
 
       {/* Details */}
-      <div className="mt-4 rounded-xl border border-border bg-surface divide-y divide-border">
+      <div id="page-account-details" className="mt-4 rounded-xl border border-border bg-surface divide-y divide-border">
         <div className="flex items-center gap-3 px-5 py-4">
           <Mail className="h-4 w-4 text-muted shrink-0" />
           <div className="min-w-0">
@@ -133,12 +133,12 @@ export default function AccountPage() {
       )}
 
       {/* CHGK Profile */}
-      <div className="mt-4">
+      <div id="page-account-chgk-profile-wrap" className="mt-4">
         <ChgkProfile />
       </div>
 
       {/* My submitted rosters */}
-      <div className="mt-4">
+      <div id="page-account-my-rosters" className="mt-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted">Мои заявки</h2>
           <Link
@@ -183,7 +183,7 @@ export default function AccountPage() {
       </div>
 
       {/* Actions */}
-      <div className="mt-6">
+      <div id="page-account-actions" className="mt-6">
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
           className="flex items-center gap-2 rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-red-50"

@@ -107,7 +107,7 @@ export default function ChgkProfile() {
 
   if (!chgkId) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-6">
+      <div id="cmp-chgk-profile-link-form" className="rounded-xl border border-border bg-surface p-6">
         <h3 className="text-sm font-bold tracking-tight">Рейтинг ЧГК</h3>
         <p className="mt-1 text-xs text-muted">
           Привяжите свой профиль с{" "}
@@ -147,7 +147,7 @@ export default function ChgkProfile() {
 
   if (profileLoading && !profile) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-6">
+      <div id="cmp-chgk-profile-loading" className="rounded-xl border border-border bg-surface p-6">
         <div className="flex items-center gap-2 text-sm text-muted">
           <Loader2 className="h-4 w-4 animate-spin" />
           Загрузка профиля ЧГК…
@@ -161,8 +161,8 @@ export default function ChgkProfile() {
   const tournamentsCount = profile?.tournamentsCount ?? 0;
 
   return (
-    <div className="rounded-xl border border-border bg-surface">
-      <div className="flex items-center justify-between border-b border-border px-5 py-3">
+    <div id="cmp-chgk-profile" className="rounded-xl border border-border bg-surface">
+      <div id="cmp-chgk-profile-header" className="flex items-center justify-between border-b border-border px-5 py-3">
         <h3 className="text-sm font-bold tracking-tight">Рейтинг ЧГК</h3>
         <a
           href={`https://rating.chgk.info/player/${chgkId}`}
@@ -176,14 +176,14 @@ export default function ChgkProfile() {
       </div>
 
       {player && (
-        <div className="px-5 pt-4 pb-2">
+        <div id="cmp-chgk-profile-player" className="px-5 pt-4 pb-2">
           <p className="text-lg font-bold">
             {player.surname} {player.name} {player.patronymic}
           </p>
         </div>
       )}
 
-      <div className="divide-y divide-border">
+      <div id="cmp-chgk-profile-stats" className="divide-y divide-border">
         <div className="flex items-center gap-3 px-5 py-3">
           <Hash className="h-4 w-4 text-muted shrink-0" />
           <div>
@@ -216,7 +216,7 @@ export default function ChgkProfile() {
         </div>
       </div>
 
-      <div className="border-t border-border px-5 py-3">
+      <div id="cmp-chgk-profile-actions" className="border-t border-border px-5 py-3">
         <button
           onClick={unlinkAccount}
           disabled={loading}

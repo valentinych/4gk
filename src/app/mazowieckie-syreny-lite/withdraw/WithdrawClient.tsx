@@ -53,7 +53,7 @@ export function WithdrawClient() {
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-12 sm:px-6">
+    <div id="page-syreny-lite-withdraw" className="mx-auto max-w-xl px-4 py-12 sm:px-6">
       <Link
         href="/mazowieckie-syreny-lite/participants"
         className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
@@ -65,11 +65,11 @@ export function WithdrawClient() {
       <h1 className="mb-6 text-2xl font-bold tracking-tight">Отзыв заявки</h1>
 
       {!valid ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+        <div id="page-syreny-lite-withdraw-invalid" className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
           Ссылка некорректна. Откройте ссылку отзыва, которую получили после заявки.
         </div>
       ) : phase === "done" ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-800">
+        <div id="page-syreny-lite-withdraw-done" className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-800">
           <div className="mb-2 flex items-center gap-2 font-semibold">
             <CheckCircle2 className="h-4 w-4" />
             Заявка отозвана
@@ -83,7 +83,7 @@ export function WithdrawClient() {
           </Link>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-surface p-5 text-sm">
+        <div id="page-syreny-lite-withdraw-confirm" className="rounded-xl border border-border bg-surface p-5 text-sm">
           <p className="mb-4 text-muted">
             Подтвердите отзыв заявки команды с турнира{" "}
             <strong className="text-foreground">Syrenki Mazowieckie Lite</strong>.

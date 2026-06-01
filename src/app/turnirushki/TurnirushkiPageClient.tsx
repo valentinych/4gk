@@ -65,8 +65,8 @@ export function TurnirushkiPageClient() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <div className="mb-10">
+    <div id="page-turnirushki" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div id="page-turnirushki-header" className="mb-10">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
@@ -83,7 +83,7 @@ export function TurnirushkiPageClient() {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2">
+      <div id="page-turnirushki-controls" className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="relative rounded-xl border border-border bg-surface p-5" ref={menuRef}>
           <button
             type="button"
@@ -134,7 +134,7 @@ export function TurnirushkiPageClient() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div id="page-turnirushki-tiles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((tile) => (
           <Link
             key={tile.title}

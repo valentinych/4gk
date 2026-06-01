@@ -134,8 +134,8 @@ export function OchpPageClient() {
   }, [seasonStart, noChampionship]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-      <div className="mb-10">
+    <div id="page-ochp" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div id="page-ochp-header" className="mb-10">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -160,8 +160,8 @@ export function OchpPageClient() {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2">
-        <div className="relative rounded-xl border border-border bg-surface p-5" ref={menuRef}>
+      <div id="page-ochp-controls" className="mb-8 grid gap-4 sm:grid-cols-2">
+        <div id="page-ochp-year-picker" className="relative rounded-xl border border-border bg-surface p-5" ref={menuRef}>
           <button
             type="button"
             onClick={(e) => {
@@ -198,7 +198,7 @@ export function OchpPageClient() {
             </div>
           )}
         </div>
-        <div className="rounded-xl border border-border bg-surface p-5">
+        <div id="page-ochp-date-card" className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
               <Trophy className="h-4 w-4 text-muted" />
@@ -226,7 +226,7 @@ export function OchpPageClient() {
       )}
 
       {tiles.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div id="page-ochp-tiles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((tile) => {
             const ext = tile.href?.startsWith("http");
             if (tile.href && !ext) {

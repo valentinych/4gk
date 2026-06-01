@@ -259,7 +259,7 @@ export default async function DzikiSopotSlugPage({ params, searchParams }: Props
   const title = PAGE_TITLES[slug] ?? slug;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div id="page-ds-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <Link
         href="/dziki-sopot"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
@@ -268,7 +268,7 @@ export default async function DzikiSopotSlugPage({ params, searchParams }: Props
         Назад к Dziki Sopot
       </Link>
 
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div id="page-ds-slug-header" className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {(slug === "rating-page" || slug === "results-chgk") && (
           <YearSwitcher slug={slug} activeYear={year} />
@@ -280,7 +280,7 @@ export default async function DzikiSopotSlugPage({ params, searchParams }: Props
       ) : slug === "results-chgk" ? (
         <ChgkRatingApiResults tournamentId={tournamentId} />
       ) : (
-        <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
+        <div id="page-ds-slug-notfound" className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
           <p className="text-base font-medium text-muted/60">Страница не найдена</p>
           <Link href="/dziki-sopot" className="mt-3 inline-block text-sm text-accent hover:underline">
             Вернуться на главную Dziki Sopot

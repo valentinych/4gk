@@ -69,12 +69,17 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        id="root-body"
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         <ThemeProvider>
           <SessionProvider>
             <ToastProvider>
               <Header />
-              <main className="min-h-screen">{children}</main>
+              <main id="root-main" className="min-h-screen">
+                {children}
+              </main>
               <Footer />
               <CookieConsent />
             </ToastProvider>

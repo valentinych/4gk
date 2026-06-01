@@ -68,6 +68,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       {/* Portal-like fixed container */}
       <div
+        id="cmp-toast-container"
         aria-live="polite"
         aria-atomic="false"
         className="pointer-events-none fixed bottom-4 left-0 right-0 z-[300] flex flex-col items-center gap-2 px-4 sm:left-auto sm:right-4 sm:items-end sm:px-0"

@@ -160,7 +160,7 @@ export default function MusicSIPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-12 sm:py-20">
+    <div id="page-music-si" className="mx-auto max-w-lg px-4 py-12 sm:py-20">
       <Link
         href="/online-games"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors"
@@ -169,7 +169,7 @@ export default function MusicSIPage() {
         Онлайн-игры
       </Link>
 
-      <div className="text-center mb-10">
+      <div id="page-music-si-header" className="text-center mb-10">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500 shadow-lg">
           <Music className="h-8 w-8 text-white" />
         </div>
@@ -181,7 +181,7 @@ export default function MusicSIPage() {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div id="page-music-si-actions" className="space-y-6">
         {isLoading ? (
           <div className="rounded-xl border border-border bg-surface p-6 text-center">
             <div className="h-5 w-5 mx-auto animate-spin rounded-full border-2 border-accent border-t-transparent" />
@@ -209,7 +209,7 @@ export default function MusicSIPage() {
             </button>
 
             {rooms.length > 0 && (
-              <div className="rounded-xl border border-border bg-surface p-5">
+              <div id="page-music-si-my-rooms" className="rounded-xl border border-border bg-surface p-5">
                 <h2 className="text-sm font-bold mb-3">Ваши комнаты</h2>
                 <div className="space-y-2">
                   {rooms.map((r) => (
@@ -264,7 +264,7 @@ export default function MusicSIPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-6">
+        <div id="page-music-si-join-form" className="rounded-xl border border-border bg-surface p-6">
           <h2 className="text-sm font-bold mb-4">Войти в игру по коду</h2>
           <div className="space-y-3">
             <div>

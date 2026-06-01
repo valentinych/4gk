@@ -91,7 +91,7 @@ function TrafficLight({ cat }: { cat: ParticipantCategory }) {
 
 export default function DsParticipantsPage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <div id="page-ds-participants" className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <Link
         href="/dziki-sopot"
         className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
@@ -100,7 +100,7 @@ export default function DsParticipantsPage() {
         Dziki Sopot
       </Link>
 
-      <div className="mb-8">
+      <div id="page-ds-participants-header" className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
           <Users className="h-3.5 w-3.5" />
           Dziki Sopot 🐗 — 2026
@@ -141,13 +141,13 @@ export default function DsParticipantsPage() {
 
 function ParticipantsSkeleton() {
   return (
-    <div aria-busy="true" aria-live="polite" className="animate-pulse">
+    <div id="page-ds-participants-skeleton" aria-busy="true" aria-live="polite" className="animate-pulse">
       <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-muted">
         <div className="h-4 w-24 rounded bg-muted/30" />
         <div className="h-5 w-56 rounded-full bg-muted/20" />
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div id="page-ds-participants-skeleton-chips" className="mb-6 flex flex-wrap gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="h-7 w-44 rounded-full border border-border bg-surface" />
         ))}
@@ -205,7 +205,7 @@ async function ParticipantsSection() {
 
   return (
     <>
-      <div className="mb-6 -mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
+      <div id="page-ds-participants-summary" className="mb-6 -mt-4 flex flex-wrap items-center gap-3 text-sm text-muted">
         <span>{participants.length} команд</span>
         <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium shadow-sm">
           Рейтинг зафиксирован на релиз{" "}
@@ -215,7 +215,7 @@ async function ParticipantsSection() {
         </span>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div id="page-ds-participants-legend" className="mb-6 flex flex-wrap gap-3">
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium shadow-sm">
           <span className="inline-block h-3 w-3 rounded-full bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.5)]" />
           <span>Участие подтверждено</span>
@@ -261,11 +261,11 @@ async function ParticipantsSection() {
       </div>
 
       {participants.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-border p-12 text-center text-sm text-muted">
+        <div id="page-ds-participants-empty" className="rounded-xl border-2 border-dashed border-border p-12 text-center text-sm text-muted">
           Данные недоступны
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <div id="page-ds-participants-table-wrap" className="overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/20 text-xs font-semibold uppercase tracking-wide text-muted">

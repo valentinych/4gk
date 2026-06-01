@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function MazowieckieSyrenyLitePage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+    <div id="page-syreny-lite" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <Link
         href="/amateur"
         className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted hover:text-accent transition-colors"
@@ -20,7 +20,7 @@ export default function MazowieckieSyrenyLitePage() {
         Любительские турниры
       </Link>
 
-      <div className="mb-10">
+      <div id="page-syreny-lite-header" className="mb-10">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-lime-100 bg-lime-50 px-3 py-1 text-xs font-semibold text-lime-700">
           <Sparkles className="h-3.5 w-3.5" />
           Любительские турниры
@@ -33,7 +33,7 @@ export default function MazowieckieSyrenyLitePage() {
         </p>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2">
+      <div id="page-syreny-lite-info-cards" className="mb-8 grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
@@ -66,7 +66,7 @@ export default function MazowieckieSyrenyLitePage() {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-2">
+      <div id="page-syreny-lite-actions" className="mb-8 grid gap-3 sm:grid-cols-2">
         <Link
           href="/mazowieckie-syreny-lite/participants"
           className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
@@ -78,7 +78,7 @@ export default function MazowieckieSyrenyLitePage() {
         </Link>
       </div>
 
-      <section>
+      <section id="page-syreny-lite-schedule">
         <h2 className="mb-4 text-lg font-bold tracking-tight">📌 Предварительная программа</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {SYRENY_LITE_SCHEDULE.map((day) => (
@@ -121,7 +121,7 @@ export default function MazowieckieSyrenyLitePage() {
         </div>
       </section>
 
-      <section className="mt-8">
+      <section id="page-syreny-lite-rules" className="mt-8">
         <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-6 text-sm leading-relaxed text-amber-900 shadow-sm">
           <p className="mb-3">
             В турнире могут принимать участие команды <strong>не выше 600-го места</strong>{" "}

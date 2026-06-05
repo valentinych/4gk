@@ -1,6 +1,57 @@
 import { db } from "./db";
+import { fetchChgkGgRatings } from "./chgk-gg";
 
 export const SYRENY_LITE_EVENT_ID = "mazowieckie-syreny-lite";
+
+/** Display-side team name overrides (matched case-insensitively). */
+export const SYRENY_LITE_RENAMED_TEAM_NAMES = new Map<string, string>([
+  ["кучин айленд", "Коробучин"],
+  ["кучин айланд", "Коробучин"],
+  ["домкрат гагарина", "Домкрат - пять гривен"],
+  ["ежу понятно", "Ой, всё!"],
+]);
+
+export const SYRENY_LITE_KSI = {
+  sheetId: "1JwcOlGv2w0tFNQ3_Xs7ffDXtirmJYGs1bmZ7McaOssk",
+  gid: "2116355512",
+  source:
+    "https://docs.google.com/spreadsheets/d/1JwcOlGv2w0tFNQ3_Xs7ffDXtirmJYGs1bmZ7McaOssk/edit?gid=2116355512",
+  topicCount: 20,
+  questionCosts: [10, 20, 30, 40, 50] as const,
+} as const;
+
+/** Teams ranked 600th or higher play out of the main standings. */
+export function isOutOfCompetition(ratingPosition: number | null): boolean {
+  return ratingPosition !== null && ratingPosition <= 600;
+}
+
+export function applySyrenyLiteDisplayName(name: string): string {
+  return SYRENY_LITE_RENAMED_TEAM_NAMES.get(normalizeSyrenyLiteName(name)) ?? name;
+}
+
+/** Normalized display names of teams in the «Вне зачёта» standings. */
+export async function getSyrenyLiteOutOfCompetitionNames(): Promise<Set<string>> {
+  const teams = await db.eventTeam.findMany({
+    where: { eventId: SYRENY_LITE_EVENT_ID, withdrawnAt: null },
+    select: { teamName: true, displayName: true, teamChgkId: true, manualEntry: true },
+  });
+
+  const realIds = teams
+    .filter((t) => !t.manualEntry && t.teamChgkId > 0)
+    .map((t) => t.teamChgkId);
+  const { map: ratings } = await fetchChgkGgRatings(realIds);
+
+  const out = new Set<string>();
+  for (const t of teams) {
+    const display = applySyrenyLiteDisplayName(t.displayName ?? t.teamName);
+    const r = !t.manualEntry && t.teamChgkId > 0 ? ratings.get(t.teamChgkId) : null;
+    const pos = r?.position ?? null;
+    if (isOutOfCompetition(pos)) {
+      out.add(normalizeSyrenyLiteName(display));
+    }
+  }
+  return out;
+}
 
 /**
  * Team display-name overrides applied at the API boundary (no DB writes).

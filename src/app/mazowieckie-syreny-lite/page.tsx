@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, ClipboardList, ExternalLink, MapPin, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, ClipboardList, ExternalLink, LayoutList, MapPin, Sparkles, Users } from "lucide-react";
 import { SYRENY_LITE, SYRENY_LITE_SCHEDULE } from "@/lib/syreny-lite";
 
 export const metadata: Metadata = {
@@ -66,7 +66,7 @@ export default function MazowieckieSyrenyLitePage() {
         </div>
       </div>
 
-      <div id="page-syreny-lite-actions" className="mb-8 grid gap-3 sm:grid-cols-2">
+      <div id="page-syreny-lite-actions" className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/mazowieckie-syreny-lite/participants"
           className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
@@ -83,6 +83,15 @@ export default function MazowieckieSyrenyLitePage() {
           <ClipboardList className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
           <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
             Подать состав
+          </span>
+        </Link>
+        <Link
+          href="/mazowieckie-syreny-lite/ksi"
+          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+        >
+          <LayoutList className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
+          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+            КСИ
           </span>
         </Link>
       </div>

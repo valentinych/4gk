@@ -7,23 +7,13 @@ import { fetchChgkGgRatings } from "@/lib/chgk-gg";
 import {
   SYRENY_LITE_EVENT_ID,
   SYRENY_LITE_HIDDEN_TEAM_NAMES,
+  SYRENY_LITE_RENAMED_TEAM_NAMES,
   allocateManualTeamChgkId,
   ensureSyrenyLiteEvent,
   normalizeSyrenyLiteName,
 } from "@/lib/syreny-lite";
 
 export const dynamic = "force-dynamic";
-
-/**
- * Display-side overrides applied without touching DB rows. Names are matched
- * case-insensitively against `displayName ?? teamName`.
- */
-const RENAMED_TEAM_NAMES = new Map<string, string>([
-  ["кучин айленд", "Коробучин"],
-  ["кучин айланд", "Коробучин"],
-  ["домкрат гагарина", "Домкрат - пять гривен"],
-  ["ежу понятно", "Ой, всё!"],
-]);
 
 const norm = normalizeSyrenyLiteName;
 
@@ -60,7 +50,7 @@ export async function GET() {
     .filter((t) => !SYRENY_LITE_HIDDEN_TEAM_NAMES.has(norm(t.displayName ?? t.teamName)))
     .map((t) => {
       const current = t.displayName ?? t.teamName;
-      const renamed = RENAMED_TEAM_NAMES.get(norm(current));
+      const renamed = SYRENY_LITE_RENAMED_TEAM_NAMES.get(norm(current));
       return renamed ? { ...t, displayName: renamed } : t;
     });
 

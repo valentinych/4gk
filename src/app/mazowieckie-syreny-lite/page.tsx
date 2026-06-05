@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, ExternalLink, MapPin, Sparkles, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, ClipboardList, ExternalLink, MapPin, Sparkles, Users } from "lucide-react";
 import { SYRENY_LITE, SYRENY_LITE_SCHEDULE } from "@/lib/syreny-lite";
 
 export const metadata: Metadata = {
@@ -74,6 +74,15 @@ export default function MazowieckieSyrenyLitePage() {
           <Users className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
           <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
             Список команд · Заявка
+          </span>
+        </Link>
+        <Link
+          href={`/account/roster/${SYRENY_LITE.id}`}
+          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+        >
+          <ClipboardList className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
+          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+            Подать состав
           </span>
         </Link>
       </div>

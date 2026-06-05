@@ -56,8 +56,32 @@ export interface BrainSectionDTO {
   matches: BrainMatchDTO[];
 }
 
+export interface BrainGroupAssignments {
+  groupA: string[];
+  groupB: string[];
+  outGroup: string[];
+}
+
+export type BrainDrawGroupKey = "groupA" | "groupB" | "outGroup";
+
+export interface BrainDrawRevealStep {
+  teamId: string;
+  group: BrainDrawGroupKey;
+}
+
+export interface BrainDrawReveal {
+  startedAt: number;
+  stepMs: number;
+  steps: BrainDrawRevealStep[];
+}
+
 export interface BrainTournamentDTO {
   initialized: boolean;
+  /** Teams loaded, groups being configured before matches exist. */
+  setup: boolean;
+  groupAssignments: BrainGroupAssignments;
+  /** Active blind-draw animation; null when idle or finished. */
+  drawReveal: BrainDrawReveal | null;
   updatedAt: number;
   activeMatchId: string | null;
   teams: BrainTeam[];
@@ -68,6 +92,9 @@ type Listener = (state: BrainTournamentDTO) => void;
 
 interface TournamentState {
   initialized: boolean;
+  setup: boolean;
+  groupAssignments: BrainGroupAssignments;
+  drawReveal: BrainDrawReveal | null;
   updatedAt: number;
   activeMatchId: string | null;
   teams: Map<string, BrainTeam>;
@@ -82,9 +109,16 @@ const g = globalThis as unknown as {
   __syrenyBrainListeners?: Set<Listener>;
 };
 
+function emptyGroupAssignments(): BrainGroupAssignments {
+  return { groupA: [], groupB: [], outGroup: [] };
+}
+
 function emptyState(): TournamentState {
   return {
     initialized: false,
+    setup: false,
+    groupAssignments: emptyGroupAssignments(),
+    drawReveal: null,
     updatedAt: Date.now(),
     activeMatchId: null,
     teams: new Map(),
@@ -165,6 +199,19 @@ function buildDTO(): BrainTournamentDTO {
 
   return {
     initialized: state.initialized,
+    setup: state.setup,
+    groupAssignments: {
+      groupA: [...state.groupAssignments.groupA],
+      groupB: [...state.groupAssignments.groupB],
+      outGroup: [...state.groupAssignments.outGroup],
+    },
+    drawReveal: state.drawReveal
+      ? {
+          startedAt: state.drawReveal.startedAt,
+          stepMs: state.drawReveal.stepMs,
+          steps: state.drawReveal.steps.map((s) => ({ ...s })),
+        }
+      : null,
     updatedAt: state.updatedAt,
     activeMatchId: state.activeMatchId,
     teams,
@@ -255,7 +302,59 @@ export interface InitTeamInput {
   outOfCompetition: boolean;
 }
 
-export function initBrainTournament(teams: InitTeamInput[]): boolean {
+function ensurePlaceholderTeam() {
+  const placeholder = "tbd";
+  if (!state.teams.has(placeholder)) {
+    state.teams.set(placeholder, {
+      id: placeholder,
+      name: "—",
+      outOfCompetition: false,
+    });
+  }
+}
+
+function addPlayoffSections() {
+  state.sections.push({ id: "sf1", name: "Полуфинал 1", teamIds: [] });
+  state.sections.push({ id: "sf2", name: "Полуфинал 2", teamIds: [] });
+  state.sections.push({ id: "third", name: "Бой за 3-е место", teamIds: [] });
+  state.sections.push({ id: "final", name: "Финал", teamIds: [] });
+  ensurePlaceholderTeam();
+  addKnockoutMatch("sf1", "tbd", "tbd", 7);
+  addKnockoutMatch("sf2", "tbd", "tbd", 7);
+  addKnockoutMatch("third", "tbd", "tbd", 7);
+  addKnockoutMatch("final", "tbd", "tbd", 9);
+}
+
+function validateGroupAssignments(
+  groupA: string[],
+  groupB: string[],
+  outGroup: string[],
+): string | null {
+  const all = [...groupA, ...groupB, ...outGroup];
+  const seen = new Set<string>();
+  for (const id of all) {
+    if (!state.teams.has(id) || id === "tbd") {
+      return `Неизвестная команда: ${id}`;
+    }
+    if (seen.has(id)) return "Команда не может быть в двух группах";
+    seen.add(id);
+  }
+  const groups = [
+    { name: "Группа A", ids: groupA },
+    { name: "Группа B", ids: groupB },
+    { name: "Вне зачёта", ids: outGroup },
+  ].filter((g) => g.ids.length > 0);
+  if (groups.length === 0) return "Назначьте хотя бы одну команду в группу";
+  for (const g of groups) {
+    if (g.ids.length < 2) {
+      return `${g.name}: нужно минимум 2 команды для кругового турнира`;
+    }
+  }
+  return null;
+}
+
+/** Load teams and enter setup mode (no matches yet). */
+export function prepareBrainTournament(teams: InitTeamInput[]): boolean {
   Object.assign(state, emptyState());
   matchCounter = 0;
 
@@ -267,12 +366,116 @@ export function initBrainTournament(teams: InitTeamInput[]): boolean {
     });
   }
 
-  const main = teams.filter((t) => !t.outOfCompetition);
-  const ooc = teams.filter((t) => t.outOfCompetition);
+  state.setup = true;
+  touch();
+  return true;
+}
 
-  const groupA = main.slice(0, 5).map((t) => t.id);
-  const groupB = main.slice(5, 10).map((t) => t.id);
-  const oocGroup = ooc.slice(0, 4).map((t) => t.id);
+function shuffleIds(ids: string[]): string[] {
+  const a = [...ids];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function shuffleDrawSteps(steps: BrainDrawRevealStep[]): BrainDrawRevealStep[] {
+  const a = [...steps];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildShuffledDrawSteps(
+  groupA: string[],
+  groupB: string[],
+  outGroup: string[],
+): BrainDrawRevealStep[] {
+  const steps: BrainDrawRevealStep[] = [
+    ...groupA.map((teamId) => ({ teamId, group: "groupA" as const })),
+    ...groupB.map((teamId) => ({ teamId, group: "groupB" as const })),
+    ...outGroup.map((teamId) => ({ teamId, group: "outGroup" as const })),
+  ];
+  return shuffleDrawSteps(steps);
+}
+
+export function setBrainGroupAssignments(
+  groupA: string[],
+  groupB: string[],
+  outGroup: string[],
+): string | null {
+  if (!state.setup || state.initialized) {
+    return "Турнир уже начат";
+  }
+  const err = validateGroupAssignments(groupA, groupB, outGroup);
+  if (err) return err;
+  state.drawReveal = null;
+  state.groupAssignments = {
+    groupA: [...groupA],
+    groupB: [...groupB],
+    outGroup: [...outGroup],
+  };
+  touch();
+  return null;
+}
+
+const DRAW_STEP_MS = 700;
+
+/** Randomly assign selected teams to groups (blind draw). */
+export function drawBrainGroups(selectedIds: string[]): string | null {
+  if (!state.setup || state.initialized) {
+    return "Турнир уже начат или настройка не начата";
+  }
+
+  const selected = selectedIds.filter(
+    (id) => state.teams.has(id) && id !== "tbd",
+  );
+  if (selected.length === 0) {
+    return "Отметьте команды для жеребьёвки";
+  }
+
+  const main: string[] = [];
+  const ooc: string[] = [];
+  for (const id of selected) {
+    const t = state.teams.get(id)!;
+    if (t.outOfCompetition) ooc.push(id);
+    else main.push(id);
+  }
+
+  const shuffledMain = shuffleIds(main);
+  const shuffledOoc = shuffleIds(ooc);
+
+  const groupA = shuffledMain.slice(0, 5);
+  const groupB = shuffledMain.slice(5, 10);
+  const outGroup = shuffledOoc.slice(0, 4);
+
+  const err = validateGroupAssignments(groupA, groupB, outGroup);
+  if (err) return err;
+
+  state.groupAssignments = { groupA, groupB, outGroup };
+  state.drawReveal = {
+    startedAt: Date.now(),
+    stepMs: DRAW_STEP_MS,
+    steps: buildShuffledDrawSteps(groupA, groupB, outGroup),
+  };
+  touch();
+  return null;
+}
+
+/** Create matches from configured group assignments. */
+export function startBrainTournament(): string | null {
+  if (!state.setup || state.initialized) {
+    return "Турнир уже начат или настройка не начата";
+  }
+  const { groupA, groupB, outGroup } = state.groupAssignments;
+  const err = validateGroupAssignments(groupA, groupB, outGroup);
+  if (err) return err;
+
+  state.sections = [];
+  state.matches.clear();
 
   if (groupA.length > 0) {
     addRoundRobinSection("group-a", "Группа A", groupA, 5);
@@ -280,34 +483,18 @@ export function initBrainTournament(teams: InitTeamInput[]): boolean {
   if (groupB.length > 0) {
     addRoundRobinSection("group-b", "Группа B", groupB, 5);
   }
-  if (oocGroup.length > 0) {
-    addRoundRobinSection("out-group", "Вне зачёта", oocGroup, 5);
+  if (outGroup.length > 0) {
+    addRoundRobinSection("out-group", "Вне зачёта", outGroup, 5);
   }
 
-  // Playoff placeholders — teams assigned later
-  state.sections.push({ id: "sf1", name: "Полуфинал 1", teamIds: [] });
-  state.sections.push({ id: "sf2", name: "Полуфинал 2", teamIds: [] });
-  state.sections.push({ id: "third", name: "Бой за 3-е место", teamIds: [] });
-  state.sections.push({ id: "final", name: "Финал", teamIds: [] });
+  addPlayoffSections();
 
-  const placeholder = "tbd";
-  if (!state.teams.has(placeholder)) {
-    state.teams.set(placeholder, {
-      id: placeholder,
-      name: "—",
-      outOfCompetition: false,
-    });
-  }
-
-  addKnockoutMatch("sf1", placeholder, placeholder, 7);
-  addKnockoutMatch("sf2", placeholder, placeholder, 7);
-  addKnockoutMatch("third", placeholder, placeholder, 7);
-  addKnockoutMatch("final", placeholder, placeholder, 9);
-
+  state.drawReveal = null;
+  state.setup = false;
   state.initialized = true;
   state.activeMatchId = [...state.matches.keys()][0] ?? null;
   touch();
-  return true;
+  return null;
 }
 
 export function setActiveMatch(matchId: string | null): boolean {
@@ -382,6 +569,20 @@ export function advancePlayoffFromGroups(): boolean {
 }
 
 export function resetBrainTournament(): void {
+  matchCounter = 0;
   Object.assign(state, emptyState());
   touch();
+}
+
+/** @deprecated Use prepareBrainTournament + startBrainTournament */
+export function initBrainTournament(teams: InitTeamInput[]): boolean {
+  if (!prepareBrainTournament(teams)) return false;
+  const main = teams.filter((t) => !t.outOfCompetition);
+  const ooc = teams.filter((t) => t.outOfCompetition);
+  state.groupAssignments = {
+    groupA: main.slice(0, 5).map((t) => t.id),
+    groupB: main.slice(5, 10).map((t) => t.id),
+    outGroup: ooc.slice(0, 4).map((t) => t.id),
+  };
+  return startBrainTournament() === null;
 }

@@ -8,13 +8,43 @@ import {
   Loader2,
   RefreshCw,
   Settings2,
+  Shuffle,
   Trophy,
 } from "lucide-react";
 import type {
+  BrainDrawReveal,
+  BrainGroupAssignments,
   BrainMatchDTO,
   BrainSectionDTO,
+  BrainTeam,
   BrainTournamentDTO,
 } from "@/lib/syreny-lite-brain-store";
+
+type GroupKey = "" | "groupA" | "groupB" | "outGroup";
+
+function assignmentsToMap(
+  teams: BrainTeam[],
+  assignments: BrainGroupAssignments,
+): Record<string, GroupKey> {
+  const map: Record<string, GroupKey> = {};
+  for (const t of teams) map[t.id] = "";
+  for (const id of assignments.groupA) map[id] = "groupA";
+  for (const id of assignments.groupB) map[id] = "groupB";
+  for (const id of assignments.outGroup) map[id] = "outGroup";
+  return map;
+}
+
+function mapToAssignments(map: Record<string, GroupKey>): BrainGroupAssignments {
+  const groupA: string[] = [];
+  const groupB: string[] = [];
+  const outGroup: string[] = [];
+  for (const [id, g] of Object.entries(map)) {
+    if (g === "groupA") groupA.push(id);
+    else if (g === "groupB") groupB.push(id);
+    else if (g === "outGroup") outGroup.push(id);
+  }
+  return { groupA, groupB, outGroup };
+}
 
 const GROUP_SECTIONS = new Set(["group-a", "group-b", "out-group"]);
 
@@ -139,6 +169,260 @@ function PlayoffAssignForm({
   );
 }
 
+function useDrawRevealProgress(drawReveal: BrainDrawReveal | null): number {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!drawReveal) {
+      setProgress(0);
+      return;
+    }
+    const update = () => {
+      const n = Math.min(
+        drawReveal.steps.length,
+        Math.floor((Date.now() - drawReveal.startedAt) / drawReveal.stepMs),
+      );
+      setProgress(n);
+    };
+    update();
+    const id = setInterval(update, 120);
+    return () => clearInterval(id);
+  }, [drawReveal]);
+
+  return progress;
+}
+
+function revealedSlice(
+  drawReveal: BrainDrawReveal,
+  progress: number,
+): BrainGroupAssignments {
+  const out: BrainGroupAssignments = { groupA: [], groupB: [], outGroup: [] };
+  for (let i = 0; i < progress; i++) {
+    const step = drawReveal.steps[i];
+    out[step.group].push(step.teamId);
+  }
+  return out;
+}
+
+function GroupSetupPreview({
+  teams,
+  assignments,
+  drawReveal = null,
+}: {
+  teams: BrainTeam[];
+  assignments: BrainGroupAssignments;
+  drawReveal?: BrainDrawReveal | null;
+}) {
+  const name = (id: string) => teams.find((t) => t.id === id)?.name ?? id;
+  const progress = useDrawRevealProgress(drawReveal);
+  const animating =
+    drawReveal !== null && progress < drawReveal.steps.length;
+  const revealed = animating ? revealedSlice(drawReveal, progress) : assignments;
+
+  const blocks: {
+    title: string;
+    key: keyof BrainGroupAssignments;
+    ids: string[];
+    rec: number;
+  }[] = [
+    { title: "Группа A", key: "groupA", ids: assignments.groupA, rec: 5 },
+    { title: "Группа B", key: "groupB", ids: assignments.groupB, rec: 5 },
+    { title: "Вне зачёта", key: "outGroup", ids: assignments.outGroup, rec: 4 },
+  ];
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-3">
+      {blocks.map((b) => {
+        const shown = revealed[b.key];
+        const hiddenCount = animating ? b.ids.length - shown.length : 0;
+        return (
+          <div
+            key={b.title}
+            className="rounded-xl border border-border bg-surface p-4"
+          >
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+              {b.title}
+              <span className="ml-1 font-normal normal-case">
+                ({b.ids.length}
+                {b.rec > 0 ? ` / ${b.rec}` : ""})
+              </span>
+            </h3>
+            {b.ids.length === 0 ? (
+              <p className="text-xs text-muted">Пока пусто</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {shown.map((id) => (
+                  <li key={id}>{name(id)}</li>
+                ))}
+                {hiddenCount > 0 &&
+                  Array.from({ length: hiddenCount }).map((_, i) => (
+                    <li
+                      key={`hidden-${i}`}
+                      className="font-mono text-muted"
+                      aria-hidden
+                    >
+                      ?
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function GroupSetupForm({
+  teams,
+  assignments,
+  drawReveal,
+  busy,
+  onAction,
+}: {
+  teams: BrainTeam[];
+  assignments: BrainGroupAssignments;
+  drawReveal: BrainDrawReveal | null;
+  busy: boolean;
+  onAction: (action: string, payload?: Record<string, unknown>) => Promise<void>;
+}) {
+  const [local, setLocal] = useState(() => assignmentsToMap(teams, assignments));
+  const [drawPool, setDrawPool] = useState(() => new Set(teams.map((t) => t.id)));
+  const drawProgress = useDrawRevealProgress(drawReveal);
+  const drawAnimating =
+    drawReveal !== null && drawProgress < drawReveal.steps.length;
+
+  useEffect(() => {
+    setLocal(assignmentsToMap(teams, assignments));
+  }, [teams, assignments.groupA, assignments.groupB, assignments.outGroup]);
+
+  useEffect(() => {
+    setDrawPool(new Set(teams.map((t) => t.id)));
+  }, [teams]);
+
+  const current = mapToAssignments(local);
+  const counts = {
+    groupA: current.groupA.length,
+    groupB: current.groupB.length,
+    outGroup: current.outGroup.length,
+  };
+
+  async function setGroup(teamId: string, group: GroupKey) {
+    const next = { ...local, [teamId]: group };
+    setLocal(next);
+    const payload = mapToAssignments(next);
+    await onAction("set-groups", {
+      groupA: payload.groupA,
+      groupB: payload.groupB,
+      outGroup: payload.outGroup,
+    });
+  }
+
+  function toggleDrawPool(teamId: string) {
+    setDrawPool((prev) => {
+      const next = new Set(prev);
+      if (next.has(teamId)) next.delete(teamId);
+      else next.add(teamId);
+      return next;
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-amber-800">
+        Распределите команды вручную или проведите слепую жеребьёвку среди
+        отмеченных. Рекомендуется: по 5 в A и B, до 4 вне зачёта.
+      </p>
+      <div className="overflow-hidden rounded-lg border border-amber-200 bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-zinc-50 text-[10px] uppercase tracking-wide text-muted">
+            <tr>
+              <th className="px-3 py-2 text-center" title="Участвует в жеребьёвке">
+                Ж
+              </th>
+              <th className="px-3 py-2 text-left">Команда</th>
+              <th className="px-3 py-2 text-left">Группа</th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((t) => (
+              <tr key={t.id} className="border-t border-border/50">
+                <td className="px-3 py-2 text-center">
+                  <input
+                    type="checkbox"
+                    checked={drawPool.has(t.id)}
+                    disabled={busy || drawAnimating}
+                    onChange={() => toggleDrawPool(t.id)}
+                    className="h-3.5 w-3.5 rounded border-border"
+                    aria-label={`${t.name} в жеребьёвке`}
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  <span className="font-medium">{t.name}</span>
+                  {t.outOfCompetition && (
+                    <span className="ml-2 text-[10px] text-muted">вне зачёта</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <select
+                    className="w-full max-w-xs rounded border border-border px-2 py-1 text-xs"
+                    value={local[t.id] ?? ""}
+                    disabled={busy || drawAnimating}
+                    onChange={(e) => setGroup(t.id, e.target.value as GroupKey)}
+                  >
+                    <option value="">— не участвует —</option>
+                    <option value="groupA">Группа A ({counts.groupA}/5)</option>
+                    <option value="groupB">Группа B ({counts.groupB}/5)</option>
+                    <option value="outGroup">Вне зачёта ({counts.outGroup}/4)</option>
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <GroupSetupPreview
+        teams={teams}
+        assignments={current}
+        drawReveal={drawReveal}
+      />
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy || drawAnimating || drawPool.size === 0}
+          onClick={() => onAction("draw-groups", { teamIds: [...drawPool] })}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-amber-100 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-200 disabled:opacity-50"
+        >
+          <Shuffle className="h-4 w-4" />
+          Слепая жеребьёвка
+        </button>
+        <button
+          type="button"
+          disabled={busy || drawAnimating}
+          onClick={() => onAction("start")}
+          className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+        >
+          Начать турнир
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            if (window.confirm("Отменить настройку и сбросить распределение?")) {
+              onAction("reset");
+            }
+          }}
+          className="rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-medium hover:bg-amber-100 disabled:opacity-50"
+        >
+          Отменить
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ModeratorPanel({
   state,
   onAction,
@@ -154,25 +438,55 @@ function ModeratorPanel({
 
   const realTeams = state.teams.filter((t) => t.id !== "tbd");
 
+  async function handleDelete() {
+    if (
+      window.confirm(
+        "Удалить турнир по брейн-рингу? Все результаты будут потеряны.",
+      )
+    ) {
+      await onAction("reset");
+    }
+  }
+
   return (
     <div
       id="cmp-syreny-brain-moderator"
       className="mb-8 rounded-xl border border-amber-200 bg-amber-50/50 p-4 sm:p-5"
     >
-      <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-900">
-        <Settings2 className="h-4 w-4" />
-        Панель модератора
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+          <Settings2 className="h-4 w-4" />
+          Панель модератора
+        </div>
+        {(state.initialized || state.setup) && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleDelete}
+            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            Удалить турнир
+          </button>
+        )}
       </div>
 
-      {!state.initialized ? (
+      {!state.initialized && !state.setup ? (
         <button
           type="button"
           disabled={busy}
-          onClick={() => onAction("init")}
+          onClick={() => onAction("prepare")}
           className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
         >
-          Создать турнир из списка команд
+          Настроить турнир
         </button>
+      ) : state.setup && !state.initialized ? (
+        <GroupSetupForm
+          teams={realTeams}
+          assignments={state.groupAssignments}
+          drawReveal={state.drawReveal}
+          busy={busy}
+          onAction={onAction}
+        />
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
@@ -405,7 +719,20 @@ export function BrainRingClient() {
             <ModeratorPanel state={state} onAction={doAction} busy={busy} />
           )}
 
-          {!state.initialized && !canModerate && (
+          {state.setup && !state.initialized && (
+            <section id="page-syreny-lite-brain-ring-setup" className="mb-10">
+              <h2 className="mb-4 text-lg font-bold tracking-tight">
+                Распределение по группам
+              </h2>
+              <GroupSetupPreview
+                teams={state.teams.filter((t) => t.id !== "tbd")}
+                assignments={state.groupAssignments}
+                drawReveal={state.drawReveal}
+              />
+            </section>
+          )}
+
+          {!state.initialized && !state.setup && !canModerate && (
             <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
               Турнир ещё не начат. Ожидайте объявления модератора.
             </div>

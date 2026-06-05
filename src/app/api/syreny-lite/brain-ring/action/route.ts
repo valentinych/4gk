@@ -12,11 +12,14 @@ import {
 } from "@/lib/syreny-lite";
 import {
   advancePlayoffFromGroups,
-  initBrainTournament,
+  drawBrainGroups,
+  prepareBrainTournament,
   resetBrainTournament,
   setActiveMatch,
+  setBrainGroupAssignments,
   setCapture,
   setPlayoffTeams,
+  startBrainTournament,
 } from "@/lib/syreny-lite-brain-store";
 
 export const dynamic = "force-dynamic";
@@ -86,19 +89,41 @@ export async function POST(request: Request) {
   const body = await request.json();
   const action = (body.action ?? "") as string;
 
-  if (action === "init") {
+  if (action === "prepare") {
     const teams = await loadInitTeams();
     if (teams.length === 0) {
       return NextResponse.json({ error: "Нет зарегистрированных команд" }, { status: 400 });
     }
-    initBrainTournament(teams);
+    prepareBrainTournament(teams);
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === "set-groups") {
+    const groupA = Array.isArray(body.groupA) ? (body.groupA as string[]) : null;
+    const groupB = Array.isArray(body.groupB) ? (body.groupB as string[]) : null;
+    const outGroup = Array.isArray(body.outGroup) ? (body.outGroup as string[]) : null;
+    if (!groupA || !groupB || !outGroup) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+    const err = setBrainGroupAssignments(groupA, groupB, outGroup);
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === "start") {
+    const err = startBrainTournament();
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === "draw-groups") {
+    const teamIds = Array.isArray(body.teamIds) ? (body.teamIds as string[]) : [];
+    const err = drawBrainGroups(teamIds);
+    if (err) return NextResponse.json({ error: err }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
 
   if (action === "reset") {
-    if (role !== "ADMIN" && role !== "ORGANIZER") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
     resetBrainTournament();
     return NextResponse.json({ ok: true });
   }

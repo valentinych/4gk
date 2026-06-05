@@ -11,6 +11,16 @@ export const SYRENY_LITE_RENAMED_TEAM_NAMES = new Map<string, string>([
   ["ежу понятно", "Ой, всё!"],
 ]);
 
+/** ЧГК на haza.online — `hazaGameId` задаётся, когда известна ссылка на игру. */
+export const SYRENY_LITE_CHGK = {
+  hazaGameId: null as number | null,
+  title: "Что? Где? Когда?",
+} as const;
+
+export function syrenyLiteChgkSourceUrl(gameId: number): string {
+  return `https://www.haza.online/game/${gameId}`;
+}
+
 export const SYRENY_LITE_KSI = {
   sheetId: "1JwcOlGv2w0tFNQ3_Xs7ffDXtirmJYGs1bmZ7McaOssk",
   gid: "2116355512",

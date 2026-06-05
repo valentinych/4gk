@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, ClipboardList, ExternalLink, LayoutList, MapPin, Sparkles, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Brain, CalendarDays, ClipboardList, ExternalLink, LayoutList, MapPin, Sparkles, Trophy, Users } from "lucide-react";
 import { SYRENY_LITE, SYRENY_LITE_SCHEDULE } from "@/lib/syreny-lite";
 
 export const metadata: Metadata = {
@@ -101,6 +101,15 @@ export default function MazowieckieSyrenyLitePage() {
           <Trophy className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
           <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
             Брейн-ринг
+          </span>
+        </Link>
+        <Link
+          href="/mazowieckie-syreny-lite/chgk"
+          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
+        >
+          <Brain className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
+          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
+            Что? Где? Когда?
           </span>
         </Link>
       </div>

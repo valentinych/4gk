@@ -40,7 +40,7 @@ export function parseHazaResultsXml(xml: string): HazaData {
 
   const rawTeams: HazaTeam[] = [];
   const teamRe =
-    /<team\s+p="([^"]+)"\s+n="([^"]*?)"\s+q="([01]*)"\s+c="([^"]*?)"\s+s="(\d+)"\s+gr="(\d+)"/g;
+    /<team\s+p="([^"]+)"\s+n="([^"]*?)"\s+q="([01]*)"\s+c="([^"]*?)"\s+s="(\d+)"\s+gr="(-?\d+)"/g;
   let m: RegExpExecArray | null;
   while ((m = teamRe.exec(xml)) !== null) {
     rawTeams.push({
@@ -88,5 +88,22 @@ export async function fetchHazaBroadcastXml(broadcastId: number): Promise<string
 
 export async function fetchHazaBroadcastData(broadcastId: number): Promise<HazaData> {
   const xml = await fetchHazaBroadcastXml(broadcastId);
+  return parseHazaResultsXml(xml);
+}
+
+async function fetchHazaResultsXml(id: number, broadcast: boolean): Promise<string> {
+  const body = `id=${id}&s=0&b=${broadcast ? 1 : 0}`;
+  const res = await fetch("https://www.haza.online/get_bcast_results.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+    cache: "no-store",
+  });
+  return res.text();
+}
+
+/** Игра на haza.online (/game/{id}). */
+export async function fetchHazaGameData(gameId: number): Promise<HazaData> {
+  const xml = await fetchHazaResultsXml(gameId, false);
   return parseHazaResultsXml(xml);
 }

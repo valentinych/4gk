@@ -48,6 +48,14 @@ function mapToAssignments(map: Record<string, GroupKey>): BrainGroupAssignments 
 
 const GROUP_SECTIONS = new Set(["group-a", "group-b", "out-group"]);
 
+function matchOptionLabel(m: BrainMatchDTO): string {
+  const score = ` (${m.scoreA}:${m.scoreB})`;
+  if (GROUP_SECTIONS.has(m.sectionId) && m.playOrder > 0) {
+    return `${m.playOrder}. ${m.teamAName} — ${m.teamBName}${score}`;
+  }
+  return `${m.teamAName} — ${m.teamBName}${score}`;
+}
+
 function StandingsTable({ section }: { section: BrainSectionDTO }) {
   if (section.standings.length === 0) return null;
   return (
@@ -90,7 +98,9 @@ function MatchScore({ match }: { match: BrainMatchDTO }) {
   const label =
     match.teamAName === "—" && match.teamBName === "—"
       ? "Команды не назначены"
-      : `${match.teamAName} ${match.scoreA}:${match.scoreB} ${match.teamBName}`;
+      : GROUP_SECTIONS.has(match.sectionId) && match.playOrder > 0
+        ? `${match.playOrder}. ${match.teamAName} ${match.scoreA}:${match.scoreB} ${match.teamBName}`
+        : `${match.teamAName} ${match.scoreA}:${match.scoreB} ${match.teamBName}`;
   return (
     <div className="flex items-center justify-between gap-2 text-xs">
       <span className="truncate font-medium">{label}</span>
@@ -503,6 +513,9 @@ function ModeratorPanel({
           <div>
             <label className="mb-1 block text-xs font-medium text-amber-900">
               Текущий матч
+              <span className="ml-1 font-normal text-amber-700">
+                (порядок без двух игр подряд одной командой)
+              </span>
             </label>
             <select
               className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm"
@@ -517,7 +530,7 @@ function ModeratorPanel({
                 <optgroup key={sec.id} label={sec.name}>
                   {sec.matches.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.teamAName} — {m.teamBName} ({m.scoreA}:{m.scoreB})
+                      {matchOptionLabel(m)}
                     </option>
                   ))}
                 </optgroup>

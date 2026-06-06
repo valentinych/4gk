@@ -2,6 +2,7 @@ import {
   computeStandings,
   type BrainStandingsRow,
 } from "./syreny-lite-brain-standings";
+import { scheduleRoundRobinNoBackToBack } from "./syreny-lite-brain-schedule";
 
 export type BrainSectionId =
   | "group-a"
@@ -24,6 +25,8 @@ export interface BrainMatch {
   teamAId: string;
   teamBId: string;
   questionCount: number;
+  /** 1-based play order within the section (group schedule). */
+  playOrder: number;
   /** teamId per question; undefined = not played, null = nobody */
   captures: (string | null | undefined)[];
 }
@@ -42,6 +45,7 @@ export interface BrainMatchDTO {
   teamAName: string;
   teamBName: string;
   questionCount: number;
+  playOrder: number;
   captures: (string | null | undefined)[];
   scoreA: number;
   scoreB: number;
@@ -161,6 +165,7 @@ function toMatchDTO(m: BrainMatch): BrainMatchDTO {
     teamAName: teamName(m.teamAId),
     teamBName: teamName(m.teamBId),
     questionCount: m.questionCount,
+    playOrder: m.playOrder,
     captures: [...m.captures],
     scoreA,
     scoreB,
@@ -169,7 +174,22 @@ function toMatchDTO(m: BrainMatch): BrainMatchDTO {
 }
 
 function sectionMatches(sectionId: BrainSectionId): BrainMatch[] {
-  return [...state.matches.values()].filter((m) => m.sectionId === sectionId);
+  return [...state.matches.values()]
+    .filter((m) => m.sectionId === sectionId)
+    .sort((a, b) => a.playOrder - b.playOrder);
+}
+
+const GROUP_SECTION_ORDER: BrainSectionId[] = ["group-a", "group-b", "out-group"];
+
+function firstScheduledMatchId(): string | null {
+  for (const sid of GROUP_SECTION_ORDER) {
+    const ms = sectionMatches(sid);
+    if (ms.length > 0) return ms[0].id;
+  }
+  const playoff = [...state.matches.values()].sort(
+    (a, b) => a.playOrder - b.playOrder,
+  );
+  return playoff[0]?.id ?? null;
 }
 
 function buildDTO(): BrainTournamentDTO {
@@ -242,16 +262,6 @@ export function subscribeBrainTournament(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
-function roundRobinPairs(teamIds: string[]): [string, string][] {
-  const pairs: [string, string][] = [];
-  for (let i = 0; i < teamIds.length; i++) {
-    for (let j = i + 1; j < teamIds.length; j++) {
-      pairs.push([teamIds[i], teamIds[j]]);
-    }
-  }
-  return pairs;
-}
-
 let matchCounter = 0;
 function newMatchId(): string {
   matchCounter++;
@@ -265,7 +275,8 @@ function addRoundRobinSection(
   questionCount: number,
 ) {
   state.sections.push({ id: sectionId, name, teamIds: [...teamIds] });
-  for (const [a, b] of roundRobinPairs(teamIds)) {
+  const pairs = scheduleRoundRobinNoBackToBack(teamIds);
+  pairs.forEach(([a, b], idx) => {
     const mid = newMatchId();
     state.matches.set(mid, {
       id: mid,
@@ -273,9 +284,10 @@ function addRoundRobinSection(
       teamAId: a,
       teamBId: b,
       questionCount,
+      playOrder: idx + 1,
       captures: Array(questionCount).fill(undefined),
     });
-  }
+  });
 }
 
 function addKnockoutMatch(
@@ -291,6 +303,7 @@ function addKnockoutMatch(
     teamAId,
     teamBId,
     questionCount,
+    playOrder: 1,
     captures: Array(questionCount).fill(undefined),
   });
   return mid;
@@ -492,7 +505,7 @@ export function startBrainTournament(): string | null {
   state.drawReveal = null;
   state.setup = false;
   state.initialized = true;
-  state.activeMatchId = [...state.matches.keys()][0] ?? null;
+  state.activeMatchId = firstScheduledMatchId();
   touch();
   return null;
 }

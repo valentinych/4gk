@@ -19,7 +19,6 @@ import type {
   BrainTeam,
   BrainTournamentDTO,
 } from "@/lib/syreny-lite-brain-store";
-
 type GroupKey = "" | "groupA" | "groupB" | "outGroup";
 
 function assignmentsToMap(
@@ -433,6 +432,152 @@ function GroupSetupForm({
   );
 }
 
+function MatchCaptureGrid({
+  match,
+  busy,
+  onAction,
+}: {
+  match: BrainMatchDTO;
+  busy: boolean;
+  onAction: (action: string, payload?: Record<string, unknown>) => Promise<void>;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {match.captures.map((cap, idx) => (
+        <div
+          key={idx}
+          className="flex items-center gap-1 rounded-lg border border-amber-200 bg-white p-2"
+        >
+          <span className="w-6 shrink-0 text-center text-xs font-mono text-muted">
+            {idx + 1}
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              onAction("set-capture", {
+                matchId: match.id,
+                questionIndex: idx,
+                teamId: match.teamAId,
+              })
+            }
+            className={`flex-1 truncate rounded px-1.5 py-1 text-[10px] font-medium transition-colors ${
+              cap === match.teamAId
+                ? "bg-emerald-600 text-white"
+                : "bg-zinc-100 hover:bg-zinc-200"
+            }`}
+          >
+            {match.teamAName}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              onAction("set-capture", {
+                matchId: match.id,
+                questionIndex: idx,
+                teamId: match.teamBId,
+              })
+            }
+            className={`flex-1 truncate rounded px-1.5 py-1 text-[10px] font-medium transition-colors ${
+              cap === match.teamBId
+                ? "bg-emerald-600 text-white"
+                : "bg-zinc-100 hover:bg-zinc-200"
+            }`}
+          >
+            {match.teamBName}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() =>
+              onAction("set-capture", {
+                matchId: match.id,
+                questionIndex: idx,
+                teamId: null,
+              })
+            }
+            className={`shrink-0 rounded px-1.5 py-1 text-[10px] font-medium ${
+              cap === null
+                ? "bg-zinc-500 text-white"
+                : cap === undefined
+                  ? "bg-zinc-100 hover:bg-zinc-200 text-muted"
+                  : "bg-zinc-100 hover:bg-zinc-200"
+            }`}
+            title="Никто"
+          >
+            —
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SectionMatchPanel({
+  section,
+  realTeams,
+  busy,
+  onAction,
+}: {
+  section: BrainSectionDTO;
+  realTeams: BrainTeam[];
+  busy: boolean;
+  onAction: (action: string, payload?: Record<string, unknown>) => Promise<void>;
+}) {
+  const activeMatch =
+    section.matches.find((m) => m.id === section.activeMatchId) ?? null;
+
+  return (
+    <div className="rounded-lg border border-amber-200 bg-white/80 p-3">
+      <label className="mb-1 block text-xs font-semibold text-amber-900">
+        {section.name}
+      </label>
+      <select
+        className="mb-3 w-full rounded-lg border border-amber-200 bg-white px-2 py-1.5 text-sm"
+        value={section.activeMatchId ?? ""}
+        onChange={(e) =>
+          onAction("set-section-active-match", {
+            sectionId: section.id,
+            matchId: e.target.value || null,
+          })
+        }
+        disabled={busy || section.matches.length === 0}
+      >
+        <option value="">— выберите матч —</option>
+        {section.matches.map((m) => (
+          <option key={m.id} value={m.id}>
+            {matchOptionLabel(m)}
+          </option>
+        ))}
+      </select>
+
+      {activeMatch && activeMatch.teamAId !== "tbd" && (
+        <div>
+          <p className="mb-2 text-xs text-amber-800">
+            {activeMatch.teamAName} vs {activeMatch.teamBName}
+            {" · "}
+            <strong>
+              {activeMatch.scoreA}:{activeMatch.scoreB}
+            </strong>
+          </p>
+          <MatchCaptureGrid match={activeMatch} busy={busy} onAction={onAction} />
+        </div>
+      )}
+
+      {activeMatch && activeMatch.teamAId === "tbd" && (
+        <PlayoffAssignForm
+          key={activeMatch.id}
+          matchId={activeMatch.id}
+          teams={realTeams}
+          busy={busy}
+          onAction={onAction}
+        />
+      )}
+    </div>
+  );
+}
+
 function ModeratorPanel({
   state,
   onAction,
@@ -442,11 +587,9 @@ function ModeratorPanel({
   onAction: (action: string, payload?: Record<string, unknown>) => Promise<void>;
   busy: boolean;
 }) {
-  const activeMatch = state.sections
-    .flatMap((s) => s.matches)
-    .find((m) => m.id === state.activeMatchId);
-
   const realTeams = state.teams.filter((t) => t.id !== "tbd");
+  const groupSections = state.sections.filter((s) => GROUP_SECTIONS.has(s.id));
+  const playoffSections = state.sections.filter((s) => !GROUP_SECTIONS.has(s.id));
 
   async function handleDelete() {
     if (
@@ -510,123 +653,40 @@ function ModeratorPanel({
             </button>
           </div>
 
-          <div>
-            <label className="mb-1 block text-xs font-medium text-amber-900">
-              Текущий матч
-              <span className="ml-1 font-normal text-amber-700">
-                (порядок без двух игр подряд одной командой)
-              </span>
-            </label>
-            <select
-              className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm"
-              value={state.activeMatchId ?? ""}
-              onChange={(e) =>
-                onAction("set-active-match", { matchId: e.target.value || null })
-              }
-              disabled={busy}
-            >
-              <option value="">— выберите матч —</option>
-              {state.sections.map((sec) => (
-                <optgroup key={sec.id} label={sec.name}>
-                  {sec.matches.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {matchOptionLabel(m)}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+          <p className="text-xs text-amber-800">
+            Три группы играют параллельно — у каждой свой текущий матч. Выбор
+            матча в одной группе не меняет другие.
+          </p>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            {groupSections.map((sec) => (
+              <SectionMatchPanel
+                key={sec.id}
+                section={sec}
+                realTeams={realTeams}
+                busy={busy}
+                onAction={onAction}
+              />
+            ))}
           </div>
 
-          {activeMatch && activeMatch.teamAId !== "tbd" && (
+          {playoffSections.some((s) => s.matches.length > 0) && (
             <div>
-              <p className="mb-2 text-xs text-amber-800">
-                Взятия вопросов · {activeMatch.teamAName} vs {activeMatch.teamBName}
-                {" · "}
-                <strong>
-                  {activeMatch.scoreA}:{activeMatch.scoreB}
-                </strong>
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {activeMatch.captures.map((cap, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-1 rounded-lg border border-amber-200 bg-white p-2"
-                  >
-                    <span className="w-6 shrink-0 text-center text-xs font-mono text-muted">
-                      {idx + 1}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() =>
-                        onAction("set-capture", {
-                          matchId: activeMatch.id,
-                          questionIndex: idx,
-                          teamId: activeMatch.teamAId,
-                        })
-                      }
-                      className={`flex-1 truncate rounded px-1.5 py-1 text-[10px] font-medium transition-colors ${
-                        cap === activeMatch.teamAId
-                          ? "bg-emerald-600 text-white"
-                          : "bg-zinc-100 hover:bg-zinc-200"
-                      }`}
-                    >
-                      {activeMatch.teamAName}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() =>
-                        onAction("set-capture", {
-                          matchId: activeMatch.id,
-                          questionIndex: idx,
-                          teamId: activeMatch.teamBId,
-                        })
-                      }
-                      className={`flex-1 truncate rounded px-1.5 py-1 text-[10px] font-medium transition-colors ${
-                        cap === activeMatch.teamBId
-                          ? "bg-emerald-600 text-white"
-                          : "bg-zinc-100 hover:bg-zinc-200"
-                      }`}
-                    >
-                      {activeMatch.teamBName}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() =>
-                        onAction("set-capture", {
-                          matchId: activeMatch.id,
-                          questionIndex: idx,
-                          teamId: null,
-                        })
-                      }
-                      className={`shrink-0 rounded px-1.5 py-1 text-[10px] font-medium ${
-                        cap === null
-                          ? "bg-zinc-500 text-white"
-                          : cap === undefined
-                            ? "bg-zinc-100 hover:bg-zinc-200 text-muted"
-                            : "bg-zinc-100 hover:bg-zinc-200"
-                      }`}
-                      title="Никто"
-                    >
-                      —
-                    </button>
-                  </div>
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-900">
+                Плей-офф
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {playoffSections.map((sec) => (
+                  <SectionMatchPanel
+                    key={sec.id}
+                    section={sec}
+                    realTeams={realTeams}
+                    busy={busy}
+                    onAction={onAction}
+                  />
                 ))}
               </div>
             </div>
-          )}
-
-          {activeMatch && activeMatch.teamAId === "tbd" && (
-            <PlayoffAssignForm
-              key={activeMatch.id}
-              matchId={activeMatch.id}
-              teams={realTeams}
-              busy={busy}
-              onAction={onAction}
-            />
           )}
         </div>
       )}

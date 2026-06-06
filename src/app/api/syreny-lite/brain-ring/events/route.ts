@@ -1,4 +1,5 @@
 import {
+  ensureBrainTournamentLoaded,
   getBrainTournamentState,
   subscribeBrainTournament,
 } from "@/lib/syreny-lite-brain-store";
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  await ensureBrainTournamentLoaded();
   const state = getBrainTournamentState();
   const encoder = new TextEncoder();
 

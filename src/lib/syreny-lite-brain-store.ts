@@ -3,39 +3,40 @@ import {
   type BrainStandingsRow,
 } from "./syreny-lite-brain-standings";
 import { scheduleRoundRobinNoBackToBack } from "./syreny-lite-brain-schedule";
+import {
+  deleteBrainStateFromDb,
+  loadBrainStateFromDb,
+  saveBrainStateToDb,
+} from "./syreny-lite-brain-persist";
+import {
+  loadSyrenyLiteBrainTeams,
+  resolveSyrenyLiteBrainSeedAssignments,
+} from "./syreny-lite-brain-seed";
+import {
+  GROUP_SECTION_ORDER,
+  PLAYOFF_SECTION_IDS,
+  type BrainDrawReveal,
+  type BrainDrawRevealStep,
+  type BrainDrawGroupKey,
+  type BrainGroupAssignments,
+  type BrainMatch,
+  type BrainSection,
+  type BrainSectionId,
+  type BrainTeam,
+  type InitTeamInput,
+  type TournamentState,
+} from "./syreny-lite-brain-store-types";
 
-export type BrainSectionId =
-  | "group-a"
-  | "group-b"
-  | "out-group"
-  | "sf1"
-  | "sf2"
-  | "third"
-  | "final";
-
-export interface BrainTeam {
-  id: string;
-  name: string;
-  outOfCompetition: boolean;
-}
-
-export interface BrainMatch {
-  id: string;
-  sectionId: BrainSectionId;
-  teamAId: string;
-  teamBId: string;
-  questionCount: number;
-  /** 1-based play order within the section (group schedule). */
-  playOrder: number;
-  /** teamId per question; undefined = not played, null = nobody */
-  captures: (string | null | undefined)[];
-}
-
-export interface BrainSection {
-  id: BrainSectionId;
-  name: string;
-  teamIds: string[];
-}
+export type {
+  BrainSectionId,
+  BrainTeam,
+  BrainMatch,
+  BrainGroupAssignments,
+  BrainDrawGroupKey,
+  BrainDrawReveal,
+  BrainDrawRevealStep,
+  InitTeamInput,
+} from "./syreny-lite-brain-store-types";
 
 export interface BrainMatchDTO {
   id: string;
@@ -56,62 +57,23 @@ export interface BrainSectionDTO {
   id: BrainSectionId;
   name: string;
   teamIds: string[];
+  activeMatchId: string | null;
   standings: BrainStandingsRow[];
   matches: BrainMatchDTO[];
 }
 
-export interface BrainGroupAssignments {
-  groupA: string[];
-  groupB: string[];
-  outGroup: string[];
-}
-
-export type BrainDrawGroupKey = "groupA" | "groupB" | "outGroup";
-
-export interface BrainDrawRevealStep {
-  teamId: string;
-  group: BrainDrawGroupKey;
-}
-
-export interface BrainDrawReveal {
-  startedAt: number;
-  stepMs: number;
-  steps: BrainDrawRevealStep[];
-}
-
 export interface BrainTournamentDTO {
   initialized: boolean;
-  /** Teams loaded, groups being configured before matches exist. */
   setup: boolean;
   groupAssignments: BrainGroupAssignments;
-  /** Active blind-draw animation; null when idle or finished. */
   drawReveal: BrainDrawReveal | null;
   updatedAt: number;
-  activeMatchId: string | null;
+  activeMatchIds: Partial<Record<BrainSectionId, string | null>>;
   teams: BrainTeam[];
   sections: BrainSectionDTO[];
 }
 
 type Listener = (state: BrainTournamentDTO) => void;
-
-interface TournamentState {
-  initialized: boolean;
-  setup: boolean;
-  groupAssignments: BrainGroupAssignments;
-  drawReveal: BrainDrawReveal | null;
-  updatedAt: number;
-  activeMatchId: string | null;
-  teams: Map<string, BrainTeam>;
-  sections: BrainSection[];
-  matches: Map<string, BrainMatch>;
-}
-
-const TOURNAMENT_KEY = "syreny-lite";
-
-const g = globalThis as unknown as {
-  __syrenyBrain?: TournamentState;
-  __syrenyBrainListeners?: Set<Listener>;
-};
 
 function emptyGroupAssignments(): BrainGroupAssignments {
   return { groupA: [], groupB: [], outGroup: [] };
@@ -119,17 +81,25 @@ function emptyGroupAssignments(): BrainGroupAssignments {
 
 function emptyState(): TournamentState {
   return {
+    matchCounter: 0,
     initialized: false,
     setup: false,
     groupAssignments: emptyGroupAssignments(),
     drawReveal: null,
     updatedAt: Date.now(),
-    activeMatchId: null,
+    activeMatchIds: {},
     teams: new Map(),
     sections: [],
     matches: new Map(),
   };
 }
+
+const g = globalThis as unknown as {
+  __syrenyBrain?: TournamentState;
+  __syrenyBrainListeners?: Set<Listener>;
+  __syrenyBrainHydrated?: boolean;
+  __syrenyBrainHydratePromise?: Promise<void>;
+};
 
 if (!g.__syrenyBrain) g.__syrenyBrain = emptyState();
 if (!g.__syrenyBrainListeners) g.__syrenyBrainListeners = new Set();
@@ -152,7 +122,10 @@ function matchScores(m: BrainMatch): { scoreA: number; scoreB: number } {
 }
 
 function matchComplete(m: BrainMatch): boolean {
-  return m.captures.length === m.questionCount && m.captures.every((c) => c !== undefined);
+  return (
+    m.captures.length === m.questionCount &&
+    m.captures.every((c) => c !== undefined)
+  );
 }
 
 function toMatchDTO(m: BrainMatch): BrainMatchDTO {
@@ -179,17 +152,13 @@ function sectionMatches(sectionId: BrainSectionId): BrainMatch[] {
     .sort((a, b) => a.playOrder - b.playOrder);
 }
 
-const GROUP_SECTION_ORDER: BrainSectionId[] = ["group-a", "group-b", "out-group"];
-
-function firstScheduledMatchId(): string | null {
-  for (const sid of GROUP_SECTION_ORDER) {
+function initDefaultActiveMatches(sectionIds: BrainSectionId[]) {
+  for (const sid of sectionIds) {
     const ms = sectionMatches(sid);
-    if (ms.length > 0) return ms[0].id;
+    if (ms.length > 0 && state.activeMatchIds[sid] == null) {
+      state.activeMatchIds[sid] = ms[0].id;
+    }
   }
-  const playoff = [...state.matches.values()].sort(
-    (a, b) => a.playOrder - b.playOrder,
-  );
-  return playoff[0]?.id ?? null;
 }
 
 function buildDTO(): BrainTournamentDTO {
@@ -212,6 +181,7 @@ function buildDTO(): BrainTournamentDTO {
       id: sec.id,
       name: sec.name,
       teamIds: [...sec.teamIds],
+      activeMatchId: state.activeMatchIds[sec.id] ?? null,
       standings: computeStandings(sec.teamIds, names, matchInputs),
       matches: matches.map(toMatchDTO),
     };
@@ -233,7 +203,7 @@ function buildDTO(): BrainTournamentDTO {
         }
       : null,
     updatedAt: state.updatedAt,
-    activeMatchId: state.activeMatchId,
+    activeMatchIds: { ...state.activeMatchIds },
     teams,
     sections,
   };
@@ -251,6 +221,72 @@ function broadcast() {
 function touch() {
   state.updatedAt = Date.now();
   broadcast();
+  if (g.__syrenyBrainHydrated) {
+    void saveBrainStateToDb(state).catch(() => {});
+  }
+}
+
+function hydrateState(saved: TournamentState) {
+  state.matchCounter = saved.matchCounter;
+  state.initialized = saved.initialized;
+  state.setup = saved.setup;
+  state.groupAssignments = saved.groupAssignments;
+  state.drawReveal = saved.drawReveal;
+  state.updatedAt = saved.updatedAt;
+  state.activeMatchIds = saved.activeMatchIds;
+  state.teams = saved.teams;
+  state.sections = saved.sections;
+  state.matches = saved.matches;
+}
+
+async function seedSyrenyLiteBrainTournament(): Promise<boolean> {
+  const teams = await loadSyrenyLiteBrainTeams();
+  if (teams.length === 0) return false;
+
+  const resolved = resolveSyrenyLiteBrainSeedAssignments(teams);
+  if (typeof resolved === "string") {
+    console.error("[brain-ring seed]", resolved);
+    return false;
+  }
+
+  if (resolved.outGroup.length < 2) {
+    console.error("[brain-ring seed] Недостаточно команд вне зачёта для группы");
+    return false;
+  }
+
+  prepareBrainTournament(teams);
+  const err = setBrainGroupAssignments(
+    resolved.groupA,
+    resolved.groupB,
+    resolved.outGroup,
+  );
+  if (err) {
+    console.error("[brain-ring seed]", err);
+    return false;
+  }
+  const startErr = startBrainTournament();
+  if (startErr) {
+    console.error("[brain-ring seed]", startErr);
+    return false;
+  }
+  return true;
+}
+
+export async function ensureBrainTournamentLoaded(): Promise<void> {
+  if (g.__syrenyBrainHydrated) return;
+  if (!g.__syrenyBrainHydratePromise) {
+    g.__syrenyBrainHydratePromise = (async () => {
+      const saved = await loadBrainStateFromDb();
+      if (saved) {
+        hydrateState(saved);
+      } else {
+        await seedSyrenyLiteBrainTournament();
+      }
+      g.__syrenyBrainHydrated = true;
+      broadcast();
+    })();
+  }
+  await g.__syrenyBrainHydratePromise;
 }
 
 export function getBrainTournamentState(): BrainTournamentDTO {
@@ -262,10 +298,9 @@ export function subscribeBrainTournament(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
-let matchCounter = 0;
 function newMatchId(): string {
-  matchCounter++;
-  return `m-${matchCounter}-${Date.now()}`;
+  state.matchCounter++;
+  return `m-${state.matchCounter}-${Date.now()}`;
 }
 
 function addRoundRobinSection(
@@ -307,12 +342,6 @@ function addKnockoutMatch(
     captures: Array(questionCount).fill(undefined),
   });
   return mid;
-}
-
-export interface InitTeamInput {
-  id: string;
-  name: string;
-  outOfCompetition: boolean;
 }
 
 function ensurePlaceholderTeam() {
@@ -366,10 +395,9 @@ function validateGroupAssignments(
   return null;
 }
 
-/** Load teams and enter setup mode (no matches yet). */
 export function prepareBrainTournament(teams: InitTeamInput[]): boolean {
   Object.assign(state, emptyState());
-  matchCounter = 0;
+  g.__syrenyBrainHydrated = true;
 
   for (const t of teams) {
     state.teams.set(t.id, {
@@ -437,7 +465,6 @@ export function setBrainGroupAssignments(
 
 const DRAW_STEP_MS = 700;
 
-/** Randomly assign selected teams to groups (blind draw). */
 export function drawBrainGroups(selectedIds: string[]): string | null {
   if (!state.setup || state.initialized) {
     return "Турнир уже начат или настройка не начата";
@@ -478,7 +505,6 @@ export function drawBrainGroups(selectedIds: string[]): string | null {
   return null;
 }
 
-/** Create matches from configured group assignments. */
 export function startBrainTournament(): string | null {
   if (!state.setup || state.initialized) {
     return "Турнир уже начат или настройка не начата";
@@ -489,6 +515,7 @@ export function startBrainTournament(): string | null {
 
   state.sections = [];
   state.matches.clear();
+  state.activeMatchIds = {};
 
   if (groupA.length > 0) {
     addRoundRobinSection("group-a", "Группа A", groupA, 5);
@@ -502,19 +529,34 @@ export function startBrainTournament(): string | null {
 
   addPlayoffSections();
 
+  initDefaultActiveMatches([...GROUP_SECTION_ORDER, ...PLAYOFF_SECTION_IDS]);
+
   state.drawReveal = null;
   state.setup = false;
   state.initialized = true;
-  state.activeMatchId = firstScheduledMatchId();
   touch();
   return null;
 }
 
-export function setActiveMatch(matchId: string | null): boolean {
-  if (matchId !== null && !state.matches.has(matchId)) return false;
-  state.activeMatchId = matchId;
+export function setSectionActiveMatch(
+  sectionId: BrainSectionId,
+  matchId: string | null,
+): boolean {
+  if (matchId !== null) {
+    const m = state.matches.get(matchId);
+    if (!m || m.sectionId !== sectionId) return false;
+  }
+  state.activeMatchIds[sectionId] = matchId;
   touch();
   return true;
+}
+
+/** @deprecated Use setSectionActiveMatch */
+export function setActiveMatch(matchId: string | null): boolean {
+  if (matchId === null) return false;
+  const m = state.matches.get(matchId);
+  if (!m) return false;
+  return setSectionActiveMatch(m.sectionId, matchId);
 }
 
 export function setCapture(
@@ -541,9 +583,6 @@ export function setPlayoffTeams(
   const m = state.matches.get(matchId);
   if (!m) return false;
   if (!state.teams.has(teamAId) || !state.teams.has(teamBId)) return false;
-  if (teamAId === "tbd" || teamBId === "tbd") {
-    // allow replacing placeholders with real teams
-  }
   m.teamAId = teamAId;
   m.teamBId = teamBId;
   m.captures = Array(m.questionCount).fill(undefined);
@@ -581,13 +620,13 @@ export function advancePlayoffFromGroups(): boolean {
   return true;
 }
 
-export function resetBrainTournament(): void {
-  matchCounter = 0;
+export async function resetBrainTournament(): Promise<void> {
   Object.assign(state, emptyState());
+  g.__syrenyBrainHydrated = true;
+  await deleteBrainStateFromDb();
   touch();
 }
 
-/** @deprecated Use prepareBrainTournament + startBrainTournament */
 export function initBrainTournament(teams: InitTeamInput[]): boolean {
   if (!prepareBrainTournament(teams)) return false;
   const main = teams.filter((t) => !t.outOfCompetition);

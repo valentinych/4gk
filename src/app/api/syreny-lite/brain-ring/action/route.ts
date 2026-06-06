@@ -10,15 +10,18 @@ import {
   isOutOfCompetition,
   normalizeSyrenyLiteName,
 } from "@/lib/syreny-lite";
+import type { BrainSectionId } from "@/lib/syreny-lite-brain-store-types";
 import {
   advancePlayoffFromGroups,
   drawBrainGroups,
+  ensureBrainTournamentLoaded,
+  getBrainTournamentState,
   prepareBrainTournament,
   resetBrainTournament,
-  setActiveMatch,
   setBrainGroupAssignments,
   setCapture,
   setPlayoffTeams,
+  setSectionActiveMatch,
   startBrainTournament,
 } from "@/lib/syreny-lite-brain-store";
 
@@ -86,6 +89,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  await ensureBrainTournamentLoaded();
+
   const body = await request.json();
   const action = (body.action ?? "") as string;
 
@@ -124,7 +129,19 @@ export async function POST(request: Request) {
   }
 
   if (action === "reset") {
-    resetBrainTournament();
+    await resetBrainTournament();
+    return NextResponse.json({ ok: true });
+  }
+
+  if (action === "set-section-active-match") {
+    const sectionId = body.sectionId as BrainSectionId;
+    const matchId = body.matchId ?? null;
+    if (!sectionId || (matchId !== null && typeof matchId !== "string")) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+    if (!setSectionActiveMatch(sectionId, matchId)) {
+      return NextResponse.json({ error: "Match not found" }, { status: 400 });
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -133,8 +150,13 @@ export async function POST(request: Request) {
     if (matchId !== null && typeof matchId !== "string") {
       return NextResponse.json({ error: "Invalid matchId" }, { status: 400 });
     }
-    if (!setActiveMatch(matchId)) {
-      return NextResponse.json({ error: "Match not found" }, { status: 400 });
+    if (matchId) {
+      const m = getBrainTournamentState()
+        .sections.flatMap((s) => s.matches)
+        .find((x) => x.id === matchId);
+      if (!m || !setSectionActiveMatch(m.sectionId, matchId)) {
+        return NextResponse.json({ error: "Match not found" }, { status: 400 });
+      }
     }
     return NextResponse.json({ ok: true });
   }

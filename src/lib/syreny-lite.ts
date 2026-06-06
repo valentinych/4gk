@@ -11,6 +11,26 @@ export const SYRENY_LITE_RENAMED_TEAM_NAMES = new Map<string, string>([
   ["ежу понятно", "Ой, всё!"],
 ]);
 
+/** Зафиксированные группы брейн-ринга (Syrenki 2026). */
+export const SYRENY_LITE_BRAIN_SEED_GROUPS = {
+  groupA: [
+    "Приемлемо",
+    "Внутренняя Мазовия",
+    "19226",
+    "Кроманьонцы штурмуют эскалатор",
+    "Хождение",
+  ],
+  groupB: [
+    "День шнурка",
+    "So close...",
+    "Домкрат - пять гривен",
+    "Коробучин",
+    "Гучыць мярзотненька",
+  ],
+  /** Пусто — остальные команды вне зачёта из заявок (до 4). */
+  outGroup: [] as string[],
+} as const;
+
 /** ЧГК на haza.online — трансляция Syrenki Mazowieckie Lite 2026. */
 export const SYRENY_LITE_CHGK = {
   hazaBroadcastId: 665,

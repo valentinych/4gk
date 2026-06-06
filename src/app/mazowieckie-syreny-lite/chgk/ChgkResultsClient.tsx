@@ -110,8 +110,7 @@ export function ChgkResultsClient() {
 
       {data && !data.configured && (
         <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
-          Трансляция результатов будет подключена, как только станет известна
-          ссылка на игру в haza.online.
+          Трансляция результатов ещё не подключена.
         </div>
       )}
 

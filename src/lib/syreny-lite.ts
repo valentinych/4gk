@@ -11,14 +11,14 @@ export const SYRENY_LITE_RENAMED_TEAM_NAMES = new Map<string, string>([
   ["ежу понятно", "Ой, всё!"],
 ]);
 
-/** ЧГК на haza.online — `hazaGameId` задаётся, когда известна ссылка на игру. */
+/** ЧГК на haza.online — трансляция Syrenki Mazowieckie Lite 2026. */
 export const SYRENY_LITE_CHGK = {
-  hazaGameId: null as number | null,
+  hazaBroadcastId: 665,
   title: "Что? Где? Когда?",
 } as const;
 
-export function syrenyLiteChgkSourceUrl(gameId: number): string {
-  return `https://www.haza.online/game/${gameId}`;
+export function syrenyLiteChgkSourceUrl(broadcastId: number): string {
+  return `https://www.haza.online/broadcast/${broadcastId}`;
 }
 
 export const SYRENY_LITE_KSI = {

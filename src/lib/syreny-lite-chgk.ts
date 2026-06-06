@@ -1,5 +1,5 @@
 import type { HazaData, HazaTour } from "./ochp-haza";
-import { fetchHazaGameData } from "./ochp-haza";
+import { fetchHazaBroadcastData } from "./ochp-haza";
 import {
   SYRENY_LITE_CHGK,
   applySyrenyLiteDisplayName,
@@ -20,7 +20,7 @@ export interface SyrenyLiteChgkTeam {
 export interface SyrenyLiteChgkData {
   configured: boolean;
   title: string;
-  gameId: number | null;
+  broadcastId: number | null;
   source: string | null;
   tours: HazaTour[];
   teams: SyrenyLiteChgkTeam[];
@@ -53,7 +53,7 @@ function isHazaTeamOoc(hazaName: string, oocNames: Set<string>): boolean {
 function buildChgkData(
   haza: HazaData,
   oocNames: Set<string>,
-  gameId: number,
+  broadcastId: number,
 ): SyrenyLiteChgkData {
   const totalQuestions = haza.tours.reduce((sum, t) => sum + t.q, 0);
 
@@ -95,8 +95,8 @@ function buildChgkData(
   return {
     configured: true,
     title: SYRENY_LITE_CHGK.title,
-    gameId,
-    source: syrenyLiteChgkSourceUrl(gameId),
+    broadcastId,
+    source: syrenyLiteChgkSourceUrl(broadcastId),
     tours: haza.tours,
     teams,
     lastQuestion: haza.lastQuestion,
@@ -108,7 +108,7 @@ export function emptySyrenyLiteChgkData(): SyrenyLiteChgkData {
   return {
     configured: false,
     title: SYRENY_LITE_CHGK.title,
-    gameId: null,
+    broadcastId: null,
     source: null,
     tours: [],
     teams: [],
@@ -120,11 +120,11 @@ export function emptySyrenyLiteChgkData(): SyrenyLiteChgkData {
 export async function loadSyrenyLiteChgkData(
   oocNames: Set<string>,
 ): Promise<SyrenyLiteChgkData> {
-  const gameId = SYRENY_LITE_CHGK.hazaGameId;
-  if (gameId == null || gameId <= 0) {
+  const broadcastId = SYRENY_LITE_CHGK.hazaBroadcastId;
+  if (broadcastId == null || broadcastId <= 0) {
     return emptySyrenyLiteChgkData();
   }
 
-  const haza = await fetchHazaGameData(gameId);
-  return buildChgkData(haza, oocNames, gameId);
+  const haza = await fetchHazaBroadcastData(broadcastId);
+  return buildChgkData(haza, oocNames, broadcastId);
 }

@@ -98,6 +98,8 @@ interface TeamEntry {
   hasRoster: boolean;
   playersCount: number | null;
   displayName: string | null;
+  city: string | null;
+  manualEntry: boolean;
   addedBy: string;
   addedAt: string;
   withdrawnAt: string | null;
@@ -218,15 +220,26 @@ export default function EventDetailPage() {
   const [selectedTeam, setSelectedTeam] = useState<ChgkTeamResult | null>(null);
   const [adminCustomName, setAdminCustomName] = useState(false);
   const [adminDisplayName, setAdminDisplayName] = useState("");
+  const [adminManualEntry, setAdminManualEntry] = useState(false);
+  const [adminManualName, setAdminManualName] = useState("");
+  const [adminManualCity, setAdminManualCity] = useState("");
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
   /* ─── Player: join ─── */
-  const [joinPhase, setJoinPhase] = useState<"idle" | "loading" | "preview" | "submitting">("idle");
+  const [joinPhase, setJoinPhase] = useState<
+    "idle" | "loading" | "preview" | "manual" | "submitting"
+  >("idle");
   const [myTeam, setMyTeam] = useState<{ teamChgkId: number; teamName: string } | null>(null);
   const [joinCustomName, setJoinCustomName] = useState(false);
   const [joinDisplayName, setJoinDisplayName] = useState("");
+  const [joinManualName, setJoinManualName] = useState("");
+  const [joinManualCity, setJoinManualCity] = useState("");
+  const [joinContactName, setJoinContactName] = useState("");
+  const [joinContactEmail, setJoinContactEmail] = useState("");
+  const [joinContactTelegram, setJoinContactTelegram] = useState("");
+  const [joinManualReason, setJoinManualReason] = useState<string | null>(null);
   const [joinError, setJoinError] = useState<string | null>(null);
 
   /* ─── Remove team from event ─── */
@@ -257,7 +270,7 @@ export default function EventDetailPage() {
 
   /* ─── Search debounce ─── */
   useEffect(() => {
-    if (!searchQuery.trim() || selectedTeam) {
+    if (adminManualEntry || !searchQuery.trim() || selectedTeam) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
@@ -274,7 +287,7 @@ export default function EventDetailPage() {
       }
     }, 400);
     return () => clearTimeout(t);
-  }, [searchQuery, selectedTeam]);
+  }, [searchQuery, selectedTeam, adminManualEntry]);
 
   /* ─── Close dropdown on outside click ─── */
   useEffect(() => {
@@ -306,18 +319,29 @@ export default function EventDetailPage() {
   }
 
   async function handleAdd() {
-    if (!selectedTeam) return;
+    if (!adminManualEntry && !selectedTeam) return;
+    if (adminManualEntry && !adminManualName.trim()) {
+      setAddError("Укажите название команды");
+      return;
+    }
     setAdding(true);
     setAddError(null);
     try {
+      const payload = adminManualEntry
+        ? {
+            manualEntry: true,
+            teamName: adminManualName.trim(),
+            city: adminManualCity.trim() || undefined,
+          }
+        : {
+            teamChgkId: selectedTeam!.id,
+            teamName: selectedTeam!.name,
+            displayName: adminCustomName ? adminDisplayName : null,
+          };
       const res = await fetch(`/api/events/${eventId}/teams`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teamChgkId: selectedTeam.id,
-          teamName: selectedTeam.name,
-          displayName: adminCustomName ? adminDisplayName : null,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) { setAddError(data.error ?? "Ошибка"); return; }
@@ -328,18 +352,38 @@ export default function EventDetailPage() {
           next[idx] = { ...next[idx], ...data, hasRoster: false };
           return next;
         }
-        return [...prev, data];
+        return [...prev, { ...data, hasRoster: false }];
       });
       clearSelected();
+      setAdminManualEntry(false);
+      setAdminManualName("");
+      setAdminManualCity("");
       toast("Команда добавлена");
     } finally {
       setAdding(false);
     }
   }
 
+  function resetManualJoinForm() {
+    setJoinManualName("");
+    setJoinManualCity("");
+    setJoinContactName("");
+    setJoinContactEmail("");
+    setJoinContactTelegram("");
+  }
+
+  function openManualJoin(reason?: string) {
+    setJoinError(null);
+    setJoinManualReason(reason ?? null);
+    setMyTeam(null);
+    resetManualJoinForm();
+    setJoinPhase("manual");
+  }
+
   async function handleJoinStart() {
     setJoinPhase("loading");
     setJoinError(null);
+    setJoinManualReason(null);
     try {
       const res = await fetch("/api/account/chgk/profile");
       if (!res.ok) {
@@ -350,8 +394,18 @@ export default function EventDetailPage() {
       }
       const d = await res.json();
       if (!d.currentTeam) {
-        setJoinError("Не удалось определить текущую команду в рейтинге ЧГКÄ. Убедитесь, что вы состоите в команде.");
-        setJoinPhase("idle");
+        openManualJoin(
+          "Не удалось определить команду в рейтинге ЧГК — укажите разовое название.",
+        );
+        return;
+      }
+      const alreadyOnList = teams.some(
+        (t) => !t.withdrawnAt && t.teamChgkId === d.currentTeam.id && !t.manualEntry,
+      );
+      if (alreadyOnList) {
+        openManualJoin(
+          `«${d.currentTeam.name}» уже заявлена на это событие. Укажите другое разовое название команды.`,
+        );
         return;
       }
       setMyTeam({ teamChgkId: d.currentTeam.id, teamName: d.currentTeam.name });
@@ -361,6 +415,58 @@ export default function EventDetailPage() {
     } catch {
       setJoinError("Ошибка сети");
       setJoinPhase("idle");
+    }
+  }
+
+  async function handleManualJoinConfirm() {
+    if (!joinManualName.trim()) {
+      setJoinError("Укажите название команды");
+      return;
+    }
+    if (!joinContactName.trim()) {
+      setJoinError("Укажите имя капитана");
+      return;
+    }
+    if (!joinContactEmail.trim() && !joinContactTelegram.trim()) {
+      setJoinError("Укажите email или Telegram для связи");
+      return;
+    }
+    setJoinPhase("submitting");
+    setJoinError(null);
+    try {
+      const res = await fetch(`/api/events/${eventId}/teams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          manualEntry: true,
+          teamName: joinManualName.trim(),
+          city: joinManualCity.trim() || undefined,
+          contactName: joinContactName.trim(),
+          contactEmail: joinContactEmail.trim() || undefined,
+          contactTelegram: joinContactTelegram.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setJoinError(data.error ?? "Ошибка");
+        setJoinPhase("manual");
+        return;
+      }
+      setTeams((prev) => {
+        const idx = prev.findIndex((t) => t.id === data.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...data, hasRoster: false };
+          return next;
+        }
+        return [...prev, { ...data, hasRoster: false }];
+      });
+      setJoinPhase("idle");
+      resetManualJoinForm();
+      toast(data?.isReserve ? "Заявка добавлена в резерв" : "Вы присоединились к событию");
+    } catch {
+      setJoinError("Ошибка сети");
+      setJoinPhase("manual");
     }
   }
 
@@ -378,6 +484,12 @@ export default function EventDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 409) {
+          openManualJoin(
+            "Эта команда из рейтинга уже заявлена. Укажите другое разовое название.",
+          );
+          return;
+        }
         setJoinError(data.error ?? "Ошибка");
         setJoinPhase("preview");
         return;
@@ -389,7 +501,7 @@ export default function EventDetailPage() {
           next[idx] = { ...next[idx], ...data, hasRoster: false };
           return next;
         }
-        return [...prev, data];
+        return [...prev, { ...data, hasRoster: false }];
       });
       setJoinPhase("idle");
       setMyTeam(null);
@@ -405,6 +517,8 @@ export default function EventDetailPage() {
     setMyTeam(null);
     setJoinError(null);
     setJoinCustomName(false);
+    setJoinManualReason(null);
+    resetManualJoinForm();
   }
 
   async function handleRemove(teamId: string, skipConfirm = false) {
@@ -719,6 +833,58 @@ export default function EventDetailPage() {
             </p>
 
             <div className="space-y-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
+                <input
+                  type="checkbox"
+                  checked={adminManualEntry}
+                  onChange={(e) => {
+                    setAdminManualEntry(e.target.checked);
+                    clearSelected();
+                    setAddError(null);
+                  }}
+                  className="rounded"
+                />
+                Команда нет в рейтинге rating.chgk.info
+              </label>
+
+              {adminManualEntry ? (
+                <div className="space-y-2 rounded-lg border border-accent/20 bg-accent/5 p-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                      Название команды
+                    </label>
+                    <input
+                      type="text"
+                      value={adminManualName}
+                      onChange={(e) => setAdminManualName(e.target.value)}
+                      placeholder="Название..."
+                      className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                      Город
+                    </label>
+                    <input
+                      type="text"
+                      value={adminManualCity}
+                      onChange={(e) => setAdminManualCity(e.target.value)}
+                      placeholder="Необязательно"
+                      className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                    />
+                  </div>
+                  {addError && <p className="text-xs text-red-600">{addError}</p>}
+                  <button
+                    onClick={handleAdd}
+                    disabled={adding}
+                    className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                    Добавить
+                  </button>
+                </div>
+              ) : (
+              <>
               {/* Search */}
               <div ref={searchRef} className="relative">
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent/30">
@@ -813,6 +979,8 @@ export default function EventDetailPage() {
                   </button>
                 </div>
               )}
+              </>
+              )}
             </div>
           </div>
         )}
@@ -843,15 +1011,24 @@ export default function EventDetailPage() {
                   Заявка отозвана{" "}
                   <strong>{formatDateTime(myEntry.withdrawnAt)}</strong>
                 </span>
-                <button
-                  onClick={handleJoinStart}
-                  disabled={registrationBlocked}
-                  title={blockedReason ?? undefined}
-                  className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <UserPlus className="h-3.5 w-3.5" />
-                  Заявиться снова
-                </button>
+                <div className="ml-auto flex flex-wrap gap-2">
+                  <button
+                    onClick={handleJoinStart}
+                    disabled={registrationBlocked}
+                    title={blockedReason ?? undefined}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Заявиться снова
+                  </button>
+                  <button
+                    onClick={() => openManualJoin()}
+                    disabled={registrationBlocked}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
+                  >
+                    Разовое название
+                  </button>
+                </div>
               </div>
             ) : joinPhase === "idle" ? (
               <div>
@@ -871,13 +1048,23 @@ export default function EventDetailPage() {
                         </span>
                       </div>
                     )}
-                    <div>
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={handleJoinStart}
                         className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
                       >
                         <UserPlus className="h-4 w-4" />
                         {willGoToReserve ? "Заявиться в резерв" : "Заявиться"}
+                      </button>
+                      <button
+                        onClick={() =>
+                          openManualJoin(
+                            "Разовое название — если команды нет в рейтинге или вы играете под другим именем.",
+                          )
+                        }
+                        className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+                      >
+                        Другая команда / разовое название
                       </button>
                     </div>
                   </>
@@ -888,6 +1075,108 @@ export default function EventDetailPage() {
               <div className="flex items-center gap-2 text-sm text-muted">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Загружаем информацию о вашей команде...
+              </div>
+            ) : joinPhase === "manual" || (joinPhase === "submitting" && !myTeam) ? (
+              <div className="rounded-lg border border-accent/20 bg-accent/5 p-4">
+                {willGoToReserve && (
+                  <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    Заявка попадёт в <strong>резерв</strong> — лимит в {event.participantLimit} команд уже достигнут.
+                  </div>
+                )}
+                {joinManualReason && (
+                  <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                    {joinManualReason}
+                  </p>
+                )}
+                <p className="mb-3 text-xs text-muted">
+                  Команда играет впервые, отсутствует на rating.chgk.info или вы играете под другим именем
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                      Название команды
+                    </label>
+                    <input
+                      type="text"
+                      value={joinManualName}
+                      onChange={(e) => setJoinManualName(e.target.value)}
+                      className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                      Город
+                    </label>
+                    <input
+                      type="text"
+                      value={joinManualCity}
+                      onChange={(e) => setJoinManualCity(e.target.value)}
+                      placeholder="Необязательно"
+                      className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                      Имя капитана
+                    </label>
+                    <input
+                      type="text"
+                      value={joinContactName}
+                      onChange={(e) => setJoinContactName(e.target.value)}
+                      className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                    />
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={joinContactEmail}
+                        onChange={(e) => setJoinContactEmail(e.target.value)}
+                        className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
+                        Telegram
+                      </label>
+                      <input
+                        type="text"
+                        value={joinContactTelegram}
+                        onChange={(e) => setJoinContactTelegram(e.target.value)}
+                        placeholder="@username"
+                        className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-muted">Укажите email или Telegram — хотя бы одно поле</p>
+                </div>
+
+                {joinError && <p className="mt-3 text-xs text-red-600">{joinError}</p>}
+
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={handleManualJoinConfirm}
+                    disabled={joinPhase === "submitting"}
+                    className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {joinPhase === "submitting" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4" />
+                    )}
+                    {willGoToReserve ? "Подтвердить (резерв)" : "Подтвердить"}
+                  </button>
+                  <button
+                    onClick={cancelJoin}
+                    disabled={joinPhase === "submitting"}
+                    className="rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
+                  >
+                    Отмена
+                  </button>
+                </div>
               </div>
             ) : joinPhase === "preview" || joinPhase === "submitting" ? (
               <div className="rounded-lg border border-accent/20 bg-accent/5 p-4">
@@ -926,7 +1215,7 @@ export default function EventDetailPage() {
 
                 {joinError && <p className="mb-2 text-xs text-red-600">{joinError}</p>}
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleJoinConfirm}
                     disabled={joinPhase === "submitting"}
@@ -938,6 +1227,17 @@ export default function EventDetailPage() {
                       <CheckCircle2 className="h-4 w-4" />
                     )}
                     {willGoToReserve ? "Подтвердить (резерв)" : "Подтвердить"}
+                  </button>
+                  <button
+                    onClick={() =>
+                      openManualJoin(
+                        "Заявка под другим разовым названием, если команда из рейтинга уже в списке.",
+                      )
+                    }
+                    disabled={joinPhase === "submitting"}
+                    className="rounded-lg border border-border px-4 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface disabled:opacity-50"
+                  >
+                    Другое разовое название
                   </button>
                   <button
                     onClick={cancelJoin}
@@ -1068,14 +1368,20 @@ export default function EventDetailPage() {
                         )}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        <a
-                          href={`https://rating.chgk.info/teams/${team.teamChgkId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-accent hover:underline"
-                        >
-                          #{team.teamChgkId}
-                        </a>
+                        {team.manualEntry || team.teamChgkId < 0 ? (
+                          <span className="text-xs text-muted" title="Нет в рейтинге">
+                            —
+                          </span>
+                        ) : (
+                          <a
+                            href={`https://rating.chgk.info/teams/${team.teamChgkId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-accent hover:underline"
+                          >
+                            #{team.teamChgkId}
+                          </a>
+                        )}
                       </td>
                       {isOrganizer && (
                         <>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchPlayerCurrentTeam } from "@/lib/chgk";
+import { allocateManualTeamChgkId } from "@/lib/event-teams";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -19,11 +20,13 @@ export async function GET(_req: Request, { params }: Params) {
         teamChgkId: true,
         teamName: true,
         displayName: true,
+        city: true,
         playersCount: true,
         addedBy: true,
         addedAt: true,
         withdrawnAt: true,
         isReserve: true,
+        manualEntry: true,
       },
     }),
     // TeamRoster submissions for this event – used to show "has roster" badge
@@ -82,6 +85,11 @@ export async function POST(req: Request, { params }: Params) {
     teamChgkId?: number;
     teamName?: string;
     displayName?: string | null;
+    manualEntry?: boolean;
+    city?: string;
+    contactName?: string;
+    contactEmail?: string;
+    contactTelegram?: string;
   };
 
   const role = session.user.role;
@@ -114,8 +122,40 @@ export async function POST(req: Request, { params }: Params) {
 
   let teamChgkId: number;
   let teamName: string;
+  let manualEntry = false;
+  let city: string | null = null;
+  let contactName: string | null = null;
+  let contactEmail: string | null = null;
+  let contactTelegram: string | null = null;
 
-  if (isOrganizer) {
+  if (body.manualEntry) {
+    const name = body.teamName?.trim();
+    if (!name) {
+      return NextResponse.json({ error: "Укажите название команды" }, { status: 400 });
+    }
+    teamName = name;
+    city = body.city?.trim() || null;
+    manualEntry = true;
+    teamChgkId = await allocateManualTeamChgkId(eventId);
+
+    if (!isOrganizer) {
+      const cn = body.contactName?.trim() ?? "";
+      const ce = body.contactEmail?.trim() ?? "";
+      const ct = body.contactTelegram?.trim() ?? "";
+      if (!cn) {
+        return NextResponse.json({ error: "Укажите имя капитана" }, { status: 400 });
+      }
+      if (!ce && !ct) {
+        return NextResponse.json(
+          { error: "Укажите email или Telegram для связи" },
+          { status: 400 },
+        );
+      }
+      contactName = cn;
+      contactEmail = ce || null;
+      contactTelegram = ct || null;
+    }
+  } else if (isOrganizer) {
     if (!body.teamChgkId || !body.teamName?.trim()) {
       return NextResponse.json({ error: "teamChgkId and teamName required" }, { status: 400 });
     }
@@ -136,7 +176,7 @@ export async function POST(req: Request, { params }: Params) {
     const team = await fetchPlayerCurrentTeam(user.chgkId);
     if (!team) {
       return NextResponse.json(
-        { error: "Не удалось определить текущую команду в рейтинге ЧГКÄ" },
+        { error: "Не удалось определить текущую команду в рейтинге ЧГК" },
         { status: 400 },
       );
     }
@@ -184,6 +224,11 @@ export async function POST(req: Request, { params }: Params) {
           selfJoined: !isOrganizer,
           teamName,
           displayName,
+          city,
+          manualEntry,
+          contactName,
+          contactEmail,
+          contactTelegram,
           playersCount: null,
           isReserve,
         },
@@ -206,6 +251,11 @@ export async function POST(req: Request, { params }: Params) {
         teamChgkId,
         teamName,
         displayName,
+        city,
+        manualEntry,
+        contactName,
+        contactEmail,
+        contactTelegram,
         addedBy: session.user.id,
         selfJoined: !isOrganizer,
         isReserve,

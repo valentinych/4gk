@@ -15,14 +15,6 @@ import {
 
 type Tab = "chgk" | "ksi" | "isi";
 
-interface IsiRatingRow {
-  pos: string;
-  name: string;
-  total: number;
-  tours: (number | null)[];
-  trend?: string;
-}
-
 interface IsiPocRow {
   pos: number;
   name: string;
@@ -50,7 +42,6 @@ interface IsiCrossCell {
 }
 
 interface IsiData {
-  rating: IsiRatingRow[];
   poc: IsiPocRow[];
   crossPlayers: string[];
   crossTable: Record<string, IsiCrossCell>;
@@ -680,53 +671,10 @@ function IsiTab({ data }: { data: IsiData | null }) {
         </a>
       </div>
 
-      {data.rating.length > 0 && <IsiRatingTable rows={data.rating} />}
       {data.poc.length > 0 && <IsiPocSection rows={data.poc} />}
       {data.crossPlayers.length > 0 && (
         <IsiCrossTableSection players={data.crossPlayers} crossTable={data.crossTable} />
       )}
-    </div>
-  );
-}
-
-function IsiRatingTable({ rows }: { rows: IsiRatingRow[] }) {
-  const maxTours = Math.max(...rows.map((r) => r.tours.length), 0);
-
-  return (
-    <div>
-      <h3 className="mb-3 text-sm font-bold">Рейтинг</h3>
-      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
-              <th className="px-3 py-2.5 text-left font-medium w-12">М</th>
-              <th className="px-3 py-2.5 text-left font-medium min-w-[160px]">Игрок</th>
-              <th className="px-3 py-2.5 text-right font-medium w-20">Сумма</th>
-              {Array.from({ length: maxTours }, (_, i) => (
-                <th key={i} className="px-3 py-2.5 text-right font-medium w-16">Тур {i + 1}</th>
-              ))}
-              <th className="px-3 py-2.5 text-center font-medium w-8"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {rows.map((row, i) => (
-              <tr key={i} className="hover:bg-surface/50">
-                <td className="px-3 py-2.5 font-bold text-muted">{row.pos}</td>
-                <td className="px-3 py-2.5 font-medium whitespace-nowrap">{row.name}</td>
-                <td className="px-3 py-2.5 text-right font-mono font-bold">{row.total.toFixed(3)}</td>
-                {row.tours.map((v, ti) => (
-                  <td key={ti} className={`px-3 py-2.5 text-right font-mono ${v === null ? "text-muted" : "text-foreground"}`}>
-                    {v ?? "—"}
-                  </td>
-                ))}
-                <td className="px-3 py-2.5 text-center text-xs">
-                  {row.trend === "up" ? <span className="text-green-600">▲</span> : row.trend === "down" ? <span className="text-red-500">▼</span> : ""}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

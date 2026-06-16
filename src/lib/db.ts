@@ -6,4 +6,5 @@ const globalForPrisma = globalThis as unknown as {
 
 export const db = globalForPrisma.prisma ?? new PrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+// Reuse one client in production (Next.js may load route modules multiple times).
+globalForPrisma.prisma = db;

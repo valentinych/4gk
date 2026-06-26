@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   LogIn,
   Megaphone,
+  ChevronDown,
+  ChevronUp,
   UserPlus,
 } from "lucide-react";
 import { getCityColor } from "@/data/calendar";
@@ -110,6 +112,78 @@ interface ChgkTeamResult {
   id: number;
   name: string;
   town?: { name: string };
+}
+
+type TeamSortKey = "name" | "addedAt" | "id" | "players";
+
+function teamDisplayName(t: TeamEntry) {
+  return t.displayName ?? t.teamName;
+}
+
+function compareTeams(
+  a: TeamEntry,
+  b: TeamEntry,
+  key: TeamSortKey,
+  dir: "asc" | "desc",
+): number {
+  const sign = dir === "asc" ? 1 : -1;
+  switch (key) {
+    case "name":
+      return (
+        teamDisplayName(a).localeCompare(teamDisplayName(b), "ru", { sensitivity: "base" }) *
+        sign
+      );
+    case "addedAt":
+      return (a.addedAt < b.addedAt ? -1 : a.addedAt > b.addedAt ? 1 : 0) * sign;
+    case "id":
+      return (a.teamChgkId - b.teamChgkId) * sign;
+    case "players":
+      return ((a.playersCount ?? -1) - (b.playersCount ?? -1)) * sign;
+  }
+}
+
+function sortTeamList(
+  list: TeamEntry[],
+  key: TeamSortKey,
+  dir: "asc" | "desc",
+): TeamEntry[] {
+  return [...list].sort((a, b) => compareTeams(a, b, key, dir));
+}
+
+function SortableTh({
+  label,
+  active,
+  dir,
+  onClick,
+  className,
+  align = "left",
+}: {
+  label: string;
+  active: boolean;
+  dir: "asc" | "desc";
+  onClick: () => void;
+  className?: string;
+  align?: "left" | "right" | "center";
+}) {
+  return (
+    <th className={className}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`inline-flex items-center gap-0.5 font-medium transition-colors hover:text-foreground ${
+          align === "right" ? "ml-auto" : align === "center" ? "mx-auto" : ""
+        } ${active ? "text-foreground" : ""}`}
+      >
+        {label}
+        {active &&
+          (dir === "asc" ? (
+            <ChevronUp className="h-3 w-3 shrink-0" />
+          ) : (
+            <ChevronDown className="h-3 w-3 shrink-0" />
+          ))}
+      </button>
+    </th>
+  );
 }
 
 /* ─── Inline editable players-count cell ─── */
@@ -226,6 +300,20 @@ export default function EventDetailPage() {
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+
+  /* ─── Teams table sort (organizer) ─── */
+  const [teamSort, setTeamSort] = useState<{ key: TeamSortKey; dir: "asc" | "desc" }>({
+    key: "name",
+    dir: "asc",
+  });
+
+  function toggleTeamSort(key: TeamSortKey) {
+    setTeamSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: key === "addedAt" ? "desc" : "asc" },
+    );
+  }
 
   /* ─── Player: join ─── */
   const [joinPhase, setJoinPhase] = useState<
@@ -652,10 +740,15 @@ export default function EventDetailPage() {
 
   const activeTeams = teams.filter((t) => !t.withdrawnAt && !t.isReserve);
   const reserveTeams = teams.filter((t) => !t.withdrawnAt && t.isReserve);
-  const withdrawnTeams = teams
-    .filter((t) => t.withdrawnAt)
-    .sort((a, b) => (a.withdrawnAt! < b.withdrawnAt! ? 1 : -1));
-  const sortedTeams = [...activeTeams, ...reserveTeams, ...withdrawnTeams];
+  const withdrawnTeams = teams.filter((t) => t.withdrawnAt);
+
+  const sortKey: TeamSortKey = isOrganizer ? teamSort.key : "name";
+  const sortDir: "asc" | "desc" = isOrganizer ? teamSort.dir : "asc";
+
+  const sortedActive = sortTeamList(activeTeams, sortKey, sortDir);
+  const sortedReserve = sortTeamList(reserveTeams, sortKey, sortDir);
+  const sortedWithdrawn = sortTeamList(withdrawnTeams, sortKey, sortDir);
+  const sortedTeams = [...sortedActive, ...sortedReserve, ...sortedWithdrawn];
   const activeTeamsCount = activeTeams.length;
 
   // Registration window + limit status (computed on client, timezone-safe)
@@ -1277,13 +1370,51 @@ export default function EventDetailPage() {
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted">
                   <th className="px-5 py-2.5 font-medium w-10">#</th>
-                  <th className="px-5 py-2.5 font-medium">Команда</th>
-                  <th className="px-3 py-2.5 font-medium whitespace-nowrap">Заявка</th>
-                  <th className="px-5 py-2.5 font-medium w-20 text-right">ID</th>
+                  {isOrganizer ? (
+                    <SortableTh
+                      label="Команда"
+                      active={teamSort.key === "name"}
+                      dir={teamSort.dir}
+                      onClick={() => toggleTeamSort("name")}
+                      className="px-5 py-2.5"
+                    />
+                  ) : (
+                    <th className="px-5 py-2.5 font-medium">Команда</th>
+                  )}
+                  {isOrganizer ? (
+                    <SortableTh
+                      label="Заявка"
+                      active={teamSort.key === "addedAt"}
+                      dir={teamSort.dir}
+                      onClick={() => toggleTeamSort("addedAt")}
+                      className="px-3 py-2.5 whitespace-nowrap"
+                    />
+                  ) : (
+                    <th className="px-3 py-2.5 font-medium whitespace-nowrap">Заявка</th>
+                  )}
+                  {isOrganizer ? (
+                    <SortableTh
+                      label="ID"
+                      active={teamSort.key === "id"}
+                      dir={teamSort.dir}
+                      onClick={() => toggleTeamSort("id")}
+                      className="px-5 py-2.5 w-20"
+                      align="right"
+                    />
+                  ) : (
+                    <th className="px-5 py-2.5 font-medium w-20 text-right">ID</th>
+                  )}
                   {isOrganizer && (
                     <>
                       <th className="px-3 py-2.5 font-medium text-center w-14">Состав</th>
-                      <th className="px-3 py-2.5 font-medium text-center w-20">Сколько</th>
+                      <SortableTh
+                        label="Сколько"
+                        active={teamSort.key === "players"}
+                        dir={teamSort.dir}
+                        onClick={() => toggleTeamSort("players")}
+                        className="px-3 py-2.5 w-20"
+                        align="center"
+                      />
                     </>
                   )}
                   <th className="w-10" />
@@ -1310,8 +1441,12 @@ export default function EventDetailPage() {
                     isWithdrawn && (!prev || !prev.withdrawnAt);
 
                   const reserveIndex = isReserve
-                    ? reserveTeams.findIndex((t) => t.id === team.id) + 1
+                    ? sortedReserve.findIndex((t) => t.id === team.id) + 1
                     : 0;
+                  const activeIndex =
+                    !isWithdrawn && !isReserve
+                      ? sortedActive.findIndex((t) => t.id === team.id) + 1
+                      : 0;
 
                   return (
                     <Fragment key={team.id}>
@@ -1331,7 +1466,7 @@ export default function EventDetailPage() {
                       )}
                     <tr className={rowClass}>
                       <td className="px-5 py-3 font-mono text-xs text-muted">
-                        {isWithdrawn ? "—" : isReserve ? `Р${reserveIndex}` : idx + 1}
+                        {isWithdrawn ? "—" : isReserve ? `Р${reserveIndex}` : activeIndex}
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2">

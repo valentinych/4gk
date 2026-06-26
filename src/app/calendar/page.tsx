@@ -36,17 +36,29 @@ import {
   warsawInputValueToIso,
 } from "@/lib/time";
 
+function isDzikiSopotEvent(event: { id: string; title: string }) {
+  return (
+    event.id === "cmmw82nst000asf012sw62tlo" ||
+    event.title.trim().toLowerCase() === "dziki sopot"
+  );
+}
+
 /**
  * Some events have dedicated landing pages outside /calendar/[id]. Map them here.
  */
 function eventUrl(
-  eventId: string,
+  event: { id: string; title: string },
   action?: "join" | "withdraw",
 ): string {
-  if (eventId === "mazowieckie-syreny-lite") {
+  if (event.id === "mazowieckie-syreny-lite") {
     return action ? "/mazowieckie-syreny-lite/participants" : "/mazowieckie-syreny-lite";
   }
-  return action ? `/calendar/${eventId}?action=${action}` : `/calendar/${eventId}`;
+  if (isDzikiSopotEvent(event)) {
+    return action ? "/dziki-sopot/participants" : "/dziki-sopot";
+  }
+  return action
+    ? `/calendar/${event.id}?action=${action}`
+    : `/calendar/${event.id}`;
 }
 
 const MONTHS_RU = [
@@ -594,6 +606,23 @@ export default function CalendarPage() {
   }
 
   const todayKey = dateKey(today);
+
+  const isTodayFilterActive =
+    selectedDay === todayKey &&
+    year === today.getFullYear() &&
+    month === today.getMonth();
+
+  const todayEventsCount = (eventMap.get(todayKey) ?? []).length;
+
+  function toggleTodayFilter() {
+    if (isTodayFilterActive) {
+      setSelectedDay(null);
+      return;
+    }
+    setYear(today.getFullYear());
+    setMonth(today.getMonth());
+    setSelectedDay(todayKey);
+  }
 
   const usedCities = usedCitiesEarly;
 
@@ -1199,6 +1228,33 @@ export default function CalendarPage() {
         </div>
       )}
 
+      {/* Filters */}
+      <div id="page-calendar-day-filter" className="mb-6 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium text-muted">Показать:</span>
+        <button
+          type="button"
+          onClick={toggleTodayFilter}
+          title={isTodayFilterActive ? "Показать весь месяц" : "События на сегодня"}
+          className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-all ${
+            isTodayFilterActive
+              ? "border-accent bg-accent text-white hover:bg-accent-hover"
+              : "border-border bg-surface text-foreground hover:bg-surface/80"
+          }`}
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          Сегодня
+          {todayEventsCount > 0 && (
+            <span
+              className={`rounded-full px-1.5 py-px text-[10px] font-semibold leading-none ${
+                isTodayFilterActive ? "bg-white/20" : "bg-accent/10 text-accent"
+              }`}
+            >
+              {todayEventsCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* City filter */}
       {usedCities.length > 0 && (
         <div id="page-calendar-city-filter" className="mb-6">
@@ -1269,9 +1325,20 @@ export default function CalendarPage() {
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <h2 className="text-base font-bold">
-                {MONTHS_RU[month]} {year}
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold">
+                  {MONTHS_RU[month]} {year}
+                </h2>
+                {(year !== today.getFullYear() || month !== today.getMonth()) && (
+                  <button
+                    type="button"
+                    onClick={toggleTodayFilter}
+                    className="rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+                  >
+                    Сегодня
+                  </button>
+                )}
+              </div>
               <button
                 onClick={nextMonth}
                 className="rounded-lg p-1.5 text-muted transition-colors hover:bg-surface hover:text-foreground"
@@ -1454,7 +1521,7 @@ function EventCard({
             </span>
           </div>
           <Link
-            href={eventUrl(event.id)}
+            href={eventUrl(event)}
             className="mt-2 block text-sm font-bold leading-snug hover:underline decoration-foreground/30 underline-offset-2"
           >
             {event.title}
@@ -1585,7 +1652,7 @@ function EventCard({
           if (isRegistered) {
             return (
               <Link
-                href={eventUrl(event.id, "withdraw")}
+                href={eventUrl(event, "withdraw")}
                 className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
               >
                 <UserMinus className="h-3 w-3" />
@@ -1609,7 +1676,7 @@ function EventCard({
           if (isWithdrawn) {
             return (
               <Link
-                href={eventUrl(event.id, "join")}
+                href={eventUrl(event, "join")}
                 className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
               >
                 <RotateCcw className="h-3 w-3" />
@@ -1620,7 +1687,7 @@ function EventCard({
 
           return (
             <Link
-              href={eventUrl(event.id, "join")}
+              href={eventUrl(event, "join")}
               className={`inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                 willReserve
                   ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"

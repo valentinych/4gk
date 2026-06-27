@@ -156,6 +156,11 @@ export interface OchpLandingTile {
   href?: string;
 }
 
+/** Плитки, видимые при любом выбранном сезоне на /ochp */
+export const OCHP_GLOBAL_TILES: OchpLandingTile[] = [
+  { slug: "stats", emoji: "📊", title: "Общая статистика" },
+];
+
 /**
  * Плитки на главной /ochp для архивных сезонов (всё кроме 2025/2026).
  * Ключ — первый год сезона (как в ?season=2024). Добавляйте записи по одной плитке.

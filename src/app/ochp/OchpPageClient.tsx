@@ -13,6 +13,7 @@ import {
   parseOchpSeasonStart,
   OCHP_SEASON_START_MAX,
   OCHP_ARCHIVE_TILES,
+  OCHP_GLOBAL_TILES,
   type OchpLandingTile,
 } from "@/lib/ochp-seasons";
 
@@ -96,12 +97,13 @@ export function OchpPageClient() {
   const ySuffix = ochpYearSuffix(seasonStart);
   const isCurrentSeason = seasonStart === OCHP_SEASON_START_MAX;
   const noChampionship = ochpSeasonHadNoChampionship(seasonStart);
-  const tiles: OchpLandingTile[] =
+  const seasonTiles: OchpLandingTile[] =
     noChampionship
       ? []
       : isCurrentSeason
         ? buildCurrentSeasonTiles()
         : (OCHP_ARCHIVE_TILES[seasonStart] ?? []);
+  const tiles = [...seasonTiles, ...OCHP_GLOBAL_TILES];
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -219,7 +221,7 @@ export function OchpPageClient() {
         </p>
       )}
 
-      {!noChampionship && !isCurrentSeason && tiles.length === 0 && (
+      {!noChampionship && !isCurrentSeason && seasonTiles.length === 0 && (
         <p className="mb-8 text-sm text-muted leading-relaxed">
           Материалы этого сезона на портале появятся по мере добавления.
         </p>

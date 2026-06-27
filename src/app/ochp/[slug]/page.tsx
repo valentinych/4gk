@@ -24,6 +24,7 @@ import ChgkRatingApiResults from "./ChgkRatingApiResults";
 import ChgkResults from "./ChgkResults";
 import BrainResults from "./BrainResults";
 import StormResults from "./StormResults";
+import OchpStatsTable from "./OchpStatsTable";
 
 const titles: Record<string, string> = {
   "schedule":      "Расписание ОЧП'26",
@@ -42,6 +43,7 @@ const titles: Record<string, string> = {
   "legionnaires":  "Поиск легионеров на ОЧП'26",
   "food":          "Где поесть рядом с МПИ",
   "excursions":    "Запись на экскурсии по Варшаве",
+  "stats":         "Общая статистика",
 };
 
 interface ScheduleEvent {
@@ -858,7 +860,7 @@ export default async function OchpSubPage({
         />
       </div>
 
-      {noChampionshipSeason ? (
+      {noChampionshipSeason && slug !== "stats" ? (
         <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
           <p className="text-base font-medium text-foreground">
             Чемпионат Польши в этот сезон не проводился
@@ -889,6 +891,8 @@ export default async function OchpSubPage({
         <BrainResults tier="33-48" />
       ) : slug === "results-storm" ? (
         <StormResults />
+      ) : slug === "stats" ? (
+        <OchpStatsTable />
       ) : slug === "food" ? (
         <div className="space-y-4">
           <div className="flex items-center justify-end">

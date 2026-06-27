@@ -9,6 +9,7 @@ import {
   findTurnirushkaBySlug,
   turnirushkaLabel,
 } from "@/lib/turnirushki";
+import { hasEkResults } from "@/lib/turnirushki-ek";
 import { hasKsiResults } from "@/lib/turnirushki-ksi";
 
 export function TurnirushkiPageClient() {
@@ -61,6 +62,13 @@ export function TurnirushkiPageClient() {
       emoji: "🎯",
       title: "Результаты КСИ (Командная Своя Игра)",
       href: `/turnirushki/ksi${tParam}`,
+    });
+  }
+  if (hasEkResults(current.slug)) {
+    tiles.push({
+      emoji: "⚡",
+      title: "ЭК",
+      href: `/turnirushki/ek${tParam}`,
     });
   }
 

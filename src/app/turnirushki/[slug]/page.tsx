@@ -10,13 +10,16 @@ import {
 } from "@/lib/turnirushki";
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
+import { getEkResults } from "@/lib/turnirushki-ek";
 import { getKsiAmateurTeamNames, getKsiResults } from "@/lib/turnirushki-ksi";
+import EkResultsTable from "./EkResultsTable";
 import KsiResultsTable from "./KsiResultsTable";
 
 const titles: Record<string, string> = {
   "rating-page": "Страница турнира на сайте рейтинга",
   "results-chgk": "Результаты Что? Где? Когда?",
   ksi: "КСИ (Командная Своя Игра)",
+  ek: "ЭК",
 };
 
 interface Person {
@@ -261,6 +264,20 @@ export default async function TurnirushkiSubPage({
             );
           }
           return <KsiResultsTable data={ksi} />;
+        })()
+      ) : slug === "ek" ? (
+        (() => {
+          const ek = getEkResults(current.slug);
+          if (!ek) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по ЭК
+                </p>
+              </div>
+            );
+          }
+          return <EkResultsTable data={ek} />;
         })()
       ) : null}
     </div>

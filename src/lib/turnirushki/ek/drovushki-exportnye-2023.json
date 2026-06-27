@@ -1,0 +1,106 @@
+{
+  "tournamentSlug": "drovushki-exportnye-2023",
+  "title": "ЭК",
+  "seedSource": "КСИ",
+  "seeds": [
+    { "ksi": 1, "name": "Йота Киля" },
+    { "ksi": 2, "name": "Олеги Литвы" },
+    { "ksi": 3, "name": "В гостях у Кафки" },
+    { "ksi": 4, "name": "Кабан отправился в морское путешествие" },
+    { "ksi": 5, "name": "Гимназия имени" },
+    { "ksi": 6, "name": "Weselny pyton" },
+    { "ksi": 7, "name": "6:54" },
+    { "ksi": 8, "name": "sample text" },
+    { "ksi": 9, "name": "Джин Толик" },
+    { "ksi": 10, "name": "X-promt" },
+    { "ksi": 11, "name": "мртвы крт" },
+    { "ksi": 12, "name": "Вихасоо-21" },
+    { "ksi": 13, "name": "Кустохвостый гребнепал" },
+    { "ksi": 14, "name": "Клёк" },
+    { "ksi": 15, "name": "Четыре Имени Шестипалого" },
+    { "ksi": 16, "name": "Прыг-Скок" }
+  ],
+  "quarterfinals": [
+    {
+      "group": "A",
+      "label": "Группа А",
+      "venue": "Главный зал",
+      "host": "Павел Забавский",
+      "teams": [
+        { "ksi": 1, "name": "Йота Киля", "score": 280, "place": 1, "bracket": "A1" },
+        { "ksi": 8, "name": "sample text", "score": 140, "place": 2, "bracket": "A2" },
+        { "ksi": 16, "name": "Прыг-Скок", "score": 90, "place": 3 },
+        { "ksi": 9, "name": "Джин Толик", "score": 50, "place": 4 }
+      ]
+    },
+    {
+      "group": "B",
+      "label": "Группа В",
+      "venue": "Зал №4",
+      "host": "Вадим Кузмич",
+      "teams": [
+        { "ksi": 10, "name": "X-promt", "score": 260, "place": 1, "bracket": "B1" },
+        { "ksi": 2, "name": "Олеги Литвы", "score": 230, "place": 2, "bracket": "B2" },
+        { "ksi": 15, "name": "Четыре Имени Шестипалого", "score": 50, "place": 3 },
+        { "ksi": 7, "name": "6:54", "score": 30, "place": 4 }
+      ]
+    },
+    {
+      "group": "C",
+      "label": "Группа С",
+      "venue": "Зал №5",
+      "host": "Дмитрий Демидов, Лиза Гришкина",
+      "teams": [
+        { "ksi": 11, "name": "мртвы крт", "score": 190, "place": 1, "bracket": "C1" },
+        { "ksi": 6, "name": "Weselny pyton", "score": 190, "place": 2, "bracket": "C2" },
+        { "ksi": 3, "name": "В гостях у Кафки", "score": 190, "place": 3 },
+        { "ksi": 14, "name": "Клёк", "score": 10, "place": 4 }
+      ]
+    },
+    {
+      "group": "D",
+      "label": "Группа D",
+      "venue": "Зал №6",
+      "host": "Вера Гаврюшина",
+      "teams": [
+        { "ksi": 5, "name": "Гимназия имени", "score": 200, "place": 1, "bracket": "D1" },
+        { "ksi": 12, "name": "Вихасоо-21", "score": 160, "place": 2, "bracket": "D2" },
+        { "ksi": 13, "name": "Кустохвостый гребнепал", "score": 150, "place": 3 },
+        { "ksi": 4, "name": "Кабан отправился в морское путешествие", "score": 80, "place": 4 }
+      ]
+    }
+  ],
+  "semifinals": [
+    {
+      "number": 1,
+      "label": "Полуфинал 1",
+      "venue": "Главный зал",
+      "teams": [
+        { "bracket": "D1", "name": "Гимназия имени", "score": 270, "place": 1 },
+        { "bracket": "A1", "name": "Йота Киля", "score": 150, "place": 2 },
+        { "bracket": "B2", "name": "Олеги Литвы", "score": 80, "place": 3 },
+        { "bracket": "C2", "name": "Weselny pyton", "score": 20, "place": 4 }
+      ]
+    },
+    {
+      "number": 2,
+      "label": "Полуфинал 2",
+      "venue": "Зал №4",
+      "teams": [
+        { "bracket": "B1", "name": "X-promt", "score": 240, "place": 1 },
+        { "bracket": "D2", "name": "Вихасоо-21", "score": 170, "place": 2 },
+        { "bracket": "C1", "name": "мртвы крт", "score": 90, "place": 3 },
+        { "bracket": "A2", "name": "sample text", "score": -60, "place": 4 }
+      ]
+    }
+  ],
+  "final": {
+    "venue": "Главный зал",
+    "teams": [
+      { "name": "Йота Киля", "score": 270, "place": 1 },
+      { "name": "Вихасоо-21", "score": 150, "place": 2 },
+      { "name": "X-promt", "score": 140, "place": 3 },
+      { "name": "Гимназия имени", "score": 80, "place": 4 }
+    ]
+  }
+}

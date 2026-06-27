@@ -131,14 +131,30 @@ function PlayoffBout({ bout }: { bout: BrainPlayoffBout }) {
 }
 
 export default function BrainResultsTable({ data }: { data: BrainResults }) {
+  const isDoubleElim = data.playoffs.format === "double-elimination";
   const winner = data.playoffs.final.teams.find((t) => t.place === 1);
+  const hasPlayoffs = data.playoffs.final.teams.length > 0;
+  const groupCount = data.groups.length;
+  const teamCount = data.seeds.length;
+  const deStages = isDoubleElim ? [...(data.playoffs.stages ?? [])].reverse() : [];
 
   return (
     <div className="space-y-8">
       <p className="text-sm text-muted leading-relaxed">
-        32 команды с посевом по итогам {data.seedSource}: 8 групп по 4, два захода, в плей-офф
-        проходят первые две. В ячейке сетки — счёт матча (забито пропущено), под ним турнирные
-        очки за матч. О — сумма очков, Р — разница, З — забито, М — место в группе.
+        {isDoubleElim ? (
+          <>
+            {teamCount} команд с посевом по итогам {data.seedSource}: {groupCount} групп по 4,
+            плей-офф по системе double elimination. В ячейке сетки — счёт матча (забито
+            пропущено), под ним турнирные очки за матч.
+          </>
+        ) : (
+          <>
+            {teamCount} команд с посевом по итогам {data.seedSource}: {groupCount} групп по 4
+            {hasPlayoffs ? ", в плей-офф проходят первые две" : ""}. В ячейке сетки — счёт матча
+            (забито пропущено), под ним турнирные очки за матч. О — сумма очков, Р — разница, З —
+            забито, М — место в группе.
+          </>
+        )}
       </p>
 
       {winner && (
@@ -149,59 +165,99 @@ export default function BrainResultsTable({ data }: { data: BrainResults }) {
           </div>
           <p className="mt-2 text-xl font-bold">{winner.name}</p>
           {winner.score != null && (
-            <p className="mt-1 text-sm text-muted">{winner.score} в финале</p>
+            <p className="mt-1 text-sm text-muted">
+              {isDoubleElim && winner.score2 != null
+                ? `${winner.score}:${winner.score2} в грандфинале`
+                : `${winner.score} в финале`}
+            </p>
           )}
         </div>
       )}
 
-      <section>
-        <h2 className="mb-3 text-base font-bold">Финал</h2>
-        <p className="mb-3 text-xs text-muted">{data.playoffs.final.venue}</p>
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
-                <th className="px-3 py-2 text-center w-10">М</th>
-                <th className="px-3 py-2 text-left">Команда</th>
-                <th className="px-3 py-2 text-right w-16">Счёт</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {data.playoffs.final.teams.map((t) => (
-                <tr key={t.name}>
-                  <td className="px-3 py-2 text-center font-mono text-muted">{t.place}</td>
-                  <td className="px-3 py-2 font-medium">{t.name}</td>
-                  <td className="px-3 py-2 text-right font-mono font-bold tabular-nums">
-                    {t.score ?? "—"}
-                  </td>
+      {hasPlayoffs && (
+        <section>
+          <h2 className="mb-3 text-base font-bold">
+            {isDoubleElim ? "Грандфинал" : "Финал"}
+          </h2>
+          <p className="mb-3 text-xs text-muted">{data.playoffs.final.venue}</p>
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+                  <th className="px-3 py-2 text-center w-10">М</th>
+                  <th className="px-3 py-2 text-left">Команда</th>
+                  {isDoubleElim ? (
+                    <>
+                      <th className="px-3 py-2 text-right w-12">1</th>
+                      <th className="px-3 py-2 text-right w-12">2</th>
+                    </>
+                  ) : (
+                    <th className="px-3 py-2 text-right w-16">Счёт</th>
+                  )}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {data.playoffs.final.teams.map((t) => (
+                  <tr key={t.name}>
+                    <td className="px-3 py-2 text-center font-mono text-muted">{t.place}</td>
+                    <td className="px-3 py-2 font-medium">{t.name}</td>
+                    {isDoubleElim ? (
+                      <>
+                        <td className="px-3 py-2 text-right font-mono font-bold tabular-nums">
+                          {t.score ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono font-bold tabular-nums">
+                          {t.score2 ?? "—"}
+                        </td>
+                      </>
+                    ) : (
+                      <td className="px-3 py-2 text-right font-mono font-bold tabular-nums">
+                        {t.score ?? "—"}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
-      <section>
-        <h2 className="mb-3 text-base font-bold">{data.playoffs.thirdPlace.label}</h2>
-        <p className="mb-3 text-xs text-muted">{data.playoffs.thirdPlace.venue}</p>
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="min-w-full text-sm">
-            <tbody className="divide-y divide-border/60">
-              {data.playoffs.thirdPlace.teams.map((t) => (
-                <tr key={t.name}>
-                  <td className="px-3 py-2 text-center font-mono text-muted w-10">{t.place}</td>
-                  <td className="px-3 py-2 font-medium">{t.name}</td>
-                  <td className="px-3 py-2 text-right font-mono font-bold tabular-nums w-16">
-                    {t.score ?? "—"}
-                  </td>
-                </tr>
+      {isDoubleElim &&
+        deStages.slice(1).map((stage) => (
+          <section key={stage.label}>
+            <h2 className="mb-4 text-base font-bold">{stage.label}</h2>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {stage.bouts.map((b) => (
+                <PlayoffBout key={b.label} bout={b} />
               ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+          </section>
+        ))}
 
-      {data.playoffs.semifinals.length > 0 && (
+      {!isDoubleElim && data.playoffs.thirdPlace.teams.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-base font-bold">{data.playoffs.thirdPlace.label}</h2>
+          <p className="mb-3 text-xs text-muted">{data.playoffs.thirdPlace.venue}</p>
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+            <table className="min-w-full text-sm">
+              <tbody className="divide-y divide-border/60">
+                {data.playoffs.thirdPlace.teams.map((t) => (
+                  <tr key={t.name}>
+                    <td className="px-3 py-2 text-center font-mono text-muted w-10">{t.place}</td>
+                    <td className="px-3 py-2 font-medium">{t.name}</td>
+                    <td className="px-3 py-2 text-right font-mono font-bold tabular-nums w-16">
+                      {t.score ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {!isDoubleElim && data.playoffs.semifinals.length > 0 && (
         <section>
           <h2 className="mb-4 text-base font-bold">Полуфиналы</h2>
           <div className="grid gap-3 lg:grid-cols-2">
@@ -212,7 +268,7 @@ export default function BrainResultsTable({ data }: { data: BrainResults }) {
         </section>
       )}
 
-      {data.playoffs.quarterfinals.length > 0 && (
+      {!isDoubleElim && data.playoffs.quarterfinals.length > 0 && (
         <section>
           <h2 className="mb-4 text-base font-bold">Четвертьфиналы</h2>
           <div className="grid gap-3 lg:grid-cols-2">
@@ -223,7 +279,7 @@ export default function BrainResultsTable({ data }: { data: BrainResults }) {
         </section>
       )}
 
-      {data.playoffs.roundOf16.length > 0 && (
+      {!isDoubleElim && data.playoffs.roundOf16.length > 0 && (
         <section>
           <h2 className="mb-4 text-base font-bold">1/8 финала</h2>
           <div className="grid gap-3 lg:grid-cols-2">
@@ -242,7 +298,7 @@ export default function BrainResultsTable({ data }: { data: BrainResults }) {
               <div className="border-b border-border bg-muted/15 px-4 py-3">
                 <h3 className="text-sm font-bold">{g.label}</h3>
                 <p className="mt-0.5 text-xs text-muted">
-                  {g.venue} · {g.host} · {g.session}
+                  {[g.venue, g.host, g.session].filter(Boolean).join(" · ")}
                 </p>
               </div>
               <GroupGrid group={g} />

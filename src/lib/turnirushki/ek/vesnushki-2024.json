@@ -1,0 +1,643 @@
+{
+  "tournamentSlug": "vesnushki-2024",
+  "title": "ЭК",
+  "seedSource": "ЧГК",
+  "format": "two-rounds",
+  "rounds": [
+    {
+      "number": 1,
+      "label": "Бой 1",
+      "groups": [
+        {
+          "id": "A",
+          "label": "Бой A",
+          "venue": "Площадка 1",
+          "teams": [
+            {
+              "name": "Олеги Литвы",
+              "score": 360,
+              "place": 1,
+              "boutPoints": 5.8
+            },
+            {
+              "name": "6:56",
+              "score": 30,
+              "place": 3,
+              "boutPoints": 2.15
+            },
+            {
+              "name": "Ежу понятно!",
+              "score": 110,
+              "place": 2,
+              "boutPoints": 3.55
+            },
+            {
+              "name": "Анаекниярва",
+              "score": 10,
+              "place": 4,
+              "boutPoints": 1.05
+            }
+          ]
+        },
+        {
+          "id": "B",
+          "label": "Бой B",
+          "venue": "Площадка 2",
+          "teams": [
+            {
+              "name": "Странные агенты",
+              "score": 240,
+              "place": 1,
+              "boutPoints": 5.2
+            },
+            {
+              "name": "Szopy",
+              "score": 70,
+              "place": 4,
+              "boutPoints": 1.35
+            },
+            {
+              "name": "Самая большая лягушка",
+              "score": 140,
+              "place": 2,
+              "boutPoints": 3.7
+            },
+            {
+              "name": "ЖмеR",
+              "score": 100,
+              "place": 3,
+              "boutPoints": 2.5
+            }
+          ]
+        },
+        {
+          "id": "C",
+          "label": "Бой C",
+          "venue": "Площадка 3",
+          "teams": [
+            {
+              "name": "Сцилла",
+              "score": 120,
+              "place": 3,
+              "boutPoints": 2.6
+            },
+            {
+              "name": "Кустохвостый гребнепал",
+              "score": 140,
+              "place": 1.5,
+              "boutPoints": 4.2
+            },
+            {
+              "name": "Гэта элементарные рэчы",
+              "score": -100,
+              "place": 4,
+              "boutPoints": 0.5
+            },
+            {
+              "name": "Нiкагдыгда",
+              "score": 140,
+              "place": 1.5,
+              "boutPoints": 4.2
+            }
+          ]
+        },
+        {
+          "id": "D",
+          "label": "Бой D",
+          "venue": "Площадка 4",
+          "teams": [
+            {
+              "name": "Пассажиры LTG",
+              "score": 250,
+              "place": 1,
+              "boutPoints": 5.25
+            },
+            {
+              "name": "Два слова на букву К",
+              "score": 150,
+              "place": 2,
+              "boutPoints": 3.75
+            },
+            {
+              "name": "KawOwiec",
+              "score": 100,
+              "place": 3,
+              "boutPoints": 2.5
+            },
+            {
+              "name": "Есть желающие",
+              "score": 10,
+              "place": 4,
+              "boutPoints": 1.05
+            }
+          ]
+        },
+        {
+          "id": "E",
+          "label": "Бой E",
+          "venue": "Площадка 5",
+          "teams": [
+            {
+              "name": "Какая собака?",
+              "score": 180,
+              "place": 2,
+              "boutPoints": 3.9
+            },
+            {
+              "name": "Просто чилим",
+              "score": 440,
+              "place": 1,
+              "boutPoints": 6.2
+            },
+            {
+              "name": "И пусть никто не уйдёт без мерло!",
+              "score": 20,
+              "place": 4,
+              "boutPoints": 1.1
+            },
+            {
+              "name": "Приемлемо",
+              "score": 30,
+              "place": 3,
+              "boutPoints": 2.15
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "label": "Бой 2",
+      "groups": [
+        {
+          "id": "F",
+          "label": "Бой F",
+          "venue": "Площадка 1",
+          "teams": [
+            {
+              "name": "Олеги Литвы",
+              "score": 450,
+              "place": 1,
+              "boutPoints": 6.25
+            },
+            {
+              "name": "Какая собака?",
+              "score": 160,
+              "place": 2,
+              "boutPoints": 3.8
+            },
+            {
+              "name": "KawOwiec",
+              "score": 130,
+              "place": 3,
+              "boutPoints": 2.65
+            },
+            {
+              "name": "Гэта элементарные рэчы",
+              "score": 70,
+              "place": 4,
+              "boutPoints": 1.35
+            }
+          ]
+        },
+        {
+          "id": "G",
+          "label": "Бой G",
+          "venue": "Площадка 2",
+          "teams": [
+            {
+              "name": "Странные агенты",
+              "score": 250,
+              "place": 1,
+              "boutPoints": 5.25
+            },
+            {
+              "name": "Ежу понятно!",
+              "score": 140,
+              "place": 2,
+              "boutPoints": 3.7
+            },
+            {
+              "name": "Приемлемо",
+              "score": 40,
+              "place": 4,
+              "boutPoints": 1.2
+            },
+            {
+              "name": "Есть желающие",
+              "score": 60,
+              "place": 3,
+              "boutPoints": 2.3
+            }
+          ]
+        },
+        {
+          "id": "H",
+          "label": "Бой H",
+          "venue": "Площадка 3",
+          "teams": [
+            {
+              "name": "Кустохвостый гребнепал",
+              "score": 230,
+              "place": 3,
+              "boutPoints": 3.15
+            },
+            {
+              "name": "Самая большая лягушка",
+              "score": 270,
+              "place": 1,
+              "boutPoints": 5.35
+            },
+            {
+              "name": "6:56",
+              "score": 250,
+              "place": 2,
+              "boutPoints": 4.25
+            },
+            {
+              "name": "И пусть никто не уйдёт без мерло!",
+              "score": -100,
+              "place": 4,
+              "boutPoints": 0.5
+            }
+          ]
+        },
+        {
+          "id": "I",
+          "label": "Бой I",
+          "venue": "Площадка 4",
+          "teams": [
+            {
+              "name": "Пассажиры LTG",
+              "score": 260,
+              "place": 1,
+              "boutPoints": 5.3
+            },
+            {
+              "name": "Нiкагдыгда",
+              "score": 200,
+              "place": 2,
+              "boutPoints": 4
+            },
+            {
+              "name": "ЖмеR",
+              "score": 50,
+              "place": 3,
+              "boutPoints": 2.25
+            },
+            {
+              "name": "Анаекниярва",
+              "score": -30,
+              "place": 4,
+              "boutPoints": 0.85
+            }
+          ]
+        },
+        {
+          "id": "G",
+          "label": "Бой G",
+          "venue": "Площадка 5",
+          "teams": [
+            {
+              "name": "Просто чилим",
+              "score": 250,
+              "place": 1,
+              "boutPoints": 5.25
+            },
+            {
+              "name": "Два слова на букву К",
+              "score": 80,
+              "place": 4,
+              "boutPoints": 1.4
+            },
+            {
+              "name": "Сцилла",
+              "score": 130,
+              "place": 2,
+              "boutPoints": 3.65
+            },
+            {
+              "name": "Szopy",
+              "score": 120,
+              "place": 3,
+              "boutPoints": 2.6
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "standings": [
+    {
+      "place": 1,
+      "name": "Олеги Литвы",
+      "bout1Points": 5.8,
+      "bout2Points": 6.25,
+      "total": 12.05
+    },
+    {
+      "place": 2,
+      "name": "Просто чилим",
+      "bout1Points": 6.2,
+      "bout2Points": 5.25,
+      "total": 11.45
+    },
+    {
+      "place": 3,
+      "name": "Пассажиры LTG",
+      "bout1Points": 5.25,
+      "bout2Points": 5.3,
+      "total": 10.55
+    },
+    {
+      "place": 4,
+      "name": "Странные агенты",
+      "bout1Points": 5.2,
+      "bout2Points": 5.25,
+      "total": 10.45
+    },
+    {
+      "place": 5,
+      "name": "Самая большая лягушка",
+      "bout1Points": 3.7,
+      "bout2Points": 5.35,
+      "total": 9.05
+    },
+    {
+      "place": 6,
+      "name": "Нiкагдыгда",
+      "bout1Points": 4.2,
+      "bout2Points": 4,
+      "total": 8.2
+    },
+    {
+      "place": 7,
+      "name": "Какая собака?",
+      "bout1Points": 3.9,
+      "bout2Points": 3.8,
+      "total": 7.7
+    },
+    {
+      "place": 8,
+      "name": "Кустохвостый гребнепал",
+      "bout1Points": 4.2,
+      "bout2Points": 3.15,
+      "total": 7.35
+    },
+    {
+      "place": 9,
+      "name": "Ежу понятно",
+      "bout1Points": 3.55,
+      "bout2Points": 3.7,
+      "total": 7.25
+    },
+    {
+      "place": 10,
+      "name": "6:56",
+      "bout1Points": 2.15,
+      "bout2Points": 4.25,
+      "total": 6.4
+    },
+    {
+      "place": 11,
+      "name": "Сцилла",
+      "bout1Points": 2.6,
+      "bout2Points": 3.65,
+      "total": 6.25
+    },
+    {
+      "place": 12,
+      "name": "Два слова на букву К",
+      "bout1Points": 3.75,
+      "bout2Points": 1.4,
+      "total": 5.15
+    },
+    {
+      "place": 13,
+      "name": "KawOwiec",
+      "bout1Points": 2.5,
+      "bout2Points": 2.65,
+      "total": 5.15
+    },
+    {
+      "place": 14,
+      "name": "ЖмеR",
+      "bout1Points": 2.5,
+      "bout2Points": 2.25,
+      "total": 4.75
+    },
+    {
+      "place": 15,
+      "name": "Szopy",
+      "bout1Points": 1.35,
+      "bout2Points": 2.6,
+      "total": 3.95
+    },
+    {
+      "place": 16,
+      "name": "Приемлемо",
+      "bout1Points": 2.15,
+      "bout2Points": 1.2,
+      "total": 3.35
+    },
+    {
+      "place": 17,
+      "name": "Есть желающие",
+      "bout1Points": 1.05,
+      "bout2Points": 2.3,
+      "total": 3.35
+    },
+    {
+      "place": 18,
+      "name": "Анаекниярва",
+      "bout1Points": 1.05,
+      "bout2Points": 0.85,
+      "total": 1.9
+    },
+    {
+      "place": 19,
+      "name": "Гэта элементарныя рэчы",
+      "bout1Points": 0.5,
+      "bout2Points": 1.35,
+      "total": 1.85
+    },
+    {
+      "place": 20,
+      "name": "И пусть никто не уйдёт без мерло!",
+      "bout1Points": 1.1,
+      "bout2Points": 0.5,
+      "total": 1.6
+    }
+  ],
+  "playoffRounds": [
+    {
+      "label": "Площадка 2 (домик 54), 09:30",
+      "venue": "Площадка 2 (домик 54), 09:30",
+      "teams": [
+        {
+          "name": "Просто чилим",
+          "score": 380,
+          "place": 1,
+          "chgk": 2
+        },
+        {
+          "name": "Пассажиры LTG",
+          "score": 60,
+          "place": 3,
+          "chgk": 3
+        },
+        {
+          "name": "Нiкагдыгда",
+          "score": 70,
+          "place": 2,
+          "chgk": 6
+        },
+        {
+          "name": "Какая собака?",
+          "score": 40,
+          "place": 4,
+          "chgk": 7
+        }
+      ]
+    },
+    {
+      "label": "Площадка 1 (главный зал), 09:30",
+      "venue": "Площадка 1 (главный зал), 09:30",
+      "teams": [
+        {
+          "name": "Олеги Литвы",
+          "score": 370,
+          "place": 1,
+          "chgk": 1
+        },
+        {
+          "name": "Странные агенты",
+          "score": 220,
+          "place": 3,
+          "chgk": 4
+        },
+        {
+          "name": "Самая большая лягушка",
+          "score": 230,
+          "place": 2,
+          "chgk": 5
+        },
+        {
+          "name": "Кустохвостый гребнепал",
+          "score": 90,
+          "place": 4,
+          "chgk": 8
+        }
+      ]
+    }
+  ],
+  "quarterfinals": [],
+  "semifinals": [],
+  "final": {
+    "venue": "Площадка 2 (домик 54), 10:15",
+    "teams": [
+      {
+        "name": "Олеги Литвы",
+        "score": 250,
+        "place": 1
+      },
+      {
+        "name": "Просто чилим",
+        "score": 170,
+        "place": 2
+      },
+      {
+        "name": "Самая большая лягушка",
+        "score": 90,
+        "place": 3
+      },
+      {
+        "name": "Нiкагдыгда",
+        "score": 60,
+        "place": 4
+      }
+    ]
+  },
+  "seeds": [
+    {
+      "chgk": 1,
+      "name": "Олеги Литвы"
+    },
+    {
+      "chgk": 2,
+      "name": "Просто чилим"
+    },
+    {
+      "chgk": 3,
+      "name": "Пассажиры LTG"
+    },
+    {
+      "chgk": 4,
+      "name": "Странные агенты"
+    },
+    {
+      "chgk": 5,
+      "name": "Самая большая лягушка"
+    },
+    {
+      "chgk": 6,
+      "name": "Нiкагдыгда"
+    },
+    {
+      "chgk": 7,
+      "name": "Какая собака?"
+    },
+    {
+      "chgk": 8,
+      "name": "Кустохвостый гребнепал"
+    },
+    {
+      "chgk": 9,
+      "name": "Ежу понятно"
+    },
+    {
+      "chgk": 10,
+      "name": "6:56"
+    },
+    {
+      "chgk": 11,
+      "name": "Сцилла"
+    },
+    {
+      "chgk": 12,
+      "name": "Два слова на букву К"
+    },
+    {
+      "chgk": 13,
+      "name": "KawOwiec"
+    },
+    {
+      "chgk": 14,
+      "name": "ЖмеR"
+    },
+    {
+      "chgk": 15,
+      "name": "Szopy"
+    },
+    {
+      "chgk": 16,
+      "name": "Приемлемо"
+    },
+    {
+      "chgk": 17,
+      "name": "Есть желающие"
+    },
+    {
+      "chgk": 18,
+      "name": "Анаекниярва"
+    },
+    {
+      "chgk": 19,
+      "name": "Гэта элементарныя рэчы"
+    },
+    {
+      "chgk": 20,
+      "name": "И пусть никто не уйдёт без мерло!"
+    }
+  ]
+}

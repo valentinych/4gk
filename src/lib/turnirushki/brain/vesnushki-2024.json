@@ -1,0 +1,979 @@
+{
+  "tournamentSlug": "vesnushki-2024",
+  "title": "Брейн-ринг",
+  "seedSource": "ЧГК",
+  "seeds": [
+    {
+      "chgkPlace": 1,
+      "name": "Олеги Литвы"
+    },
+    {
+      "chgkPlace": 2,
+      "name": "Пассажиры LTG"
+    },
+    {
+      "chgkPlace": 3,
+      "name": "6:56"
+    },
+    {
+      "chgkPlace": 4,
+      "name": "Сцилла"
+    },
+    {
+      "chgkPlace": 5,
+      "name": "Странные агенты"
+    },
+    {
+      "chgkPlace": 6,
+      "name": "Просто чилим"
+    },
+    {
+      "chgkPlace": 7,
+      "name": "Какая собака?"
+    },
+    {
+      "chgkPlace": 8,
+      "name": "Нiкагдыгда"
+    },
+    {
+      "chgkPlace": 9,
+      "name": "Szopy"
+    },
+    {
+      "chgkPlace": 10,
+      "name": "Кустохвостый гребнепал"
+    },
+    {
+      "chgkPlace": 11,
+      "name": "Гэта элементарныя рэчы"
+    },
+    {
+      "chgkPlace": 12,
+      "name": "Самая большая лягушка"
+    },
+    {
+      "chgkPlace": 13,
+      "name": "Два слова на букву К"
+    },
+    {
+      "chgkPlace": 14,
+      "name": "KawOwiec"
+    },
+    {
+      "chgkPlace": 15,
+      "name": "Ежу понятно"
+    },
+    {
+      "chgkPlace": 16,
+      "name": "Приемлемо"
+    },
+    {
+      "chgkPlace": 17,
+      "name": "Анаекниярва"
+    },
+    {
+      "chgkPlace": 18,
+      "name": "И пусть никто не уйдёт без мерло!"
+    },
+    {
+      "chgkPlace": 19,
+      "name": "Есть желающие"
+    },
+    {
+      "chgkPlace": 20,
+      "name": "ЖмеR"
+    }
+  ],
+  "groups": [
+    {
+      "id": "A",
+      "label": "Группа A",
+      "venue": "площадка 4",
+      "host": "Алина",
+      "session": "",
+      "teams": [
+        {
+          "num": 1,
+          "name": "Странные агенты",
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 5,
+              "conceded": 0,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 9,
+          "diff": 7,
+          "scored": 11,
+          "place": 1,
+          "bracket": "A1"
+        },
+        {
+          "num": 2,
+          "name": "Самая большая лягушка",
+          "matrix": [
+            {
+              "scored": 0,
+              "conceded": 5,
+              "matchPoints": 0
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 4,
+              "conceded": 0,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 6,
+          "diff": 0,
+          "scored": 6,
+          "place": 2,
+          "bracket": "A2"
+        },
+        {
+          "num": 3,
+          "name": "Два слова на букву К",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 5,
+          "diff": 0,
+          "scored": 6,
+          "place": 3
+        },
+        {
+          "num": 4,
+          "name": "ЖмеR",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 0,
+              "conceded": 4,
+              "matchPoints": 0
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 2,
+          "diff": -7,
+          "scored": 3,
+          "place": 4
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Группа B",
+      "venue": "площадка 3",
+      "host": "Руслан",
+      "session": "",
+      "teams": [
+        {
+          "num": 1,
+          "name": "Просто чилим",
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "scored": 5,
+              "conceded": 0,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 0,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 8,
+          "diff": 8,
+          "scored": 10,
+          "place": 1,
+          "bracket": "B1"
+        },
+        {
+          "num": 2,
+          "name": "Гэта элементарныя рэчы",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "scored": 3,
+              "conceded": 0,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
+          "diff": 3,
+          "scored": 7,
+          "place": 2,
+          "bracket": "B2"
+        },
+        {
+          "num": 3,
+          "name": "KawOwiec",
+          "matrix": [
+            {
+              "scored": 0,
+              "conceded": 5,
+              "matchPoints": 0
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            }
+          ],
+          "tournamentPoints": 4,
+          "diff": -5,
+          "scored": 4,
+          "place": 3
+        },
+        {
+          "num": 4,
+          "name": "Есть желающие",
+          "matrix": [
+            {
+              "scored": 0,
+              "conceded": 3,
+              "matchPoints": 0
+            },
+            {
+              "scored": 0,
+              "conceded": 3,
+              "matchPoints": 0
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 2,
+          "diff": -6,
+          "scored": 2,
+          "place": 4
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Группа C",
+      "venue": "Площадка 2",
+      "host": "Вадим",
+      "session": "",
+      "teams": [
+        {
+          "num": 1,
+          "name": "Какая собака?",
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 2,
+              "conceded": 0,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 9,
+          "diff": 6,
+          "scored": 9,
+          "place": 1,
+          "bracket": "C1"
+        },
+        {
+          "num": 2,
+          "name": "Кустохвостый гребнепал",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 5,
+          "diff": 1,
+          "scored": 8,
+          "place": 3
+        },
+        {
+          "num": 3,
+          "name": "Ежу понятно",
+          "matrix": [
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
+          "diff": 1,
+          "scored": 8,
+          "place": 2,
+          "bracket": "C2"
+        },
+        {
+          "num": 4,
+          "name": "И пусть никто не уйдёт без мерло!",
+          "matrix": [
+            {
+              "scored": 0,
+              "conceded": 2,
+              "matchPoints": 0
+            },
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 2,
+          "diff": -8,
+          "scored": 2,
+          "place": 4
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "label": "Группа D",
+      "venue": "площадка 1",
+      "host": "Павел",
+      "session": "",
+      "teams": [
+        {
+          "num": 1,
+          "name": "Нiкагдыгда",
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 5,
+          "diff": -2,
+          "scored": 6,
+          "place": 3
+        },
+        {
+          "num": 2,
+          "name": "Szopy",
+          "matrix": [
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 9,
+          "diff": 7,
+          "scored": 10,
+          "place": 1,
+          "bracket": "D1"
+        },
+        {
+          "num": 3,
+          "name": "Приемлемо",
+          "matrix": [
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
+          "diff": 0,
+          "scored": 6,
+          "place": 2,
+          "bracket": "D2"
+        },
+        {
+          "num": 4,
+          "name": "Анаекниярва",
+          "matrix": [
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 3,
+          "diff": -5,
+          "scored": 3,
+          "place": 4
+        }
+      ]
+    }
+  ],
+  "playoffs": {
+    "format": "double-elimination",
+    "stages": [
+      {
+        "label": "Топ-16",
+        "bouts": [
+          {
+            "label": "Бой 1, площадка 1, ведущий 1",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Олеги Литвы",
+                "score": 4
+              },
+              {
+                "slot": "",
+                "team": "Szopy",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "label": "Бой 2, площадка 2, ведущий 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Пассажиры LTG",
+                "score": 3
+              },
+              {
+                "slot": "",
+                "team": "Какая собака?",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "label": "Бой 3, площадка 3, ведущий 3",
+            "matches": [
+              {
+                "slot": "",
+                "team": "6:56",
+                "score": 1
+              },
+              {
+                "slot": "",
+                "team": "Просто чилим",
+                "score": 4
+              }
+            ]
+          },
+          {
+            "label": "Бой 4, площадка 4, ведущий 4",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Сцилла",
+                "score": 0
+              },
+              {
+                "slot": "",
+                "team": "Странные агенты",
+                "score": 5
+              }
+            ]
+          },
+          {
+            "label": "Бой 5, площадка 1, ведущий 1",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Приемлемо",
+                "score": 1
+              },
+              {
+                "slot": "",
+                "team": "Кустохвостый гребнепал",
+                "score": 3
+              }
+            ]
+          },
+          {
+            "label": "Бой 6, площадка 2, ведущий 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Ежу понятно",
+                "score": 3
+              },
+              {
+                "slot": "",
+                "team": "Никагдыгда",
+                "score": 2
+              }
+            ]
+          },
+          {
+            "label": "Бой 7, площадка 3, ведущий 3",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Самая большая лягушка",
+                "score": 3
+              },
+              {
+                "slot": "",
+                "team": "KawOwiec",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "label": "Бой 8, площадка 4, ведущий 4",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Гэта элементарные рэчы",
+                "score": 2
+              },
+              {
+                "slot": "",
+                "team": "Два слова на букву К",
+                "score": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Топ-12",
+        "bouts": [
+          {
+            "label": "Бой 9, площадка 1, ведущий 1",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Кустохвостый гребнепал",
+                "score": 2
+              },
+              {
+                "slot": "",
+                "team": "Сцилла",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "label": "Бой 10, площадка 2, ведущий 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Ежу понятно",
+                "score": 1
+              },
+              {
+                "slot": "",
+                "team": "6:56",
+                "score": 3
+              }
+            ]
+          },
+          {
+            "label": "Бой 11, площадка 3, ведущий 3",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Самая большая лягушка",
+                "score": 2
+              },
+              {
+                "slot": "",
+                "team": "Какая собака?",
+                "score": 1
+              }
+            ]
+          },
+          {
+            "label": "Бой 12, площадка 4, ведущий 14",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Гэта элементарные рэчы",
+                "score": 1
+              },
+              {
+                "slot": "",
+                "team": "Szopy",
+                "score": 4
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Топ-8",
+        "bouts": [
+          {
+            "label": "Бой 13, площадка 1, ведущий 1",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Олеги Литвы",
+                "score": 3
+              },
+              {
+                "slot": "",
+                "team": "Странные агенты",
+                "score": 2
+              }
+            ]
+          },
+          {
+            "label": "Бой 14, площадка 2, ведущий 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Пассажиры LTG",
+                "score": 3
+              },
+              {
+                "slot": "",
+                "team": "Просто чилим",
+                "score": 2
+              }
+            ]
+          },
+          {
+            "label": "Бой 15, площадка 3, ведущий 3",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Кустохвостый гребнепал",
+                "score": 1
+              },
+              {
+                "slot": "",
+                "team": "6:56",
+                "score": 3
+              }
+            ]
+          },
+          {
+            "label": "Бой 16, площадка 4, ведущий 4",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Самая большая лягушка",
+                "score": 4
+              },
+              {
+                "slot": "",
+                "team": "Szopy",
+                "score": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Топ-6",
+        "bouts": [
+          {
+            "label": "Бой 17, площадка 1, ведущий 1",
+            "matches": [
+              {
+                "slot": "",
+                "team": "6:56",
+                "score": 2
+              },
+              {
+                "slot": "",
+                "team": "Просто чилим",
+                "score": 3
+              }
+            ]
+          },
+          {
+            "label": "Бой 18, площадка 2, ведущий 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Самая большая лягушка",
+                "score": 2
+              },
+              {
+                "slot": "",
+                "team": "Странные агенты",
+                "score": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Финал верхней сетки",
+        "bouts": [
+          {
+            "label": "Бой 19, площадка 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Олеги Литвы",
+                "score": 3
+              },
+              {
+                "slot": "",
+                "team": "Пассажиры LTG",
+                "score": 0
+              }
+            ]
+          },
+          {
+            "label": "Бой 20, площадка 1",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Просто чилим",
+                "score": 2
+              },
+              {
+                "slot": "",
+                "team": "Самая большая лягушка",
+                "score": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Финал нижней сетки",
+        "bouts": [
+          {
+            "label": "Бой 21, площадка 2 ведущий 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Пассажиры LTG",
+                "score": 3
+              },
+              {
+                "slot": "",
+                "team": "Просто чилим",
+                "score": 0
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "Грандфинал",
+        "bouts": [
+          {
+            "label": "Грандфинал, площадка 2, ведущий 2",
+            "matches": [
+              {
+                "slot": "",
+                "team": "Олеги Литвы",
+                "score": 1,
+                "score2": 0
+              },
+              {
+                "slot": "",
+                "team": "Пассажиры LTG",
+                "score": 3,
+                "score2": 2
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "roundOf16": [],
+    "quarterfinals": [],
+    "semifinals": [],
+    "final": {
+      "label": "Грандфинал",
+      "venue": "площадка 2, ведущий 2",
+      "teams": [
+        {
+          "name": "Пассажиры LTG",
+          "score": 3,
+          "score2": 2,
+          "place": 1
+        },
+        {
+          "name": "Олеги Литвы",
+          "score": 1,
+          "score2": 0,
+          "place": 2
+        }
+      ]
+    },
+    "thirdPlace": {
+      "label": "",
+      "venue": "",
+      "teams": []
+    }
+  }
+}

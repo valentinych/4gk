@@ -5,7 +5,96 @@ import type {
   BrainResults,
 } from "@/lib/turnirushki-brain";
 
-function pairMatches(matches: BrainPlayoffMatch[]): [BrainPlayoffMatch, BrainPlayoffMatch | undefined][] {
+function MatrixCell({ cell }: { cell: import("@/lib/turnirushki-brain").BrainMatrixCell }) {
+  if (cell.self) {
+    return <span className="font-mono text-muted">X</span>;
+  }
+  if (cell.scored == null && cell.conceded == null) {
+    return <span className="text-muted/40">—</span>;
+  }
+  return (
+    <div className="leading-tight">
+      <div className="font-mono tabular-nums">
+        {cell.scored ?? "—"} {cell.conceded ?? "—"}
+      </div>
+      {cell.matchPoints != null && (
+        <div className="text-[10px] font-semibold text-muted tabular-nums">{cell.matchPoints}</div>
+      )}
+    </div>
+  );
+}
+
+function GroupGrid({ group }: { group: import("@/lib/turnirushki-brain").BrainGroup }) {
+  const teams = [...group.teams].sort((a, b) => a.num - b.num);
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[420px] text-xs border-collapse">
+        <thead>
+          <tr className="bg-muted/10 text-[10px] uppercase tracking-wide text-muted">
+            <th className="px-1.5 py-1.5 text-center w-6">№</th>
+            <th className="px-1.5 py-1.5 text-left min-w-[120px]">Команда</th>
+            {[1, 2, 3, 4].map((n) => (
+              <th key={n} className="px-1 py-1.5 text-center w-11">
+                {n}
+              </th>
+            ))}
+            <th className="px-1 py-1.5 text-center w-7" title="Турнирные очки">
+              О
+            </th>
+            <th className="px-1 py-1.5 text-center w-7" title="Разница">
+              Р
+            </th>
+            <th className="px-1 py-1.5 text-center w-7" title="Забито">
+              З
+            </th>
+            <th className="px-1 py-1.5 text-center w-6" title="Место">
+              М
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {teams.map((t) => (
+            <tr key={t.num} className="border-t border-border/50">
+              <td className="px-1.5 py-1.5 text-center font-mono text-muted">{t.num}</td>
+              <td className="px-1.5 py-1.5 font-medium">
+                <span className="inline-flex flex-wrap items-center gap-1">
+                  {t.bracket && (
+                    <span className="font-mono text-[10px] text-accent">{t.bracket}</span>
+                  )}
+                  {t.name}
+                  {t.amateur && (
+                    <span className="rounded bg-emerald-50 px-1 text-[10px] font-bold text-emerald-700 border border-emerald-100">
+                      Л
+                    </span>
+                  )}
+                </span>
+              </td>
+              {t.matrix.map((cell, ci) => (
+                <td key={ci} className="px-1 py-1.5 text-center align-middle">
+                  <MatrixCell cell={cell} />
+                </td>
+              ))}
+              <td className="px-1 py-1.5 text-center font-mono font-bold tabular-nums">
+                {t.tournamentPoints ?? "—"}
+              </td>
+              <td className="px-1 py-1.5 text-center font-mono tabular-nums">
+                {t.diff ?? "—"}
+              </td>
+              <td className="px-1 py-1.5 text-center font-mono tabular-nums">
+                {t.scored ?? "—"}
+              </td>
+              <td className="px-1 py-1.5 text-center font-mono font-bold tabular-nums">
+                {t.place ?? "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function pairMatches(matches: BrainPlayoffMatch[]) {
   const pairs: [BrainPlayoffMatch, BrainPlayoffMatch | undefined][] = [];
   for (let i = 0; i < matches.length; i += 2) {
     pairs.push([matches[i], matches[i + 1]]);
@@ -48,7 +137,8 @@ export default function BrainResultsTable({ data }: { data: BrainResults }) {
     <div className="space-y-8">
       <p className="text-sm text-muted leading-relaxed">
         32 команды с посевом по итогам {data.seedSource}: 8 групп по 4, два захода, в плей-офф
-        проходят первые две. В ячейках групп — матчи 4×4; в плей-офф указан счёт (взятые вопросы).
+        проходят первые две. В ячейке сетки — счёт матча (забито пропущено), под ним турнирные
+        очки за матч. О — сумма очков, Р — разница, З — забито, М — место в группе.
       </p>
 
       {winner && (
@@ -155,52 +245,7 @@ export default function BrainResultsTable({ data }: { data: BrainResults }) {
                   {g.venue} · {g.host} · {g.session}
                 </p>
               </div>
-              <table className="w-full text-xs">
-                <thead className="bg-muted/10 text-[10px] uppercase tracking-wide text-muted">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left w-8">М</th>
-                    <th className="px-2 py-1.5 text-left">Команда</th>
-                    <th className="px-2 py-1.5 text-right" title="Забито">
-                      О
-                    </th>
-                    <th className="px-2 py-1.5 text-right" title="Разница">
-                      Р
-                    </th>
-                    <th className="px-2 py-1.5 text-right" title="Нули">
-                      З
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {g.teams.map((t) => (
-                    <tr key={t.name} className="border-t border-border/50">
-                      <td className="px-2 py-1.5 font-mono text-muted">{t.place}</td>
-                      <td className="px-2 py-1.5 font-medium">
-                        <span className="inline-flex items-center gap-1">
-                          {t.bracket && (
-                            <span className="font-mono text-[10px] text-accent">{t.bracket}</span>
-                          )}
-                          {t.name}
-                          {t.amateur && (
-                            <span className="rounded bg-emerald-50 px-1 text-[10px] font-bold text-emerald-700 border border-emerald-100">
-                              Л
-                            </span>
-                          )}
-                        </span>
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono tabular-nums">
-                        {t.scoredFor ?? "—"}
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono tabular-nums">
-                        {t.diff ?? "—"}
-                      </td>
-                      <td className="px-2 py-1.5 text-right font-mono tabular-nums">
-                        {t.zeros ?? "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <GroupGrid group={g} />
             </div>
           ))}
         </div>

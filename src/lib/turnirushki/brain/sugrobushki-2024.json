@@ -144,23 +144,119 @@
       "session": "1 заход, 15.35",
       "teams": [
         {
+          "num": 3,
+          "name": "5:55",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
+          "diff": 1,
+          "scored": 6,
+          "place": 1,
+          "bracket": "A1"
+        },
+        {
           "num": 2,
           "name": "Прыг-скок",
-          "amateur": false,
-          "scoredFor": 7,
+          "matrix": [
+            {
+              "scored": 4,
+              "conceded": 0,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
           "diff": 5,
-          "zeros": 8,
+          "scored": 8,
           "place": 2,
           "bracket": "A2"
         },
         {
           "num": 1,
           "name": "В эстонском лесу заметили очень вежливых кабанов",
-          "amateur": false,
-          "scoredFor": 6,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 0,
+              "conceded": 4,
+              "matchPoints": 0
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 6,
           "diff": 0,
-          "zeros": 7,
+          "scored": 7,
           "place": 3
+        },
+        {
+          "num": 4,
+          "name": "GOL",
+          "amateur": true,
+          "matrix": [
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 3,
+          "diff": -6,
+          "scored": 3,
+          "place": 4
         }
       ]
     },
@@ -172,23 +268,118 @@
       "session": "1 заход, 15.35",
       "teams": [
         {
+          "num": 3,
+          "name": "Гдыгда",
+          "matrix": [
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": null,
+              "conceded": null,
+              "matchPoints": 0
+            }
+          ],
+          "tournamentPoints": 6,
+          "diff": 3,
+          "scored": 6,
+          "place": 1,
+          "bracket": "B1"
+        },
+        {
           "num": 2,
           "name": "Polish Space Marines",
-          "amateur": false,
-          "scoredFor": 4,
+          "matrix": [
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": null,
+              "conceded": null,
+              "matchPoints": 0
+            }
+          ],
+          "tournamentPoints": 4,
           "diff": 1,
-          "zeros": 5,
+          "scored": 5,
           "place": 2,
           "bracket": "B2"
         },
         {
           "num": 1,
           "name": "Йота Киля",
-          "amateur": false,
-          "scoredFor": 2,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": null,
+              "conceded": null,
+              "matchPoints": 0
+            }
+          ],
+          "tournamentPoints": 2,
           "diff": -4,
-          "zeros": 2,
+          "scored": 2,
           "place": 3
+        },
+        {
+          "num": 4,
+          "name": "Налево от Льежа",
+          "matrix": [
+            {
+              "scored": null,
+              "conceded": null,
+              "matchPoints": 0
+            },
+            {
+              "scored": null,
+              "conceded": null,
+              "matchPoints": 0
+            },
+            {
+              "scored": null,
+              "conceded": null,
+              "matchPoints": 0
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 0,
+          "diff": 0,
+          "scored": 0,
+          "place": 4
         }
       ]
     },
@@ -200,23 +391,118 @@
       "session": "1 заход, 15.35",
       "teams": [
         {
+          "num": 3,
+          "name": "Как-то так",
+          "matrix": [
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "scored": 1,
+              "conceded": 1,
+              "matchPoints": 2
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 8,
+          "diff": 2,
+          "scored": 6,
+          "place": 1,
+          "bracket": "C1"
+        },
+        {
           "num": 2,
           "name": "Szopy",
-          "amateur": false,
-          "scoredFor": 7,
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 1,
+              "matchPoints": 2
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
           "diff": 1,
-          "zeros": 5,
+          "scored": 5,
           "place": 2,
           "bracket": "C2"
         },
         {
           "num": 1,
           "name": "Джим имени Дайан Найад и Неми Мижд",
-          "amateur": false,
-          "scoredFor": 6,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 6,
           "diff": 0,
-          "zeros": 7,
+          "scored": 7,
           "place": 3
+        },
+        {
+          "num": 4,
+          "name": "Бесславные краснолюдки",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 3,
+          "diff": -3,
+          "scored": 4,
+          "place": 4
         }
       ]
     },
@@ -230,20 +516,115 @@
         {
           "num": 2,
           "name": "Газлайтинг ван дер Львумбы",
-          "amateur": false,
-          "scoredFor": 9,
+          "matrix": [
+            {
+              "scored": 4,
+              "conceded": 0,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 9,
           "diff": 8,
-          "zeros": 10,
+          "scored": 10,
           "place": 1,
           "bracket": "D1"
         },
         {
+          "num": 3,
+          "name": "Странные агенты",
+          "matrix": [
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
+          "diff": 2,
+          "scored": 8,
+          "place": 2,
+          "bracket": "D2"
+        },
+        {
+          "num": 4,
+          "name": "Кустохвостый гребнепал",
+          "matrix": [
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 5,
+          "diff": -1,
+          "scored": 6,
+          "place": 3
+        },
+        {
           "num": 1,
           "name": "Тёмный лес",
-          "amateur": false,
-          "scoredFor": 2,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 0,
+              "conceded": 4,
+              "matchPoints": 0
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            }
+          ],
+          "tournamentPoints": 2,
           "diff": -9,
-          "zeros": 2,
+          "scored": 2,
           "place": 4
         }
       ]
@@ -258,20 +639,115 @@
         {
           "num": 2,
           "name": "4:20",
-          "amateur": false,
-          "scoredFor": 7,
+          "matrix": [
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            }
+          ],
+          "tournamentPoints": 7,
           "diff": 2,
-          "zeros": 7,
+          "scored": 7,
           "place": 1,
           "bracket": "E1"
         },
         {
+          "num": 4,
+          "name": "Чай Кава Макава",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 1,
+              "conceded": 1,
+              "matchPoints": 2
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 6,
+          "diff": 0,
+          "scored": 5,
+          "place": 2,
+          "bracket": "E2"
+        },
+        {
+          "num": 3,
+          "name": "Самая большая лягушка",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 1,
+              "matchPoints": 2
+            }
+          ],
+          "tournamentPoints": 6,
+          "diff": -1,
+          "scored": 4,
+          "place": 3
+        },
+        {
           "num": 1,
           "name": "Игрунки",
-          "amateur": false,
-          "scoredFor": 5,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 5,
           "diff": -1,
-          "zeros": 6,
+          "scored": 6,
           "place": 4
         }
       ]
@@ -286,21 +762,117 @@
         {
           "num": 1,
           "name": "Олеги Литвы",
-          "amateur": false,
-          "scoredFor": 9,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 5,
+              "conceded": 0,
+              "matchPoints": 3
+            },
+            {
+              "scored": 4,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 9,
           "diff": 10,
-          "zeros": 12,
+          "scored": 12,
           "place": 1,
           "bracket": "F1"
         },
         {
+          "num": 4,
+          "name": "Карт бланш",
+          "matrix": [
+            {
+              "scored": 1,
+              "conceded": 4,
+              "matchPoints": 1
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 7,
+          "diff": 0,
+          "scored": 6,
+          "place": 2,
+          "bracket": "F2"
+        },
+        {
           "num": 2,
           "name": "Раздолье",
-          "amateur": false,
-          "scoredFor": 4,
+          "matrix": [
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            }
+          ],
+          "tournamentPoints": 4,
           "diff": -4,
-          "zeros": 4,
+          "scored": 4,
           "place": 3
+        },
+        {
+          "num": 3,
+          "name": "Сборная того или иного рода",
+          "amateur": true,
+          "matrix": [
+            {
+              "scored": 0,
+              "conceded": 5,
+              "matchPoints": 0
+            },
+            {
+              "scored": 2,
+              "conceded": 2,
+              "matchPoints": 2
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            }
+          ],
+          "tournamentPoints": 3,
+          "diff": -6,
+          "scored": 3,
+          "place": 4
         }
       ]
     },
@@ -314,22 +886,117 @@
         {
           "num": 1,
           "name": "Теория чистых ожиданий",
-          "amateur": false,
-          "scoredFor": 9,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 9,
           "diff": 4,
-          "zeros": 9,
+          "scored": 9,
           "place": 1,
           "bracket": "G1"
         },
         {
           "num": 2,
           "name": "Два слова на букву К",
-          "amateur": false,
-          "scoredFor": 7,
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 0,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
           "diff": 3,
-          "zeros": 7,
+          "scored": 7,
           "place": 2,
           "bracket": "G2"
+        },
+        {
+          "num": 3,
+          "name": "Не читал, но обсуждаю",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 4,
+              "conceded": 0,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 5,
+          "diff": 2,
+          "scored": 7,
+          "place": 3
+        },
+        {
+          "num": 4,
+          "name": "И пусть никто не уйдёт без мерло!",
+          "amateur": true,
+          "matrix": [
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 0,
+              "conceded": 3,
+              "matchPoints": 0
+            },
+            {
+              "scored": 0,
+              "conceded": 4,
+              "matchPoints": 0
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 1,
+          "diff": -9,
+          "scored": 1,
+          "place": 4
         }
       ]
     },
@@ -343,21 +1010,116 @@
         {
           "num": 1,
           "name": "Пассажиры LTG",
-          "amateur": false,
-          "scoredFor": 7,
+          "matrix": [
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 5,
+              "conceded": 0,
+              "matchPoints": 3
+            },
+            {
+              "scored": 3,
+              "conceded": 2,
+              "matchPoints": 3
+            }
+          ],
+          "tournamentPoints": 7,
           "diff": 4,
-          "zeros": 9,
+          "scored": 9,
           "place": 1,
           "bracket": "H1"
         },
         {
+          "num": 4,
+          "name": "31-й пациент",
+          "matrix": [
+            {
+              "scored": 2,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "scored": 3,
+              "conceded": 0,
+              "matchPoints": 3
+            },
+            {
+              "scored": 2,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            }
+          ],
+          "tournamentPoints": 7,
+          "diff": 3,
+          "scored": 7,
+          "place": 2,
+          "bracket": "H2"
+        },
+        {
           "num": 2,
           "name": "Просто чилим",
-          "amateur": false,
-          "scoredFor": 6,
+          "matrix": [
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 3,
+              "conceded": 1,
+              "matchPoints": 3
+            },
+            {
+              "scored": 0,
+              "conceded": 3,
+              "matchPoints": 0
+            }
+          ],
+          "tournamentPoints": 6,
           "diff": 1,
-          "zeros": 6,
+          "scored": 6,
           "place": 3
+        },
+        {
+          "num": 3,
+          "name": "Джагернаут",
+          "matrix": [
+            {
+              "scored": 0,
+              "conceded": 5,
+              "matchPoints": 0
+            },
+            {
+              "scored": 1,
+              "conceded": 3,
+              "matchPoints": 1
+            },
+            {
+              "self": true
+            },
+            {
+              "scored": 1,
+              "conceded": 2,
+              "matchPoints": 1
+            }
+          ],
+          "tournamentPoints": 2,
+          "diff": -8,
+          "scored": 2,
+          "place": 4
         }
       ]
     }

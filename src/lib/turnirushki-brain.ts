@@ -1,14 +1,25 @@
 import sugrobushki2024 from "./turnirushki/brain/sugrobushki-2024.json";
 
+export interface BrainMatrixCell {
+  self?: boolean;
+  scored?: number | null;
+  conceded?: number | null;
+  matchPoints?: number | null;
+}
+
 export interface BrainGroupTeam {
   num: number;
   name: string;
   amateur?: boolean;
-  scoredFor: number | null;
-  diff: number | null;
-  zeros: number | null;
-  place: number | null;
   bracket?: string;
+  matrix: BrainMatrixCell[];
+  /** Турнирные очки */
+  tournamentPoints: number | null;
+  /** Разница забитых и пропущенных */
+  diff: number | null;
+  /** Забито */
+  scored: number | null;
+  place: number | null;
 }
 
 export interface BrainGroup {

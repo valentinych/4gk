@@ -55,6 +55,55 @@ export interface OchpStatsPageData {
   playerPodium: OchpPlayerPodiumRow[];
 }
 
+export const OCHP_STATS_PAGE_SIZE = 10;
+
+export type OchpStatsTableId = "seasons" | "teams" | "players";
+
+export interface OchpStatsPaginatedResponse<T> {
+  table: OchpStatsTableId;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  rows: T[];
+}
+
+export function paginateOchpStats<T>(
+  items: T[],
+  page: number,
+  pageSize = OCHP_STATS_PAGE_SIZE,
+): Omit<OchpStatsPaginatedResponse<T>, "table"> {
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize) || 1);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  return {
+    page: safePage,
+    pageSize,
+    total,
+    totalPages,
+    rows: items.slice(start, start + pageSize),
+  };
+}
+
+export function paginateOchpStatsTable(
+  data: OchpStatsPageData,
+  table: OchpStatsTableId,
+  page: number,
+  pageSize = OCHP_STATS_PAGE_SIZE,
+):
+  | OchpStatsPaginatedResponse<OchpSeasonStatRow>
+  | OchpStatsPaginatedResponse<OchpTeamPodiumRow>
+  | OchpStatsPaginatedResponse<OchpPlayerPodiumRow> {
+  if (table === "seasons") {
+    return { table, ...paginateOchpStats(data.seasons, page, pageSize) };
+  }
+  if (table === "teams") {
+    return { table, ...paginateOchpStats(data.teamPodium, page, pageSize) };
+  }
+  return { table, ...paginateOchpStats(data.playerPodium, page, pageSize) };
+}
+
 interface RatingPlayer {
   id: number;
   name: string;

@@ -11,8 +11,10 @@ import {
 } from "@/lib/turnirushki";
 import { hasBrainResults } from "@/lib/turnirushki-brain";
 import { hasEkResults } from "@/lib/turnirushki-ek";
+import { hasIsiResults } from "@/lib/turnirushki-isi";
 import { hasQuizResults } from "@/lib/turnirushki-quiz";
 import { hasKsiResults } from "@/lib/turnirushki-ksi";
+import { hasTroikaResults } from "@/lib/turnirushki-troika";
 
 export function TurnirushkiPageClient() {
   const router = useRouter();
@@ -85,6 +87,20 @@ export function TurnirushkiPageClient() {
       emoji: "🔔",
       title: "Результаты Брейн-Ринга",
       href: `/turnirushki/brain-ring${tParam}`,
+    });
+  }
+  if (hasTroikaResults(current.slug)) {
+    tiles.push({
+      emoji: "3️⃣",
+      title: "Тройка",
+      href: `/turnirushki/troika${tParam}`,
+    });
+  }
+  if (hasIsiResults(current.slug)) {
+    tiles.push({
+      emoji: "🎲",
+      title: "ИСИ (Индивидуальная Своя Игра)",
+      href: `/turnirushki/isi${tParam}`,
     });
   }
 

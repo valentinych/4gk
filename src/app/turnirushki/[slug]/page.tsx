@@ -12,11 +12,15 @@ import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import { getBrainResults } from "@/lib/turnirushki-brain";
 import { getEkResults } from "@/lib/turnirushki-ek";
+import { getIsiResults } from "@/lib/turnirushki-isi";
 import { getQuizResults } from "@/lib/turnirushki-quiz";
 import { getKsiAmateurTeamNames, getKsiResults } from "@/lib/turnirushki-ksi";
+import { getTroikaResults } from "@/lib/turnirushki-troika";
 import BrainResultsTable from "./BrainResultsTable";
 import EkResultsTable from "./EkResultsTable";
+import IsiResultsTable from "./IsiResultsTable";
 import KsiResultsTable from "./KsiResultsTable";
+import TroikaResultsTable from "./TroikaResultsTable";
 
 const titles: Record<string, string> = {
   "rating-page": "Страница турнира на сайте рейтинга",
@@ -25,6 +29,8 @@ const titles: Record<string, string> = {
   ek: "ЭК",
   quiz: "Quiz Штурм",
   "brain-ring": "Результаты Брейн-Ринга",
+  troika: "Тройка",
+  isi: "ИСИ (Индивидуальная Своя Игра)",
 };
 
 interface Person {
@@ -311,6 +317,34 @@ export default async function TurnirushkiSubPage({
             );
           }
           return <BrainResultsTable data={brain} />;
+        })()
+      ) : slug === "troika" ? (
+        (() => {
+          const troika = getTroikaResults(current.slug);
+          if (!troika) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по Тройке
+                </p>
+              </div>
+            );
+          }
+          return <TroikaResultsTable data={troika} />;
+        })()
+      ) : slug === "isi" ? (
+        (() => {
+          const isi = getIsiResults(current.slug);
+          if (!isi) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по ИСИ
+                </p>
+              </div>
+            );
+          }
+          return <IsiResultsTable data={isi} />;
         })()
       ) : null}
     </div>

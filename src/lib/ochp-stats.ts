@@ -62,6 +62,7 @@ export interface OchpStaffRow {
   editor: number;
   gameJury: number;
   appealJury: number;
+  total: number;
 }
 
 export interface OchpStatsPageData {
@@ -75,6 +76,12 @@ export interface OchpStatsPageData {
 
 export const OCHP_STATS_PAGE_SIZE = 10;
 export const OCHP_STATS_TOP_N = 30;
+/** Включать в топ всех игроков с этим числом участий (ничья на границе топ-30). */
+export const OCHP_PARTICIPATION_INCLUDE_COUNT = 5;
+/** Включать в топ всех игроков с этой суммой взятых вопросов. */
+export const OCHP_QUESTIONS_INCLUDE_COUNT = 226;
+
+export type OchpStatsSortDir = "asc" | "desc";
 
 export type OchpStatsTableId =
   | "seasons"
@@ -83,6 +90,81 @@ export type OchpStatsTableId =
   | "participations"
   | "questions"
   | "staff";
+
+const OCHP_STATS_SORT_COLUMNS: Record<OchpStatsTableId, readonly string[]> = {
+  seasons: ["teamCount"],
+  teams: ["gold", "silver", "bronze"],
+  players: ["gold", "silver", "bronze"],
+  participations: ["count"],
+  questions: ["count"],
+  staff: ["orgcommittee", "editor", "gameJury", "appealJury", "total"],
+};
+
+const OCHP_STATS_DEFAULT_SORT: Record<OchpStatsTableId, string> = {
+  seasons: "teamCount",
+  teams: "gold",
+  players: "gold",
+  participations: "count",
+  questions: "count",
+  staff: "total",
+};
+
+export function resolveOchpStatsSort(
+  table: OchpStatsTableId,
+  sortBy: string | null | undefined,
+  sortDir: string | null | undefined,
+): { sortBy: string; sortDir: OchpStatsSortDir } {
+  const allowed = OCHP_STATS_SORT_COLUMNS[table];
+  const by =
+    sortBy && allowed.includes(sortBy) ? sortBy : OCHP_STATS_DEFAULT_SORT[table];
+  const dir: OchpStatsSortDir =
+    sortDir === "asc" || sortDir === "desc" ? sortDir : "desc";
+  return { sortBy: by, sortDir: dir };
+}
+
+function sortByName<T extends { name: string }>(
+  a: T,
+  b: T,
+  mul: number,
+): number {
+  return mul * a.name.localeCompare(b.name, "ru");
+}
+
+function sortRows<T extends { name: string }>(
+  rows: T[],
+  sortBy: string,
+  sortDir: OchpStatsSortDir,
+  nameKey: keyof T = "name" as keyof T,
+): T[] {
+  const mul = sortDir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const av = a[sortBy as keyof T];
+    const bv = b[sortBy as keyof T];
+    if (typeof av === "number" && typeof bv === "number") {
+      return mul * (av - bv) || sortByName(a, b, 1);
+    }
+    if (sortBy === nameKey) {
+      return sortByName(a, b, mul);
+    }
+    return 0;
+  });
+}
+
+function sortSeasonRows(
+  rows: OchpSeasonStatRow[],
+  sortBy: string,
+  sortDir: OchpStatsSortDir,
+): OchpSeasonStatRow[] {
+  const mul = sortDir === "asc" ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    if (sortBy === "teamCount") {
+      const av = a.teamCount ?? -1;
+      const bv = b.teamCount ?? -1;
+      return mul * (av - bv) || a.label.localeCompare(b.label, "ru");
+    }
+    return 0;
+  });
+}
 
 export interface OchpStatsPaginatedResponse<T> {
   table: OchpStatsTableId;
@@ -116,31 +198,38 @@ export function paginateOchpStatsTable(
   table: OchpStatsTableId,
   page: number,
   pageSize = OCHP_STATS_PAGE_SIZE,
+  sortBy?: string | null,
+  sortDir?: string | null,
 ):
   | OchpStatsPaginatedResponse<OchpSeasonStatRow>
   | OchpStatsPaginatedResponse<OchpTeamPodiumRow>
   | OchpStatsPaginatedResponse<OchpPlayerPodiumRow>
   | OchpStatsPaginatedResponse<OchpPlayerCountRow>
   | OchpStatsPaginatedResponse<OchpStaffRow> {
+  const sort = resolveOchpStatsSort(table, sortBy, sortDir);
+
   if (table === "seasons") {
-    return { table, ...paginateOchpStats(data.seasons, page, pageSize) };
+    const rows = sortSeasonRows(data.seasons, sort.sortBy, sort.sortDir);
+    return { table, ...paginateOchpStats(rows, page, pageSize) };
   }
   if (table === "teams") {
-    return { table, ...paginateOchpStats(data.teamPodium, page, pageSize) };
+    const rows = sortRows(data.teamPodium, sort.sortBy, sort.sortDir);
+    return { table, ...paginateOchpStats(rows, page, pageSize) };
   }
   if (table === "players") {
-    return { table, ...paginateOchpStats(data.playerPodium, page, pageSize) };
+    const rows = sortRows(data.playerPodium, sort.sortBy, sort.sortDir);
+    return { table, ...paginateOchpStats(rows, page, pageSize) };
   }
   if (table === "participations") {
-    return {
-      table,
-      ...paginateOchpStats(data.topParticipations, page, pageSize),
-    };
+    const rows = sortRows(data.topParticipations, sort.sortBy, sort.sortDir);
+    return { table, ...paginateOchpStats(rows, page, pageSize) };
   }
   if (table === "questions") {
-    return { table, ...paginateOchpStats(data.topQuestions, page, pageSize) };
+    const rows = sortRows(data.topQuestions, sort.sortBy, sort.sortDir);
+    return { table, ...paginateOchpStats(rows, page, pageSize) };
   }
-  return { table, ...paginateOchpStats(data.staff, page, pageSize) };
+  const rows = sortRows(data.staff, sort.sortBy, sort.sortDir);
+  return { table, ...paginateOchpStats(rows, page, pageSize) };
 }
 
 interface RatingPlayer {
@@ -197,6 +286,28 @@ function staffFromTournamentMeta(meta: {
   };
 }
 
+function topNIncludingCount(
+  items: OchpPlayerCountRow[],
+  n: number,
+  includeCount: number,
+): OchpPlayerCountRow[] {
+  const sorted = [...items].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name, "ru"),
+  );
+  const chosen = new Map<number, OchpPlayerCountRow>();
+  for (let i = 0; i < Math.min(n, sorted.length); i++) {
+    chosen.set(sorted[i]!.playerId, sorted[i]!);
+  }
+  for (const item of sorted) {
+    if (item.count === includeCount) {
+      chosen.set(item.playerId, item);
+    }
+  }
+  return [...chosen.values()].sort(
+    (a, b) => b.count - a.count || a.name.localeCompare(b.name, "ru"),
+  );
+}
+
 function aggregatePlayerStats(appearancesBySeason: SeasonPlayerAppearance[][]): {
   topParticipations: OchpPlayerCountRow[];
   topQuestions: OchpPlayerCountRow[];
@@ -220,26 +331,29 @@ function aggregatePlayerStats(appearancesBySeason: SeasonPlayerAppearance[][]): 
     }
   }
 
-  const byName = (a: { name: string }, b: { name: string }) =>
-    a.name.localeCompare(b.name, "ru");
+  const allParticipations = [...map.entries()].map(([playerId, r]) => ({
+    playerId,
+    name: r.name,
+    count: r.participations,
+  }));
 
-  const topParticipations = [...map.entries()]
-    .map(([playerId, r]) => ({
-      playerId,
-      name: r.name,
-      count: r.participations,
-    }))
-    .sort((a, b) => b.count - a.count || byName(a, b))
-    .slice(0, OCHP_STATS_TOP_N);
+  const allQuestions = [...map.entries()].map(([playerId, r]) => ({
+    playerId,
+    name: r.name,
+    count: r.questionsTotal,
+  }));
 
-  const topQuestions = [...map.entries()]
-    .map(([playerId, r]) => ({
-      playerId,
-      name: r.name,
-      count: r.questionsTotal,
-    }))
-    .sort((a, b) => b.count - a.count || byName(a, b))
-    .slice(0, OCHP_STATS_TOP_N);
+  const topParticipations = topNIncludingCount(
+    allParticipations,
+    OCHP_STATS_TOP_N,
+    OCHP_PARTICIPATION_INCLUDE_COUNT,
+  );
+
+  const topQuestions = topNIncludingCount(
+    allQuestions,
+    OCHP_STATS_TOP_N,
+    OCHP_QUESTIONS_INCLUDE_COUNT,
+  );
 
   return { topParticipations, topQuestions };
 }
@@ -286,15 +400,14 @@ function aggregateStaff(staffBySeason: TournamentStaff[]): OchpStaffRow[] {
   }
 
   return [...map.entries()]
-    .map(([playerId, r]) => ({ playerId, ...r }))
+    .map(([playerId, r]) => ({
+      playerId,
+      ...r,
+      total: r.orgcommittee + r.editor + r.gameJury + r.appealJury,
+    }))
     .sort(
       (a, b) =>
-        b.orgcommittee +
-        b.editor +
-        b.gameJury +
-        b.appealJury -
-        (a.orgcommittee + a.editor + a.gameJury + a.appealJury) ||
-        a.name.localeCompare(b.name, "ru"),
+        b.total - a.total || a.name.localeCompare(b.name, "ru"),
     );
 }
 

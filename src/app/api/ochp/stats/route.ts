@@ -45,7 +45,16 @@ export async function GET(request: Request) {
 
   try {
     const data = await getCachedOchpStats();
-    const payload = paginateOchpStatsTable(data, table, page, pageSize);
+    const sortBy = searchParams.get("sortBy");
+    const sortDir = searchParams.get("sortDir");
+    const payload = paginateOchpStatsTable(
+      data,
+      table,
+      page,
+      pageSize,
+      sortBy,
+      sortDir,
+    );
     return NextResponse.json(payload);
   } catch {
     return NextResponse.json({ error: "failed to load stats" }, { status: 500 });

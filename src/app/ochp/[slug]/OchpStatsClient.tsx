@@ -11,9 +11,88 @@ import {
   type OchpSeasonStatRow,
   type OchpStaffRow,
   type OchpStatsPaginatedResponse,
+  type OchpStatsSortDir,
   type OchpStatsTableId,
   type OchpTeamPodiumRow,
 } from "@/lib/ochp-stats";
+
+function SortableTh({
+  label,
+  sortKey,
+  activeSortBy,
+  sortDir,
+  onSort,
+  className = "px-3 py-2.5 text-center font-medium",
+}: {
+  label: React.ReactNode;
+  sortKey: string;
+  activeSortBy: string;
+  sortDir: OchpStatsSortDir;
+  onSort: (key: string) => void;
+  className?: string;
+}) {
+  const active = activeSortBy === sortKey;
+  return (
+    <th className={className}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-0.5 uppercase tracking-wide hover:text-foreground ${
+          active ? "text-foreground" : ""
+        }`}
+      >
+        {label}
+        {active && (
+          <span className="text-[10px] normal-case leading-none">
+            {sortDir === "asc" ? "▲" : "▼"}
+          </span>
+        )}
+      </button>
+    </th>
+  );
+}
+
+function PodiumTableHeader({
+  sortBy,
+  sortDir,
+  onSort,
+}: {
+  sortBy: string;
+  sortDir: OchpStatsSortDir;
+  onSort: (key: string) => void;
+}) {
+  return (
+    <tr className="border-b border-border text-xs text-muted">
+      <th className="px-3 py-2.5 text-left font-medium uppercase tracking-wide">
+        Имя
+      </th>
+      <SortableTh
+        label="🥇"
+        sortKey="gold"
+        activeSortBy={sortBy}
+        sortDir={sortDir}
+        onSort={onSort}
+        className="px-3 py-2.5 text-center font-medium w-12 text-base"
+      />
+      <SortableTh
+        label="🥈"
+        sortKey="silver"
+        activeSortBy={sortBy}
+        sortDir={sortDir}
+        onSort={onSort}
+        className="px-3 py-2.5 text-center font-medium w-12 text-base"
+      />
+      <SortableTh
+        label="🥉"
+        sortKey="bronze"
+        activeSortBy={sortBy}
+        sortDir={sortDir}
+        onSort={onSort}
+        className="px-3 py-2.5 text-center font-medium w-12 text-base"
+      />
+    </tr>
+  );
+}
 
 function MedalCells({
   gold,
@@ -36,34 +115,6 @@ function MedalCells({
         {bronze || <span className="text-muted/40">—</span>}
       </td>
     </>
-  );
-}
-
-function PodiumTableHeader() {
-  return (
-    <tr className="border-b border-border text-xs text-muted">
-      <th className="px-3 py-2.5 text-left font-medium uppercase tracking-wide">
-        Имя
-      </th>
-      <th
-        className="px-3 py-2.5 text-center font-medium w-12 text-base"
-        title="1-е место"
-      >
-        🥇
-      </th>
-      <th
-        className="px-3 py-2.5 text-center font-medium w-12 text-base"
-        title="2-е место"
-      >
-        🥈
-      </th>
-      <th
-        className="px-3 py-2.5 text-center font-medium w-12 text-base"
-        title="3-е место"
-      >
-        🥉
-      </th>
-    </tr>
   );
 }
 
@@ -150,40 +201,54 @@ function TableShell({
   );
 }
 
-function usePaginatedOchpTable<T>(table: OchpStatsTableId) {
+function usePaginatedOchpTable<T>(
+  table: OchpStatsTableId,
+  defaultSortBy: string,
+) {
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState(defaultSortBy);
+  const [sortDir, setSortDir] = useState<OchpStatsSortDir>("desc");
   const [data, setData] = useState<OchpStatsPaginatedResponse<T> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (nextPage: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        table,
-        page: String(nextPage),
-        pageSize: String(OCHP_STATS_PAGE_SIZE),
-      });
-      const res = await fetch(`/api/ochp/stats?${params}`);
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.error || `HTTP ${res.status}`);
+  const load = useCallback(
+    async (
+      nextPage: number,
+      nextSortBy: string,
+      nextSortDir: OchpStatsSortDir,
+    ) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({
+          table,
+          page: String(nextPage),
+          pageSize: String(OCHP_STATS_PAGE_SIZE),
+          sortBy: nextSortBy,
+          sortDir: nextSortDir,
+        });
+        const res = await fetch(`/api/ochp/stats?${params}`);
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          throw new Error(j.error || `HTTP ${res.status}`);
+        }
+        const payload = (await res.json()) as OchpStatsPaginatedResponse<T>;
+        setData(payload);
+        setPage(payload.page);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Ошибка загрузки");
+        setData(null);
+      } finally {
+        setLoading(false);
       }
-      const payload = (await res.json()) as OchpStatsPaginatedResponse<T>;
-      setData(payload);
-      setPage(payload.page);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ошибка загрузки");
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [table]);
+    },
+    [table],
+  );
 
   useEffect(() => {
-    load(page);
-  }, [load, page]);
+    load(page, sortBy, sortDir);
+  }, [load, page, sortBy, sortDir]);
 
   const goToPage = useCallback(
     (nextPage: number) => {
@@ -194,12 +259,25 @@ function usePaginatedOchpTable<T>(table: OchpStatsTableId) {
     [data],
   );
 
-  return { data, loading, error, page, goToPage };
+  const toggleSort = useCallback(
+    (column: string) => {
+      setPage(1);
+      if (sortBy === column) {
+        setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      } else {
+        setSortBy(column);
+        setSortDir("desc");
+      }
+    },
+    [sortBy],
+  );
+
+  return { data, loading, error, page, goToPage, sortBy, sortDir, toggleSort };
 }
 
 function SeasonsTableSection() {
-  const { data, loading, error, goToPage } =
-    usePaginatedOchpTable<OchpSeasonStatRow>("seasons");
+  const { data, loading, error, goToPage, sortBy, sortDir, toggleSort } =
+    usePaginatedOchpTable<OchpSeasonStatRow>("seasons", "teamCount");
   const rows = data?.rows ?? [];
 
   return (
@@ -231,9 +309,14 @@ function SeasonsTableSection() {
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
                 <th className="px-3 py-2.5 text-left font-medium">Сезон</th>
                 <th className="px-3 py-2.5 text-left font-medium">Даты</th>
-                <th className="px-3 py-2.5 text-center font-medium w-14">
-                  Ком.
-                </th>
+                <SortableTh
+                  label="Ком."
+                  sortKey="teamCount"
+                  activeSortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                  className="px-3 py-2.5 text-center font-medium w-14"
+                />
                 <th className="px-3 py-2.5 text-left font-medium">
                   Общий зачёт ЧГК
                 </th>
@@ -329,8 +412,8 @@ function SeasonsTableSection() {
 }
 
 function TeamPodiumSection() {
-  const { data, loading, error, goToPage } =
-    usePaginatedOchpTable<OchpTeamPodiumRow>("teams");
+  const { data, loading, error, goToPage, sortBy, sortDir, toggleSort } =
+    usePaginatedOchpTable<OchpTeamPodiumRow>("teams", "gold");
   const rows = data?.rows ?? [];
 
   return (
@@ -363,7 +446,11 @@ function TeamPodiumSection() {
         <div className="overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="min-w-full text-sm">
             <thead>
-              <PodiumTableHeader />
+              <PodiumTableHeader
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={toggleSort}
+              />
             </thead>
             <tbody className="divide-y divide-border/60">
               {rows.map((row) => (
@@ -395,8 +482,8 @@ function TeamPodiumSection() {
 }
 
 function PlayerPodiumSection() {
-  const { data, loading, error, goToPage } =
-    usePaginatedOchpTable<OchpPlayerPodiumRow>("players");
+  const { data, loading, error, goToPage, sortBy, sortDir, toggleSort } =
+    usePaginatedOchpTable<OchpPlayerPodiumRow>("players", "gold");
   const rows = data?.rows ?? [];
 
   return (
@@ -428,7 +515,11 @@ function PlayerPodiumSection() {
         <div className="overflow-x-auto rounded-xl border border-border bg-surface">
           <table className="min-w-full text-sm">
             <thead>
-              <PodiumTableHeader />
+              <PodiumTableHeader
+                sortBy={sortBy}
+                sortDir={sortDir}
+                onSort={toggleSort}
+              />
             </thead>
             <tbody className="divide-y divide-border/60">
               {rows.map((row) => (
@@ -496,8 +587,8 @@ function PlayerCountTableSection({
   description: string;
   valueLabel: string;
 }) {
-  const { data, loading, error, goToPage } =
-    usePaginatedOchpTable<OchpPlayerCountRow>(table);
+  const { data, loading, error, goToPage, sortBy, sortDir, toggleSort } =
+    usePaginatedOchpTable<OchpPlayerCountRow>(table, "count");
   const rows = data?.rows ?? [];
 
   return (
@@ -528,9 +619,14 @@ function PlayerCountTableSection({
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
                 <th className="px-3 py-2.5 text-left font-medium">Имя</th>
-                <th className="px-3 py-2.5 text-center font-medium w-24">
-                  {valueLabel}
-                </th>
+                <SortableTh
+                  label={valueLabel}
+                  sortKey="count"
+                  activeSortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                  className="px-3 py-2.5 text-center font-medium w-24"
+                />
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -551,8 +647,8 @@ function PlayerCountTableSection({
 }
 
 function StaffTableSection() {
-  const { data, loading, error, goToPage } =
-    usePaginatedOchpTable<OchpStaffRow>("staff");
+  const { data, loading, error, goToPage, sortBy, sortDir, toggleSort } =
+    usePaginatedOchpTable<OchpStaffRow>("staff", "total");
   const rows = data?.rows ?? [];
 
   return (
@@ -586,18 +682,46 @@ function StaffTableSection() {
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
                 <th className="px-3 py-2.5 text-left font-medium">Имя</th>
-                <th className="px-3 py-2.5 text-center font-medium w-20">
-                  Оргком.
-                </th>
-                <th className="px-3 py-2.5 text-center font-medium w-20">
-                  Редакт.
-                </th>
-                <th className="px-3 py-2.5 text-center font-medium w-20">
-                  Игр. жюри
-                </th>
-                <th className="px-3 py-2.5 text-center font-medium w-20">
-                  Апелл. жюри
-                </th>
+                <SortableTh
+                  label="Оргком."
+                  sortKey="orgcommittee"
+                  activeSortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                  className="px-3 py-2.5 text-center font-medium w-20"
+                />
+                <SortableTh
+                  label="Редакт."
+                  sortKey="editor"
+                  activeSortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                  className="px-3 py-2.5 text-center font-medium w-20"
+                />
+                <SortableTh
+                  label="Игр. жюри"
+                  sortKey="gameJury"
+                  activeSortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                  className="px-3 py-2.5 text-center font-medium w-20"
+                />
+                <SortableTh
+                  label="Апелл. жюри"
+                  sortKey="appealJury"
+                  activeSortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                  className="px-3 py-2.5 text-center font-medium w-20"
+                />
+                <SortableTh
+                  label="Σ"
+                  sortKey="total"
+                  activeSortBy={sortBy}
+                  sortDir={sortDir}
+                  onSort={toggleSort}
+                  className="px-3 py-2.5 text-center font-medium w-16"
+                />
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -610,6 +734,7 @@ function StaffTableSection() {
                   <CountCell value={row.editor} />
                   <CountCell value={row.gameJury} />
                   <CountCell value={row.appealJury} />
+                  <CountCell value={row.total} />
                 </tr>
               ))}
             </tbody>
@@ -629,13 +754,13 @@ export default function OchpStatsClient() {
       <PlayerCountTableSection
         table="participations"
         title="Топ-30 по участиям"
-        description="Игроки с наибольшим числом выступлений на ОЧП (по составам команд в рейтинге)."
+        description="Игроки с наибольшим числом выступлений на ОЧП; в список также входят все с 5 участиями."
         valueLabel="Участий"
       />
       <PlayerCountTableSection
         table="questions"
         title="Топ-30 по взятым вопросам"
-        description="Сумма взятых вопросов команды за все участия игрока на ОЧП."
+        description="Сумма взятых вопросов команды за все участия; в список также входят все с 226 вопросами."
         valueLabel="Вопросов"
       />
       <StaffTableSection />

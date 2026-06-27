@@ -11,6 +11,7 @@ import {
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import { getEkResults } from "@/lib/turnirushki-ek";
+import { getQuizResults } from "@/lib/turnirushki-quiz";
 import { getKsiAmateurTeamNames, getKsiResults } from "@/lib/turnirushki-ksi";
 import EkResultsTable from "./EkResultsTable";
 import KsiResultsTable from "./KsiResultsTable";
@@ -20,6 +21,7 @@ const titles: Record<string, string> = {
   "results-chgk": "Результаты Что? Где? Когда?",
   ksi: "КСИ (Командная Своя Игра)",
   ek: "ЭК",
+  quiz: "Quiz Штурм",
 };
 
 interface Person {
@@ -278,6 +280,20 @@ export default async function TurnirushkiSubPage({
             );
           }
           return <EkResultsTable data={ek} />;
+        })()
+      ) : slug === "quiz" ? (
+        (() => {
+          const quiz = getQuizResults(current.slug);
+          if (!quiz) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по Quiz
+                </p>
+              </div>
+            );
+          }
+          return <KsiResultsTable data={quiz} decimalScores />;
         })()
       ) : null}
     </div>

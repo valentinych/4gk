@@ -1,4 +1,5 @@
 import drovushki2023 from "./turnirushki/ksi/drovushki-exportnye-2023.json";
+import sugrobushki2024 from "./turnirushki/ksi/sugrobushki-2024.json";
 
 export interface KsiTeam {
   position: number;
@@ -22,6 +23,7 @@ export interface KsiResults {
 
 const ALL: Record<string, KsiResults> = {
   [drovushki2023.tournamentSlug]: drovushki2023 as KsiResults,
+  [sugrobushki2024.tournamentSlug]: sugrobushki2024 as KsiResults,
 };
 
 export function getKsiResults(tournamentSlug: string): KsiResults | null {

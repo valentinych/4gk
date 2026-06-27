@@ -14,6 +14,13 @@ export const TURNIRUSHKI: Turnirushka[] = [
     dateLabel: "22–23 июля 2023 г.",
     ratingTournamentId: 9159,
   },
+  {
+    slug: "sugrobushki-2024",
+    name: "Сугробушки",
+    year: 2024,
+    dateLabel: "13–14 января 2024 г.",
+    ratingTournamentId: 9933,
+  },
 ];
 
 export function ratingTournamentUrl(id: number): string {

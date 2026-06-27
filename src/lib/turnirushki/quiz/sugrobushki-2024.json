@@ -1,0 +1,1080 @@
+{
+  "tournamentSlug": "sugrobushki-2024",
+  "title": "Quiz Штурм",
+  "questionCount": 8,
+  "source": "https://docs.google.com/spreadsheets/d/1X-PGkR_5J4s6nvJb3-HIuCN2KI2BUM_gab7HBvBvJ8Q/edit?gid=400404368",
+  "teams": [
+    {
+      "position": 1,
+      "number": 3,
+      "name": "5:55",
+      "region": "Варшава",
+      "total": 71.5,
+      "scores": [
+        10,
+        9,
+        9,
+        9,
+        9.5,
+        10,
+        9,
+        6
+      ]
+    },
+    {
+      "position": 2,
+      "number": 42,
+      "name": "Олеги Литвы",
+      "region": "Сборная",
+      "total": 62,
+      "scores": [
+        10,
+        5,
+        10,
+        6,
+        7.5,
+        6.5,
+        8,
+        9
+      ]
+    },
+    {
+      "position": 3,
+      "number": 14,
+      "name": "В гостях у Кафки",
+      "region": "Прага",
+      "total": 60.5,
+      "scores": [
+        10,
+        7,
+        9,
+        6,
+        8,
+        5.5,
+        9,
+        6
+      ]
+    },
+    {
+      "position": 4,
+      "number": 22,
+      "name": "Два слова на букву К",
+      "region": "Мёрфельден-Вальдорф",
+      "total": 59.5,
+      "scores": [
+        10,
+        6,
+        8,
+        5.5,
+        8,
+        7,
+        6,
+        9
+      ]
+    },
+    {
+      "position": 5,
+      "number": 30,
+      "name": "И пусть никто не уйдёт без мерло!",
+      "region": "Сборная",
+      "total": 58.5,
+      "scores": [
+        10,
+        8,
+        9,
+        6,
+        7.5,
+        5,
+        7,
+        6
+      ],
+      "amateur": true
+    },
+    {
+      "position": 6,
+      "number": 11,
+      "name": "Бесславные краснолюдки",
+      "region": "Вроцлав",
+      "total": 57,
+      "scores": [
+        10,
+        7,
+        10,
+        7,
+        6,
+        4,
+        7,
+        6
+      ]
+    },
+    {
+      "position": 7,
+      "number": 33,
+      "name": "Йота Киля",
+      "region": "Дрезден",
+      "total": 55,
+      "scores": [
+        10,
+        7,
+        7,
+        3.5,
+        7.5,
+        5,
+        9,
+        6
+      ]
+    },
+    {
+      "position": 8,
+      "number": 62,
+      "name": "Шутка со смыслом",
+      "region": "Мюнхен",
+      "total": 55,
+      "scores": [
+        10,
+        6,
+        10,
+        5.5,
+        7.5,
+        2,
+        8,
+        6
+      ]
+    },
+    {
+      "position": 9,
+      "number": 43,
+      "name": "Пассажиры LTG",
+      "region": "Вильнюс",
+      "total": 55,
+      "scores": [
+        10,
+        4,
+        9,
+        5.5,
+        7.5,
+        6,
+        7,
+        6
+      ]
+    },
+    {
+      "position": 10,
+      "number": 37,
+      "name": "Кустохвостый гребнепал",
+      "region": "Сборная",
+      "total": 53.5,
+      "scores": [
+        10,
+        5,
+        8,
+        6.5,
+        7,
+        7.5,
+        8,
+        1.5
+      ]
+    },
+    {
+      "position": 11,
+      "number": 25,
+      "name": "Джин Толик",
+      "region": "Вильнюс-Варшава",
+      "total": 52,
+      "scores": [
+        10,
+        9,
+        6,
+        7,
+        7.5,
+        6,
+        5,
+        1.5
+      ]
+    },
+    {
+      "position": 12,
+      "number": 60,
+      "name": "Хы",
+      "region": "Мюнхен",
+      "total": 51.5,
+      "scores": [
+        10,
+        9,
+        6,
+        6.5,
+        7,
+        4,
+        9,
+        0
+      ]
+    },
+    {
+      "position": 13,
+      "number": 52,
+      "name": "Странные агенты",
+      "region": "Берлин",
+      "total": 51,
+      "scores": [
+        10,
+        8,
+        10,
+        5,
+        8,
+        2,
+        8,
+        0
+      ]
+    },
+    {
+      "position": 14,
+      "number": 55,
+      "name": "Теория чистых ожиданий",
+      "region": "Рига",
+      "total": 50.5,
+      "scores": [
+        9,
+        2,
+        9,
+        5,
+        6.5,
+        6,
+        7,
+        6
+      ]
+    },
+    {
+      "position": 15,
+      "number": 46,
+      "name": "Просто чилим",
+      "region": "Вроцлав",
+      "total": 50,
+      "scores": [
+        9,
+        5,
+        6,
+        4,
+        6,
+        7,
+        7,
+        6
+      ]
+    },
+    {
+      "position": 16,
+      "number": 29,
+      "name": "Жёлтая Резиновая Уточка",
+      "region": "Франкфурт-на-Майне",
+      "total": 48.5,
+      "scores": [
+        9,
+        6,
+        6,
+        6,
+        7.5,
+        6,
+        8,
+        0
+      ]
+    },
+    {
+      "position": 17,
+      "number": 44,
+      "name": "Пражские горцы",
+      "region": "Прага",
+      "total": 48,
+      "scores": [
+        8,
+        5,
+        8,
+        5,
+        5.5,
+        6,
+        9,
+        1.5
+      ]
+    },
+    {
+      "position": 18,
+      "number": 45,
+      "name": "Пробковый ноктурламбиум",
+      "region": "Хельсинки",
+      "total": 48,
+      "scores": [
+        9,
+        5,
+        5,
+        7,
+        6.5,
+        5,
+        9,
+        1.5
+      ]
+    },
+    {
+      "position": 19,
+      "number": 58,
+      "name": "Хождение под мухой",
+      "region": "Варшава",
+      "total": 47.5,
+      "scores": [
+        10,
+        7,
+        4,
+        5,
+        6,
+        7,
+        7,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 20,
+      "number": 54,
+      "name": "Твикс Пикс",
+      "region": "Вроцлав",
+      "total": 47.5,
+      "scores": [
+        8,
+        9,
+        7,
+        3.5,
+        5.5,
+        6,
+        7,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 21,
+      "number": 41,
+      "name": "Не читал, но обсуждаю",
+      "region": "Дюссельдорф",
+      "total": 47.5,
+      "scores": [
+        9,
+        4,
+        7,
+        7,
+        6.5,
+        5,
+        9,
+        0
+      ]
+    },
+    {
+      "position": 22,
+      "number": 61,
+      "name": "Чай Кава Макава",
+      "region": "Варшава",
+      "total": 47,
+      "scores": [
+        10,
+        7,
+        6,
+        5,
+        5.5,
+        4,
+        8,
+        1.5
+      ]
+    },
+    {
+      "position": 23,
+      "number": 12,
+      "name": "Билли Миллиган",
+      "region": "Сборная",
+      "total": 47,
+      "scores": [
+        9,
+        8,
+        5,
+        6,
+        5.5,
+        6,
+        6,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 24,
+      "number": 35,
+      "name": "Какая собака?",
+      "region": "Варшава",
+      "total": 47,
+      "scores": [
+        10,
+        5,
+        10,
+        5,
+        6.5,
+        3,
+        6,
+        1.5
+      ]
+    },
+    {
+      "position": 25,
+      "number": 47,
+      "name": "Прыг-скок",
+      "region": "Мюнхен",
+      "total": 46,
+      "scores": [
+        10,
+        4,
+        7,
+        3.5,
+        7.5,
+        2,
+        6,
+        6
+      ]
+    },
+    {
+      "position": 26,
+      "number": 34,
+      "name": "Как-то так",
+      "region": "Прага",
+      "total": 46,
+      "scores": [
+        10,
+        8,
+        3,
+        6.5,
+        7,
+        3,
+        7,
+        1.5
+      ]
+    },
+    {
+      "position": 27,
+      "number": 57,
+      "name": "Улиточка",
+      "region": "Берлин",
+      "total": 45.5,
+      "scores": [
+        10,
+        5,
+        5,
+        4.5,
+        6,
+        6.5,
+        7,
+        1.5
+      ]
+    },
+    {
+      "position": 28,
+      "number": 27,
+      "name": "Есть желающие",
+      "region": "Вроцлав",
+      "total": 45,
+      "scores": [
+        9,
+        5,
+        7,
+        4,
+        7.5,
+        4,
+        7,
+        1.5
+      ]
+    },
+    {
+      "position": 29,
+      "number": 9,
+      "name": "Szopy",
+      "region": "Варшава",
+      "total": 45,
+      "scores": [
+        8,
+        9,
+        6,
+        4,
+        5.5,
+        5,
+        6,
+        1.5
+      ]
+    },
+    {
+      "position": 30,
+      "number": 36,
+      "name": "Карт бланш",
+      "region": "Кишинёв",
+      "total": 45,
+      "scores": [
+        9,
+        7,
+        6,
+        4.5,
+        7,
+        4,
+        6,
+        1.5
+      ]
+    },
+    {
+      "position": 31,
+      "number": 19,
+      "name": "Гэта элементарныя рэчы",
+      "region": "Варшава",
+      "total": 44.5,
+      "scores": [
+        9,
+        6,
+        7,
+        2,
+        6.5,
+        5.5,
+        7,
+        1.5
+      ]
+    },
+    {
+      "position": 32,
+      "number": 16,
+      "name": "Вялiкi Топчы",
+      "region": "Варшава",
+      "total": 44.5,
+      "scores": [
+        9,
+        8,
+        4,
+        6,
+        6,
+        3,
+        7,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 33,
+      "number": 32,
+      "name": "или вася",
+      "region": "Прага",
+      "total": 44.5,
+      "scores": [
+        8,
+        4,
+        10,
+        6,
+        7,
+        3,
+        5,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 34,
+      "number": 4,
+      "name": "69/300",
+      "region": "Варшава",
+      "total": 44,
+      "scores": [
+        8,
+        6,
+        5,
+        6,
+        6.5,
+        5,
+        6,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 35,
+      "number": 51,
+      "name": "Страна победившего сюрреализма",
+      "region": "Сборная",
+      "total": 43.5,
+      "scores": [
+        8,
+        3,
+        5,
+        4,
+        6.5,
+        3,
+        8,
+        6
+      ]
+    },
+    {
+      "position": 36,
+      "number": 59,
+      "name": "Храп бабули",
+      "region": "Сборная",
+      "total": 43.5,
+      "scores": [
+        10,
+        8,
+        1,
+        6,
+        6,
+        5,
+        6,
+        1.5
+      ]
+    },
+    {
+      "position": 37,
+      "number": 13,
+      "name": "Большие люди",
+      "region": "Краков",
+      "total": 43,
+      "scores": [
+        10,
+        6,
+        2,
+        6,
+        6.5,
+        4,
+        7,
+        1.5
+      ]
+    },
+    {
+      "position": 38,
+      "number": 26,
+      "name": "Ежовые ягодицы",
+      "region": "Краков",
+      "total": 41.5,
+      "scores": [
+        7,
+        4,
+        5,
+        6,
+        3.5,
+        4,
+        6,
+        6
+      ],
+      "amateur": true
+    },
+    {
+      "position": 39,
+      "number": 50,
+      "name": "Сборная того или иного рода",
+      "region": "Рига",
+      "total": 41,
+      "scores": [
+        9,
+        4,
+        5,
+        4,
+        5,
+        3,
+        5,
+        6
+      ],
+      "amateur": true
+    },
+    {
+      "position": 40,
+      "number": 23,
+      "name": "Джагернаут",
+      "region": "Тбилиси",
+      "total": 40.5,
+      "scores": [
+        9,
+        5,
+        5,
+        5,
+        6.5,
+        3.5,
+        5,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 41,
+      "number": 38,
+      "name": "Маца i памада",
+      "region": "Варшава",
+      "total": 40,
+      "scores": [
+        6,
+        8,
+        4,
+        2,
+        6,
+        3.5,
+        9,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 42,
+      "number": 6,
+      "name": "Legionnaires sususpense",
+      "region": "Вроцлав",
+      "total": 39.5,
+      "scores": [
+        7,
+        6,
+        5,
+        3,
+        8,
+        4,
+        5,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 43,
+      "number": 8,
+      "name": "Quizofrenics",
+      "region": "Копенгаген",
+      "total": 39.5,
+      "scores": [
+        9,
+        6,
+        8,
+        4.5,
+        7,
+        3,
+        5,
+        -3
+      ]
+    },
+    {
+      "position": 44,
+      "number": 49,
+      "name": "Самая большая лягушка",
+      "region": "Варшава",
+      "total": 38.5,
+      "scores": [
+        10,
+        2,
+        10,
+        3,
+        5.5,
+        4,
+        7,
+        -3
+      ]
+    },
+    {
+      "position": 45,
+      "number": 10,
+      "name": "Беглые по лезвю",
+      "region": "Варшава",
+      "total": 37,
+      "scores": [
+        8,
+        4,
+        6,
+        4,
+        4.5,
+        5,
+        4,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 46,
+      "number": 39,
+      "name": "Море по колено",
+      "region": "Прага",
+      "total": 36.5,
+      "scores": [
+        9,
+        6,
+        2,
+        3,
+        5.5,
+        1.5,
+        8,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 47,
+      "number": 5,
+      "name": "GOL",
+      "region": "Одесса",
+      "total": 35,
+      "scores": [
+        8,
+        2,
+        4,
+        5,
+        6.5,
+        0,
+        8,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 48,
+      "number": 21,
+      "name": "Даша с нами",
+      "region": "Варшава",
+      "total": 34.5,
+      "scores": [
+        8,
+        5,
+        2,
+        6,
+        6,
+        5,
+        7,
+        -4.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 49,
+      "number": 20,
+      "name": "Даша в Зоопарке",
+      "region": "Вена",
+      "total": 32,
+      "scores": [
+        3,
+        6,
+        3,
+        6,
+        6,
+        4,
+        4,
+        0
+      ],
+      "amateur": true
+    },
+    {
+      "position": 50,
+      "number": 53,
+      "name": "Так получилось",
+      "region": "Дюссельдорф",
+      "total": 29.5,
+      "scores": [
+        5,
+        1,
+        4,
+        4,
+        6,
+        2,
+        6,
+        1.5
+      ],
+      "amateur": true
+    },
+    {
+      "position": 51,
+      "number": 1,
+      "name": "31-й пациент",
+      "region": "Рига",
+      "total": 26.5,
+      "scores": [
+        10,
+        2,
+        5,
+        2,
+        5,
+        1,
+        6,
+        -4.5
+      ]
+    },
+    {
+      "position": 52,
+      "number": 2,
+      "name": "4:20",
+      "region": "Краков",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 53,
+      "number": 7,
+      "name": "Polish Space Marines",
+      "region": "Краков",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 54,
+      "number": 15,
+      "name": "В эстонском лесу заметили очень вежливых кабанов",
+      "region": "Сборная",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 55,
+      "number": 17,
+      "name": "Газлайтинг ван дер Львумбы",
+      "region": "Амстердам",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 56,
+      "number": 18,
+      "name": "Гдыгда",
+      "region": "Сборная",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 57,
+      "number": 24,
+      "name": "Джим имени Дайан Найад и Неми Мижд",
+      "region": "Сборная",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 58,
+      "number": 28,
+      "name": "ЖмеR",
+      "region": "Дюссельдорф",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 59,
+      "number": 31,
+      "name": "Игрунки",
+      "region": "Сборная",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 60,
+      "number": 40,
+      "name": "Налево от Льежа",
+      "region": "Кёльн",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 61,
+      "number": 48,
+      "name": "Раздолье",
+      "region": "Дортмунд",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "position": 62,
+      "number": 56,
+      "name": "Тёмный лес",
+      "region": "Мюнхен",
+      "total": 0,
+      "scores": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

@@ -18,30 +18,53 @@ function questionColumnMaxima(teams: KsiTeam[], qCount: number): (number | null)
   });
 }
 
-function ScoreCell({ value, isBest }: { value: number | undefined; isBest: boolean }) {
+function fmtScore(value: number, decimalScores: boolean): string {
+  if (!decimalScores) return String(value);
+  return value.toLocaleString("ru-RU", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  });
+}
+
+function ScoreCell({
+  value,
+  isBest,
+  decimalScores,
+}: {
+  value: number | undefined;
+  isBest: boolean;
+  decimalScores: boolean;
+}) {
   if (value == null) {
     return <span className="text-muted/40">—</span>;
   }
+  const label = fmtScore(value, decimalScores);
   if (isBest) {
     return (
       <span
         className="inline-flex h-7 min-w-[2rem] items-center justify-center rounded-full bg-emerald-900 px-1.5 font-bold text-white tabular-nums shadow-sm"
-        title={`Максимум за вопрос: ${value}`}
+        title={`Максимум за вопрос: ${label}`}
       >
-        {value}
+        {label}
       </span>
     );
   }
   if (value < 0) {
-    return <span className="text-red-600 font-medium">{value}</span>;
+    return <span className="text-red-600 font-medium">{label}</span>;
   }
   if (value === 0) {
     return <span className="text-muted/50">0</span>;
   }
-  return <span>{value}</span>;
+  return <span>{label}</span>;
 }
 
-export default function KsiResultsTable({ data }: { data: KsiResults }) {
+export default function KsiResultsTable({
+  data,
+  decimalScores = false,
+}: {
+  data: KsiResults;
+  decimalScores?: boolean;
+}) {
   const qCount = data.questionCount;
   const colMax = questionColumnMaxima(data.teams, qCount);
   const amateurCount = data.teams.filter((t) => t.amateur).length;
@@ -129,7 +152,7 @@ export default function KsiResultsTable({ data }: { data: KsiResults }) {
                   {t.region}
                 </td>
                 <td className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-sm font-bold tabular-nums bg-surface/50">
-                  {t.total}
+                  {fmtScore(t.total, decimalScores)}
                   {t.tiebreaker && (
                     <div className="mt-0.5 text-[10px] font-normal text-muted/70 normal-nums">
                       {t.tiebreaker}
@@ -145,7 +168,7 @@ export default function KsiResultsTable({ data }: { data: KsiResults }) {
                       key={qi}
                       className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums"
                     >
-                      <ScoreCell value={v} isBest={isBest} />
+                      <ScoreCell value={v} isBest={isBest} decimalScores={decimalScores} />
                     </td>
                   );
                 })}

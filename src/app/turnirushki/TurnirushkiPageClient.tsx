@@ -10,6 +10,7 @@ import {
   turnirushkaLabel,
 } from "@/lib/turnirushki";
 import { hasEkResults } from "@/lib/turnirushki-ek";
+import { hasQuizResults } from "@/lib/turnirushki-quiz";
 import { hasKsiResults } from "@/lib/turnirushki-ksi";
 
 export function TurnirushkiPageClient() {
@@ -69,6 +70,13 @@ export function TurnirushkiPageClient() {
       emoji: "⚡",
       title: "ЭК",
       href: `/turnirushki/ek${tParam}`,
+    });
+  }
+  if (hasQuizResults(current.slug)) {
+    tiles.push({
+      emoji: "🧠",
+      title: "Quiz Штурм",
+      href: `/turnirushki/quiz${tParam}`,
     });
   }
 

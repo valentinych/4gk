@@ -33,12 +33,22 @@ function MedalCells({
 
 function PodiumTableHeader() {
   return (
-    <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
-      <th className="px-3 py-2.5 text-left font-medium w-8">#</th>
-      <th className="px-3 py-2.5 text-left font-medium">Имя</th>
-      <th className="px-3 py-2.5 text-center font-medium w-12">1-е</th>
-      <th className="px-3 py-2.5 text-center font-medium w-12">2-е</th>
-      <th className="px-3 py-2.5 text-center font-medium w-12">3-е</th>
+    <tr className="border-b border-border text-xs text-muted">
+      <th className="px-3 py-2.5 text-left font-medium w-8 uppercase tracking-wide">
+        #
+      </th>
+      <th className="px-3 py-2.5 text-left font-medium uppercase tracking-wide">
+        Имя
+      </th>
+      <th className="px-3 py-2.5 text-center font-medium w-12 text-base" title="1-е место">
+        🥇
+      </th>
+      <th className="px-3 py-2.5 text-center font-medium w-12 text-base" title="2-е место">
+        🥈
+      </th>
+      <th className="px-3 py-2.5 text-center font-medium w-12 text-base" title="3-е место">
+        🥉
+      </th>
     </tr>
   );
 }

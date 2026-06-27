@@ -6,8 +6,10 @@ import { ChevronLeft, ChevronRight, ExternalLink, Loader2 } from "lucide-react";
 import { ochpRatingPublicUrl } from "@/lib/ochp-seasons";
 import {
   OCHP_STATS_PAGE_SIZE,
+  type OchpPlayerCountRow,
   type OchpPlayerPodiumRow,
   type OchpSeasonStatRow,
+  type OchpStaffRow,
   type OchpStatsPaginatedResponse,
   type OchpStatsTableId,
   type OchpTeamPodiumRow,
@@ -456,12 +458,187 @@ function PlayerPodiumSection() {
   );
 }
 
+function PlayerNameLink({
+  playerId,
+  name,
+}: {
+  playerId: number;
+  name: string;
+}) {
+  return (
+    <a
+      href={`https://rating.chgk.info/players/${playerId}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium hover:text-accent hover:underline"
+    >
+      {name}
+    </a>
+  );
+}
+
+function CountCell({ value }: { value: number }) {
+  return (
+    <td className="px-3 py-2.5 text-center font-mono tabular-nums">
+      {value || <span className="text-muted/40">—</span>}
+    </td>
+  );
+}
+
+function PlayerCountTableSection({
+  table,
+  title,
+  description,
+  valueLabel,
+}: {
+  table: "participations" | "questions";
+  title: string;
+  description: string;
+  valueLabel: string;
+}) {
+  const { data, loading, error, goToPage } =
+    usePaginatedOchpTable<OchpPlayerCountRow>(table);
+  const rows = data?.rows ?? [];
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-base font-bold">{title}</h2>
+        <p className="mt-1 text-sm text-muted leading-relaxed">{description}</p>
+      </div>
+
+      <TableShell
+        loading={loading}
+        error={error}
+        empty={rows.length === 0}
+        pagination={
+          data ? (
+            <TablePagination
+              page={data.page}
+              totalPages={data.totalPages}
+              total={data.total}
+              loading={loading}
+              onPageChange={goToPage}
+            />
+          ) : null
+        }
+      >
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+                <th className="px-3 py-2.5 text-left font-medium">Имя</th>
+                <th className="px-3 py-2.5 text-center font-medium w-24">
+                  {valueLabel}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {rows.map((row) => (
+                <tr key={row.playerId} className="hover:bg-surface/50">
+                  <td className="px-3 py-2.5">
+                    <PlayerNameLink playerId={row.playerId} name={row.name} />
+                  </td>
+                  <CountCell value={row.count} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </TableShell>
+    </section>
+  );
+}
+
+function StaffTableSection() {
+  const { data, loading, error, goToPage } =
+    usePaginatedOchpTable<OchpStaffRow>("staff");
+  const rows = data?.rows ?? [];
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-base font-bold">Оргкомитет, редакторы и жюри</h2>
+        <p className="mt-1 text-sm text-muted leading-relaxed">
+          Число ОЧП, на которых человек входил в оргкомитет, редакторскую группу,
+          игровое или апелляционное жюри (по данным сайта рейтинга).
+        </p>
+      </div>
+
+      <TableShell
+        loading={loading}
+        error={error}
+        empty={rows.length === 0}
+        pagination={
+          data ? (
+            <TablePagination
+              page={data.page}
+              totalPages={data.totalPages}
+              total={data.total}
+              loading={loading}
+              onPageChange={goToPage}
+            />
+          ) : null
+        }
+      >
+        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+                <th className="px-3 py-2.5 text-left font-medium">Имя</th>
+                <th className="px-3 py-2.5 text-center font-medium w-20">
+                  Оргком.
+                </th>
+                <th className="px-3 py-2.5 text-center font-medium w-20">
+                  Редакт.
+                </th>
+                <th className="px-3 py-2.5 text-center font-medium w-20">
+                  Игр. жюри
+                </th>
+                <th className="px-3 py-2.5 text-center font-medium w-20">
+                  Апелл. жюри
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {rows.map((row) => (
+                <tr key={row.playerId} className="hover:bg-surface/50">
+                  <td className="px-3 py-2.5">
+                    <PlayerNameLink playerId={row.playerId} name={row.name} />
+                  </td>
+                  <CountCell value={row.orgcommittee} />
+                  <CountCell value={row.editor} />
+                  <CountCell value={row.gameJury} />
+                  <CountCell value={row.appealJury} />
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </TableShell>
+    </section>
+  );
+}
+
 export default function OchpStatsClient() {
   return (
     <div className="space-y-10">
       <SeasonsTableSection />
       <TeamPodiumSection />
       <PlayerPodiumSection />
+      <PlayerCountTableSection
+        table="participations"
+        title="Топ-30 по участиям"
+        description="Игроки с наибольшим числом выступлений на ОЧП (по составам команд в рейтинге)."
+        valueLabel="Участий"
+      />
+      <PlayerCountTableSection
+        table="questions"
+        title="Топ-30 по взятым вопросам"
+        description="Сумма взятых вопросов команды за все участия игрока на ОЧП."
+        valueLabel="Вопросов"
+      />
+      <StaffTableSection />
     </div>
   );
 }

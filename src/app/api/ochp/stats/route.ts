@@ -13,7 +13,14 @@ const getCachedOchpStats = unstable_cache(
   { revalidate: 3600 },
 );
 
-const TABLES: OchpStatsTableId[] = ["seasons", "teams", "players"];
+const TABLES: OchpStatsTableId[] = [
+  "seasons",
+  "teams",
+  "players",
+  "participations",
+  "questions",
+  "staff",
+];
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

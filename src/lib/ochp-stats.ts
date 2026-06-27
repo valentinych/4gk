@@ -49,15 +49,40 @@ export interface OchpPlayerPodiumRow {
   bronze: number;
 }
 
+export interface OchpPlayerCountRow {
+  playerId: number;
+  name: string;
+  count: number;
+}
+
+export interface OchpStaffRow {
+  playerId: number;
+  name: string;
+  orgcommittee: number;
+  editor: number;
+  gameJury: number;
+  appealJury: number;
+}
+
 export interface OchpStatsPageData {
   seasons: OchpSeasonStatRow[];
   teamPodium: OchpTeamPodiumRow[];
   playerPodium: OchpPlayerPodiumRow[];
+  topParticipations: OchpPlayerCountRow[];
+  topQuestions: OchpPlayerCountRow[];
+  staff: OchpStaffRow[];
 }
 
 export const OCHP_STATS_PAGE_SIZE = 10;
+export const OCHP_STATS_TOP_N = 30;
 
-export type OchpStatsTableId = "seasons" | "teams" | "players";
+export type OchpStatsTableId =
+  | "seasons"
+  | "teams"
+  | "players"
+  | "participations"
+  | "questions"
+  | "staff";
 
 export interface OchpStatsPaginatedResponse<T> {
   table: OchpStatsTableId;
@@ -94,20 +119,183 @@ export function paginateOchpStatsTable(
 ):
   | OchpStatsPaginatedResponse<OchpSeasonStatRow>
   | OchpStatsPaginatedResponse<OchpTeamPodiumRow>
-  | OchpStatsPaginatedResponse<OchpPlayerPodiumRow> {
+  | OchpStatsPaginatedResponse<OchpPlayerPodiumRow>
+  | OchpStatsPaginatedResponse<OchpPlayerCountRow>
+  | OchpStatsPaginatedResponse<OchpStaffRow> {
   if (table === "seasons") {
     return { table, ...paginateOchpStats(data.seasons, page, pageSize) };
   }
   if (table === "teams") {
     return { table, ...paginateOchpStats(data.teamPodium, page, pageSize) };
   }
-  return { table, ...paginateOchpStats(data.playerPodium, page, pageSize) };
+  if (table === "players") {
+    return { table, ...paginateOchpStats(data.playerPodium, page, pageSize) };
+  }
+  if (table === "participations") {
+    return {
+      table,
+      ...paginateOchpStats(data.topParticipations, page, pageSize),
+    };
+  }
+  if (table === "questions") {
+    return { table, ...paginateOchpStats(data.topQuestions, page, pageSize) };
+  }
+  return { table, ...paginateOchpStats(data.staff, page, pageSize) };
 }
 
 interface RatingPlayer {
   id: number;
   name: string;
   surname: string;
+}
+
+interface TournamentStaff {
+  orgcommittee: RatingPlayer[];
+  editors: RatingPlayer[];
+  gameJury: RatingPlayer[];
+  appealJury: RatingPlayer[];
+}
+
+interface SeasonPlayerAppearance {
+  playerId: number;
+  name: string;
+  questionsTotal: number;
+}
+
+function playerLabel(p: RatingPlayer): string {
+  return `${p.name} ${p.surname}`.trim();
+}
+
+function playerAppearancesFromResults(
+  teams: RatingResultRow[],
+): SeasonPlayerAppearance[] {
+  const out: SeasonPlayerAppearance[] = [];
+  for (const r of teams) {
+    const score = r.questionsTotal ?? 0;
+    for (const m of r.teamMembers ?? []) {
+      out.push({
+        playerId: m.player.id,
+        name: playerLabel(m.player),
+        questionsTotal: score,
+      });
+    }
+  }
+  return out;
+}
+
+function staffFromTournamentMeta(meta: {
+  orgcommittee?: RatingPlayer[];
+  editors?: RatingPlayer[];
+  gameJury?: RatingPlayer[];
+  appealJury?: RatingPlayer[];
+}): TournamentStaff {
+  return {
+    orgcommittee: meta.orgcommittee ?? [],
+    editors: meta.editors ?? [],
+    gameJury: meta.gameJury ?? [],
+    appealJury: meta.appealJury ?? [],
+  };
+}
+
+function aggregatePlayerStats(appearancesBySeason: SeasonPlayerAppearance[][]): {
+  topParticipations: OchpPlayerCountRow[];
+  topQuestions: OchpPlayerCountRow[];
+} {
+  const map = new Map<
+    number,
+    { name: string; participations: number; questionsTotal: number }
+  >();
+
+  for (const season of appearancesBySeason) {
+    for (const a of season) {
+      let row = map.get(a.playerId);
+      if (!row) {
+        row = { name: a.name, participations: 0, questionsTotal: 0 };
+        map.set(a.playerId, row);
+      } else {
+        row.name = a.name;
+      }
+      row.participations += 1;
+      row.questionsTotal += a.questionsTotal;
+    }
+  }
+
+  const byName = (a: { name: string }, b: { name: string }) =>
+    a.name.localeCompare(b.name, "ru");
+
+  const topParticipations = [...map.entries()]
+    .map(([playerId, r]) => ({
+      playerId,
+      name: r.name,
+      count: r.participations,
+    }))
+    .sort((a, b) => b.count - a.count || byName(a, b))
+    .slice(0, OCHP_STATS_TOP_N);
+
+  const topQuestions = [...map.entries()]
+    .map(([playerId, r]) => ({
+      playerId,
+      name: r.name,
+      count: r.questionsTotal,
+    }))
+    .sort((a, b) => b.count - a.count || byName(a, b))
+    .slice(0, OCHP_STATS_TOP_N);
+
+  return { topParticipations, topQuestions };
+}
+
+function aggregateStaff(staffBySeason: TournamentStaff[]): OchpStaffRow[] {
+  const map = new Map<
+    number,
+    {
+      name: string;
+      orgcommittee: number;
+      editor: number;
+      gameJury: number;
+      appealJury: number;
+    }
+  >();
+
+  const bump = (
+    people: RatingPlayer[],
+    field: "orgcommittee" | "editor" | "gameJury" | "appealJury",
+  ) => {
+    for (const p of people) {
+      let row = map.get(p.id);
+      if (!row) {
+        row = {
+          name: playerLabel(p),
+          orgcommittee: 0,
+          editor: 0,
+          gameJury: 0,
+          appealJury: 0,
+        };
+        map.set(p.id, row);
+      } else {
+        row.name = playerLabel(p);
+      }
+      row[field] += 1;
+    }
+  };
+
+  for (const staff of staffBySeason) {
+    bump(staff.orgcommittee, "orgcommittee");
+    bump(staff.editors, "editor");
+    bump(staff.gameJury, "gameJury");
+    bump(staff.appealJury, "appealJury");
+  }
+
+  return [...map.entries()]
+    .map(([playerId, r]) => ({ playerId, ...r }))
+    .sort(
+      (a, b) =>
+        b.orgcommittee +
+        b.editor +
+        b.gameJury +
+        b.appealJury -
+        (a.orgcommittee + a.editor + a.gameJury + a.appealJury) ||
+        a.name.localeCompare(b.name, "ru"),
+    );
 }
 
 interface RatingResultRow {
@@ -248,7 +436,16 @@ function aggregatePodiums(
 interface SeasonFetchResult {
   stat: OchpSeasonStatRow;
   polishPodium: PolishPodiumEntry[];
+  playerAppearances: SeasonPlayerAppearance[];
+  staff: TournamentStaff;
 }
+
+const EMPTY_STAFF: TournamentStaff = {
+  orgcommittee: [],
+  editors: [],
+  gameJury: [],
+  appealJury: [],
+};
 
 async function fetchSeasonData(seasonStart: number): Promise<SeasonFetchResult> {
   const label = `ОЧП'${ochpYearSuffix(seasonStart)}`;
@@ -267,7 +464,12 @@ async function fetchSeasonData(seasonStart: number): Promise<SeasonFetchResult> 
   };
 
   if (!base.held) {
-    return { stat: base, polishPodium: [] };
+    return {
+      stat: base,
+      polishPodium: [],
+      playerAppearances: [],
+      staff: EMPTY_STAFF,
+    };
   }
 
   const tournamentId = resolveOchpRatingTournamentId(seasonStart);
@@ -275,6 +477,8 @@ async function fetchSeasonData(seasonStart: number): Promise<SeasonFetchResult> 
   base.resultsHref = `/ochp/results-chgk?season=${seasonStart}`;
 
   let polishPodium: PolishPodiumEntry[] = [];
+  let playerAppearances: SeasonPlayerAppearance[] = [];
+  let staff: TournamentStaff = EMPTY_STAFF;
 
   try {
     const [metaRes, resultsRes] = await Promise.all([
@@ -291,6 +495,10 @@ async function fetchSeasonData(seasonStart: number): Promise<SeasonFetchResult> 
       const meta = (await metaRes.json()) as {
         dateStart?: string;
         dateEnd?: string;
+        orgcommittee?: RatingPlayer[];
+        editors?: RatingPlayer[];
+        gameJury?: RatingPlayer[];
+        appealJury?: RatingPlayer[];
       };
       if (meta.dateStart && meta.dateEnd) {
         base.dateLabel = formatOchpTournamentDateRange(
@@ -298,13 +506,17 @@ async function fetchSeasonData(seasonStart: number): Promise<SeasonFetchResult> 
           meta.dateEnd,
         );
       }
+      staff = staffFromTournamentMeta(meta);
     }
 
-    if (!resultsRes.ok) return { stat: base, polishPodium };
+    if (!resultsRes.ok) {
+      return { stat: base, polishPodium, playerAppearances, staff };
+    }
 
     const results = (await resultsRes.json()) as RatingResultRow[];
     const teams = results.filter((r) => r.position !== 9999);
     base.teamCount = teams.length;
+    playerAppearances = playerAppearancesFromResults(teams);
 
     const overall = [...teams].sort((a, b) => a.position - b.position)[0];
     if (overall) {
@@ -330,7 +542,7 @@ async function fetchSeasonData(seasonStart: number): Promise<SeasonFetchResult> 
     // leave partial row
   }
 
-  return { stat: base, polishPodium };
+  return { stat: base, polishPodium, playerAppearances, staff };
 }
 
 export async function fetchOchpStatsPageData(): Promise<OchpStatsPageData> {
@@ -339,10 +551,17 @@ export async function fetchOchpStatsPageData(): Promise<OchpStatsPageData> {
   const { teams, players } = aggregatePodiums(
     fetched.map((f) => f.polishPodium),
   );
+  const { topParticipations, topQuestions } = aggregatePlayerStats(
+    fetched.map((f) => f.playerAppearances),
+  );
+  const staff = aggregateStaff(fetched.map((f) => f.staff));
   return {
     seasons: fetched.map((f) => f.stat),
     teamPodium: teams,
     playerPodium: players,
+    topParticipations,
+    topQuestions,
+    staff,
   };
 }
 

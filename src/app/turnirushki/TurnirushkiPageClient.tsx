@@ -9,6 +9,7 @@ import {
   findTurnirushkaBySlug,
   turnirushkaLabel,
 } from "@/lib/turnirushki";
+import { hasBrainResults } from "@/lib/turnirushki-brain";
 import { hasEkResults } from "@/lib/turnirushki-ek";
 import { hasQuizResults } from "@/lib/turnirushki-quiz";
 import { hasKsiResults } from "@/lib/turnirushki-ksi";
@@ -77,6 +78,13 @@ export function TurnirushkiPageClient() {
       emoji: "🧠",
       title: "Quiz Штурм",
       href: `/turnirushki/quiz${tParam}`,
+    });
+  }
+  if (hasBrainResults(current.slug)) {
+    tiles.push({
+      emoji: "🔔",
+      title: "Результаты Брейн-Ринга",
+      href: `/turnirushki/brain-ring${tParam}`,
     });
   }
 

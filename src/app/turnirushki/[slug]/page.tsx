@@ -10,9 +10,11 @@ import {
 } from "@/lib/turnirushki";
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
+import { getBrainResults } from "@/lib/turnirushki-brain";
 import { getEkResults } from "@/lib/turnirushki-ek";
 import { getQuizResults } from "@/lib/turnirushki-quiz";
 import { getKsiAmateurTeamNames, getKsiResults } from "@/lib/turnirushki-ksi";
+import BrainResultsTable from "./BrainResultsTable";
 import EkResultsTable from "./EkResultsTable";
 import KsiResultsTable from "./KsiResultsTable";
 
@@ -22,6 +24,7 @@ const titles: Record<string, string> = {
   ksi: "КСИ (Командная Своя Игра)",
   ek: "ЭК",
   quiz: "Quiz Штурм",
+  "brain-ring": "Результаты Брейн-Ринга",
 };
 
 interface Person {
@@ -294,6 +297,20 @@ export default async function TurnirushkiSubPage({
             );
           }
           return <KsiResultsTable data={quiz} decimalScores />;
+        })()
+      ) : slug === "brain-ring" ? (
+        (() => {
+          const brain = getBrainResults(current.slug);
+          if (!brain) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по Брейн-Рингу
+                </p>
+              </div>
+            );
+          }
+          return <BrainResultsTable data={brain} />;
         })()
       ) : null}
     </div>

@@ -1,0 +1,580 @@
+{
+  "tournamentSlug": "sugrobushki-2024",
+  "title": "Брейн-ринг",
+  "seedSource": "ЧГК",
+  "seeds": [
+    {
+      "chgkPlace": 1,
+      "name": "В эстонском лесу заметили очень вежливых кабанов"
+    },
+    {
+      "chgkPlace": 2,
+      "name": "Игрунки"
+    },
+    {
+      "chgkPlace": 3,
+      "name": "Олеги Литвы"
+    },
+    {
+      "chgkPlace": 4,
+      "name": "Йота Киля"
+    },
+    {
+      "chgkPlace": 5,
+      "name": "Джим имени Дайан Найад и Неми Мижд"
+    },
+    {
+      "chgkPlace": 6,
+      "name": "Теория чистых ожиданий"
+    },
+    {
+      "chgkPlace": 7,
+      "name": "Пассажиры LTG"
+    },
+    {
+      "chgkPlace": 8,
+      "name": "Тёмный лес"
+    },
+    {
+      "chgkPlace": 9,
+      "name": "Газлайтинг ван дер Львумбы"
+    },
+    {
+      "chgkPlace": 10,
+      "name": "Просто чилим"
+    },
+    {
+      "chgkPlace": 11,
+      "name": "Два слова на букву К"
+    },
+    {
+      "chgkPlace": 12,
+      "name": "Szopy"
+    },
+    {
+      "chgkPlace": 13,
+      "name": "Polish Space Marines"
+    },
+    {
+      "chgkPlace": 14,
+      "name": "Раздолье"
+    },
+    {
+      "chgkPlace": 15,
+      "name": "4:20"
+    },
+    {
+      "chgkPlace": 16,
+      "name": "Прыг-скок"
+    },
+    {
+      "chgkPlace": 17,
+      "name": "5:55"
+    },
+    {
+      "chgkPlace": 18,
+      "name": "Самая большая лягушка"
+    },
+    {
+      "chgkPlace": 19,
+      "name": "Сборная того или иного рода",
+      "amateur": true
+    },
+    {
+      "chgkPlace": 20,
+      "name": "Гдыгда"
+    },
+    {
+      "chgkPlace": 21,
+      "name": "Как-то так"
+    },
+    {
+      "chgkPlace": 22,
+      "name": "Не читал, но обсуждаю"
+    },
+    {
+      "chgkPlace": 23,
+      "name": "Странные агенты"
+    },
+    {
+      "chgkPlace": 24,
+      "name": "Кустохвостый гребнепал"
+    },
+    {
+      "chgkPlace": 25,
+      "name": "Джагернаут"
+    },
+    {
+      "chgkPlace": 26,
+      "name": "31-й пациент"
+    },
+    {
+      "chgkPlace": 27,
+      "name": "И пусть никто не уйдёт без мерло!",
+      "amateur": true
+    },
+    {
+      "chgkPlace": 28,
+      "name": "Бесславные краснолюдки"
+    },
+    {
+      "chgkPlace": 29,
+      "name": "Налево от Льежа"
+    },
+    {
+      "chgkPlace": 30,
+      "name": "Карт бланш"
+    },
+    {
+      "chgkPlace": 31,
+      "name": "Чай Кава Макава"
+    },
+    {
+      "chgkPlace": 32,
+      "name": "GOL",
+      "amateur": true
+    }
+  ],
+  "groups": [
+    {
+      "id": "A",
+      "label": "Группа A",
+      "venue": "главный зал",
+      "host": "Павел",
+      "session": "1 заход, 15.35",
+      "teams": [
+        {
+          "num": 2,
+          "name": "Прыг-скок",
+          "amateur": false,
+          "scoredFor": 7,
+          "diff": 5,
+          "zeros": 8,
+          "place": 2,
+          "bracket": "A2"
+        },
+        {
+          "num": 1,
+          "name": "В эстонском лесу заметили очень вежливых кабанов",
+          "amateur": false,
+          "scoredFor": 6,
+          "diff": 0,
+          "zeros": 7,
+          "place": 3
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Группа B",
+      "venue": "зал 6",
+      "host": "Руслан",
+      "session": "1 заход, 15.35",
+      "teams": [
+        {
+          "num": 2,
+          "name": "Polish Space Marines",
+          "amateur": false,
+          "scoredFor": 4,
+          "diff": 1,
+          "zeros": 5,
+          "place": 2,
+          "bracket": "B2"
+        },
+        {
+          "num": 1,
+          "name": "Йота Киля",
+          "amateur": false,
+          "scoredFor": 2,
+          "diff": -4,
+          "zeros": 2,
+          "place": 3
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "label": "Группа C",
+      "venue": "зал 5",
+      "host": "Алина",
+      "session": "1 заход, 15.35",
+      "teams": [
+        {
+          "num": 2,
+          "name": "Szopy",
+          "amateur": false,
+          "scoredFor": 7,
+          "diff": 1,
+          "zeros": 5,
+          "place": 2,
+          "bracket": "C2"
+        },
+        {
+          "num": 1,
+          "name": "Джим имени Дайан Найад и Неми Мижд",
+          "amateur": false,
+          "scoredFor": 6,
+          "diff": 0,
+          "zeros": 7,
+          "place": 3
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "label": "Группа D",
+      "venue": "зал 4",
+      "host": "Вадим",
+      "session": "1 заход, 15.35",
+      "teams": [
+        {
+          "num": 2,
+          "name": "Газлайтинг ван дер Львумбы",
+          "amateur": false,
+          "scoredFor": 9,
+          "diff": 8,
+          "zeros": 10,
+          "place": 1,
+          "bracket": "D1"
+        },
+        {
+          "num": 1,
+          "name": "Тёмный лес",
+          "amateur": false,
+          "scoredFor": 2,
+          "diff": -9,
+          "zeros": 2,
+          "place": 4
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "label": "Группа E",
+      "venue": "главный зал",
+      "host": "Павел",
+      "session": "2 заход, 16.50",
+      "teams": [
+        {
+          "num": 2,
+          "name": "4:20",
+          "amateur": false,
+          "scoredFor": 7,
+          "diff": 2,
+          "zeros": 7,
+          "place": 1,
+          "bracket": "E1"
+        },
+        {
+          "num": 1,
+          "name": "Игрунки",
+          "amateur": false,
+          "scoredFor": 5,
+          "diff": -1,
+          "zeros": 6,
+          "place": 4
+        }
+      ]
+    },
+    {
+      "id": "F",
+      "label": "Группа F",
+      "venue": "зал 6",
+      "host": "Руслан",
+      "session": "2 заход, 16.50",
+      "teams": [
+        {
+          "num": 1,
+          "name": "Олеги Литвы",
+          "amateur": false,
+          "scoredFor": 9,
+          "diff": 10,
+          "zeros": 12,
+          "place": 1,
+          "bracket": "F1"
+        },
+        {
+          "num": 2,
+          "name": "Раздолье",
+          "amateur": false,
+          "scoredFor": 4,
+          "diff": -4,
+          "zeros": 4,
+          "place": 3
+        }
+      ]
+    },
+    {
+      "id": "G",
+      "label": "Группа G",
+      "venue": "зал 5,",
+      "host": "Алина",
+      "session": "2 заход, 16.50",
+      "teams": [
+        {
+          "num": 1,
+          "name": "Теория чистых ожиданий",
+          "amateur": false,
+          "scoredFor": 9,
+          "diff": 4,
+          "zeros": 9,
+          "place": 1,
+          "bracket": "G1"
+        },
+        {
+          "num": 2,
+          "name": "Два слова на букву К",
+          "amateur": false,
+          "scoredFor": 7,
+          "diff": 3,
+          "zeros": 7,
+          "place": 2,
+          "bracket": "G2"
+        }
+      ]
+    },
+    {
+      "id": "H",
+      "label": "Группа H",
+      "venue": "зал 4",
+      "host": "Вадим",
+      "session": "2 заход, 16.50",
+      "teams": [
+        {
+          "num": 1,
+          "name": "Пассажиры LTG",
+          "amateur": false,
+          "scoredFor": 7,
+          "diff": 4,
+          "zeros": 9,
+          "place": 1,
+          "bracket": "H1"
+        },
+        {
+          "num": 2,
+          "name": "Просто чилим",
+          "amateur": false,
+          "scoredFor": 6,
+          "diff": 1,
+          "zeros": 6,
+          "place": 3
+        }
+      ]
+    }
+  ],
+  "playoffs": {
+    "roundOf16": [
+      {
+        "label": "Бой I - главный зал  Павел",
+        "matches": [
+          {
+            "slot": "A1",
+            "team": "5:55",
+            "score": 2
+          },
+          {
+            "slot": "B1",
+            "team": "Гдыгда",
+            "score": 1
+          },
+          {
+            "slot": "D2",
+            "team": "Странные агенты",
+            "score": 4
+          },
+          {
+            "slot": "C2",
+            "team": "Szopy",
+            "score": 3
+          }
+        ]
+      },
+      {
+        "label": "Бой J - зал 5 Алина",
+        "matches": [
+          {
+            "slot": "C1",
+            "team": "Как-то так",
+            "score": 2
+          },
+          {
+            "slot": "D1",
+            "team": "Газлайтинг ван дер Львумбы",
+            "score": 2
+          },
+          {
+            "slot": "B2",
+            "team": "Polish Space Marines",
+            "score": 3
+          },
+          {
+            "slot": "A2",
+            "team": "Прыг-скок",
+            "score": 4
+          }
+        ]
+      },
+      {
+        "label": "Бой M - главный зал Павел",
+        "matches": [
+          {
+            "slot": "E1",
+            "team": "4:20",
+            "score": 4
+          },
+          {
+            "slot": "F1",
+            "team": "Олеги Литвы",
+            "score": 4
+          },
+          {
+            "slot": "H2",
+            "team": "31-ый пациент",
+            "score": 1
+          },
+          {
+            "slot": "G2",
+            "team": "Два слова на букву К",
+            "score": 1
+          }
+        ]
+      },
+      {
+        "label": "Бой N - зал 5 Алина",
+        "matches": [
+          {
+            "slot": "G1",
+            "team": "Теория чистых ожиданий",
+            "score": 4
+          },
+          {
+            "slot": "H1",
+            "team": "Пассажиры LTG",
+            "score": 4
+          },
+          {
+            "slot": "F2",
+            "team": "Карт бланш",
+            "score": 1
+          },
+          {
+            "slot": "E2",
+            "team": "Чай Кава Макава",
+            "score": 3
+          }
+        ]
+      }
+    ],
+    "quarterfinals": [
+      {
+        "label": "Бой Q - главный зал Павел",
+        "matches": [
+          {
+            "slot": "I1",
+            "team": "Странные агенты",
+            "score": 1
+          },
+          {
+            "slot": "O1",
+            "team": "Олеги Литвы",
+            "score": 1
+          },
+          {
+            "slot": "L1",
+            "team": "Прыг-скок",
+            "score": 2
+          },
+          {
+            "slot": "N1",
+            "team": "Теория чистых ожиданий",
+            "score": 2
+          }
+        ]
+      },
+      {
+        "label": "Бой R  - зал 5 Алина",
+        "matches": [
+          {
+            "slot": "J1",
+            "team": "Polish Space Marines",
+            "score": 2
+          },
+          {
+            "slot": "M1",
+            "team": "4:20",
+            "score": 1
+          },
+          {
+            "slot": "K1",
+            "team": "Szopy",
+            "score": 1
+          },
+          {
+            "slot": "P1",
+            "team": "Пассажиры LTG",
+            "score": 3
+          }
+        ]
+      }
+    ],
+    "semifinals": [
+      {
+        "label": "Полуфинал 1 - главный зал Павел",
+        "matches": [
+          {
+            "slot": "Q1",
+            "team": "Прыг-скок",
+            "score": 1
+          },
+          {
+            "slot": "S1",
+            "team": "Теория чистых ожиданий",
+            "score": 1
+          },
+          {
+            "slot": "R1",
+            "team": "Polish Space Marines",
+            "score": 2
+          },
+          {
+            "slot": "T1",
+            "team": "Пассажиры LTG",
+            "score": 3
+          }
+        ]
+      }
+    ],
+    "final": {
+      "label": "Финал",
+      "venue": "Главный зал, Павел",
+      "teams": [
+        {
+          "name": "Пассажиры LTG",
+          "score": 3,
+          "place": 1
+        },
+        {
+          "name": "Polish Space Marines",
+          "score": 2,
+          "place": 2
+        }
+      ]
+    },
+    "thirdPlace": {
+      "label": "Бой за 3-е место",
+      "venue": "зал 4, Вадим",
+      "teams": [
+        {
+          "name": "Прыг-скок",
+          "score": 3,
+          "place": 1
+        },
+        {
+          "name": "Теория чистых ожиданий",
+          "score": 1,
+          "place": 2
+        }
+      ]
+    }
+  }
+}

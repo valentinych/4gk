@@ -131,12 +131,90 @@ function PlayoffBout({ bout }: { bout: BrainPlayoffBout }) {
 }
 
 export default function BrainResultsTable({ data }: { data: BrainResults }) {
+  const isBracketPath = data.playoffs.format === "bracket-path";
   const isDoubleElim = data.playoffs.format === "double-elimination";
   const winner = data.playoffs.final.teams.find((t) => t.place === 1);
   const hasPlayoffs = data.playoffs.final.teams.length > 0;
   const groupCount = data.groups.length;
   const teamCount = data.seeds.length;
   const deStages = isDoubleElim ? [...(data.playoffs.stages ?? [])].reverse() : [];
+
+  if (isBracketPath) {
+    return (
+      <div className="space-y-8">
+        <p className="text-sm text-muted leading-relaxed">
+          {teamCount} команд с посевом по итогам {data.seedSource}. Турнир на выбывание:
+          путь каждой команды по этапам плей-офф.
+        </p>
+        {winner && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-5">
+            <div className="flex items-center gap-2 text-amber-800">
+              <Trophy className="h-5 w-5 shrink-0" />
+              <span className="text-sm font-semibold uppercase tracking-wide">Победитель</span>
+            </div>
+            <p className="mt-2 text-xl font-bold">{winner.name}</p>
+            {winner.score != null && winner.score2 != null && (
+              <p className="mt-1 text-sm text-muted">
+                {winner.score}:{winner.score2} в финале (до 3 побед)
+              </p>
+            )}
+          </div>
+        )}
+        {hasPlayoffs && (
+          <section>
+            <h2 className="mb-3 text-base font-bold">Финал</h2>
+            <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs uppercase tracking-wide text-muted">
+                    <th className="px-3 py-2 text-center w-10">М</th>
+                    <th className="px-3 py-2 text-left">Команда</th>
+                    <th className="px-3 py-2 text-right w-16">Счёт</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {data.playoffs.final.teams.map((t) => (
+                    <tr key={t.name}>
+                      <td className="px-3 py-2 text-center font-mono text-muted">{t.place}</td>
+                      <td className="px-3 py-2 font-medium">{t.name}</td>
+                      <td className="px-3 py-2 text-right font-mono font-bold tabular-nums">
+                        {t.score2 != null ? `${t.score}:${t.score2}` : (t.score ?? "—")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+        {(data.playoffs.bracket?.length ?? 0) > 0 && (
+          <section>
+            <h2 className="mb-3 text-base font-bold">Путь команд</h2>
+            <div className="space-y-3">
+              {data.playoffs.bracket!.map((entry) => (
+                <div
+                  key={entry.name}
+                  className="rounded-xl border border-border bg-surface px-4 py-3"
+                >
+                  <p className="font-semibold mb-2">{entry.name}</p>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    {entry.path.map((step, i) => (
+                      <span
+                        key={i}
+                        className="rounded-md bg-muted/20 px-2 py-1 font-mono text-xs"
+                      >
+                        {step.opponent} → {step.result}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

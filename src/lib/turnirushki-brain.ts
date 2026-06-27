@@ -1,5 +1,6 @@
 import sugrobushki2024 from "./turnirushki/brain/sugrobushki-2024.json";
 import vesnushki2024 from "./turnirushki/brain/vesnushki-2024.json";
+import vesnushki2025 from "./turnirushki/brain/vesnushki-2025.json";
 
 export interface BrainMatrixCell {
   self?: boolean;
@@ -55,6 +56,16 @@ export interface BrainPlayoffStage {
   bouts: BrainPlayoffBout[];
 }
 
+export interface BrainBracketPathEntry {
+  opponent: string;
+  result: string;
+}
+
+export interface BrainBracketPath {
+  name: string;
+  path: BrainBracketPathEntry[];
+}
+
 export interface BrainResults {
   tournamentSlug: string;
   title: string;
@@ -62,7 +73,8 @@ export interface BrainResults {
   seeds: { chgkPlace: number; name: string; amateur?: boolean }[];
   groups: BrainGroup[];
   playoffs: {
-    format?: "standard" | "double-elimination";
+    format?: "standard" | "double-elimination" | "bracket-path";
+    bracket?: BrainBracketPath[];
     stages?: BrainPlayoffStage[];
     roundOf16: BrainPlayoffBout[];
     quarterfinals: BrainPlayoffBout[];
@@ -75,6 +87,7 @@ export interface BrainResults {
 const ALL: Record<string, BrainResults> = {
   [sugrobushki2024.tournamentSlug]: sugrobushki2024 as BrainResults,
   [vesnushki2024.tournamentSlug]: vesnushki2024 as BrainResults,
+  [vesnushki2025.tournamentSlug]: vesnushki2025 as BrainResults,
 };
 
 export function getBrainResults(tournamentSlug: string): BrainResults | null {

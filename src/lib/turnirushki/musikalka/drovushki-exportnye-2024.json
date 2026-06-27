@@ -1,0 +1,704 @@
+{
+  "tournamentSlug": "drovushki-exportnye-2024",
+  "title": "Музыкалка",
+  "blockLabels": [
+    "Блок 1",
+    "Блок 2",
+    "Блок 3"
+  ],
+  "teams": [
+    {
+      "name": "С нами Б-г",
+      "blocks": [
+        16,
+        16,
+        18
+      ],
+      "total": 50,
+      "chgkPlace": 46,
+      "place": 1
+    },
+    {
+      "name": "Polish Space Marines",
+      "blocks": [
+        20,
+        13,
+        16
+      ],
+      "total": 49,
+      "chgkPlace": 8,
+      "place": 2
+    },
+    {
+      "name": "Чайный сбор",
+      "blocks": [
+        16,
+        14,
+        18
+      ],
+      "total": 48,
+      "chgkPlace": 58,
+      "place": 3
+    },
+    {
+      "name": "Хор овец",
+      "blocks": [
+        18,
+        10,
+        17
+      ],
+      "total": 45,
+      "chgkPlace": 54,
+      "place": 4
+    },
+    {
+      "name": "69/300",
+      "blocks": [
+        15,
+        12,
+        17
+      ],
+      "total": 44,
+      "chgkPlace": 4,
+      "place": 5
+    },
+    {
+      "name": "Хы",
+      "blocks": [
+        16,
+        13,
+        15
+      ],
+      "total": 44,
+      "chgkPlace": 56,
+      "place": 6
+    },
+    {
+      "name": "6:56",
+      "blocks": [
+        14,
+        14,
+        15
+      ],
+      "total": 43,
+      "chgkPlace": 3,
+      "place": 7
+    },
+    {
+      "name": "Шутка сас",
+      "blocks": [
+        16,
+        11,
+        16
+      ],
+      "total": 43,
+      "chgkPlace": 61,
+      "place": 8
+    },
+    {
+      "name": "Кустохвостый гребнепал",
+      "blocks": [
+        15,
+        14,
+        14
+      ],
+      "total": 43,
+      "chgkPlace": 29,
+      "place": 9
+    },
+    {
+      "name": "WarSowiak",
+      "blocks": [
+        16,
+        11,
+        15
+      ],
+      "total": 42,
+      "chgkPlace": 10,
+      "place": 10
+    },
+    {
+      "name": "В гостях у Кафки",
+      "blocks": [
+        13,
+        13,
+        16
+      ],
+      "total": 42,
+      "chgkPlace": 12,
+      "place": 11
+    },
+    {
+      "name": "Залитые кабины",
+      "blocks": [
+        15,
+        13,
+        14
+      ],
+      "total": 42,
+      "chgkPlace": 21,
+      "place": 12
+    },
+    {
+      "name": "Пассажиры LTG",
+      "blocks": [
+        16,
+        11,
+        15
+      ],
+      "total": 42,
+      "chgkPlace": 38,
+      "place": 13
+    },
+    {
+      "name": "И пусть никто не уйдёт без мерло!",
+      "blocks": [
+        16,
+        11,
+        15
+      ],
+      "total": 42,
+      "chgkPlace": 22,
+      "place": 14
+    },
+    {
+      "name": "Гэта элементарныя рэчы",
+      "blocks": [
+        12,
+        13,
+        16
+      ],
+      "total": 41,
+      "chgkPlace": 15,
+      "place": 15
+    },
+    {
+      "name": "На острове Рухну прошел дождь из клопов",
+      "blocks": [
+        15,
+        10,
+        16
+      ],
+      "total": 41,
+      "chgkPlace": 32,
+      "place": 16
+    },
+    {
+      "name": "Странные агенты",
+      "blocks": [
+        12,
+        13,
+        15
+      ],
+      "total": 40,
+      "chgkPlace": 49,
+      "place": 17
+    },
+    {
+      "name": "Человек-снежинка",
+      "blocks": [
+        15,
+        10,
+        15
+      ],
+      "total": 40,
+      "chgkPlace": 59,
+      "place": 18
+    },
+    {
+      "name": "Большие люди",
+      "blocks": [
+        15,
+        11,
+        13
+      ],
+      "total": 39,
+      "chgkPlace": 11,
+      "place": 19
+    },
+    {
+      "name": "Как-то так",
+      "blocks": [
+        12,
+        12,
+        15
+      ],
+      "total": 39,
+      "chgkPlace": 24,
+      "place": 20
+    },
+    {
+      "name": "Самая большая лягушка",
+      "blocks": [
+        14,
+        11,
+        14
+      ],
+      "total": 39,
+      "chgkPlace": 47,
+      "place": 21
+    },
+    {
+      "name": "Храпбабули",
+      "blocks": [
+        15,
+        10,
+        14
+      ],
+      "total": 39,
+      "chgkPlace": 55,
+      "place": 22
+    },
+    {
+      "name": "Чем ниже горы, тем выше Кьеркегоры",
+      "blocks": [
+        14,
+        12,
+        13
+      ],
+      "total": 39,
+      "chgkPlace": 60,
+      "place": 23
+    },
+    {
+      "name": "4:20",
+      "blocks": [
+        14,
+        10,
+        14
+      ],
+      "total": 38,
+      "chgkPlace": 2,
+      "place": 24
+    },
+    {
+      "name": "ЖмеR",
+      "blocks": [
+        15,
+        10,
+        13
+      ],
+      "total": 38,
+      "chgkPlace": 20,
+      "place": 25
+    },
+    {
+      "name": "Карт бланш",
+      "blocks": [
+        12,
+        12,
+        14
+      ],
+      "total": 38,
+      "chgkPlace": 25,
+      "place": 26
+    },
+    {
+      "name": "Просто чилим",
+      "blocks": [
+        13,
+        11,
+        14
+      ],
+      "total": 38,
+      "chgkPlace": 43,
+      "place": 27
+    },
+    {
+      "name": "Два слова на букву К",
+      "blocks": [
+        16,
+        9,
+        12
+      ],
+      "total": 37,
+      "chgkPlace": 17,
+      "place": 28
+    },
+    {
+      "name": "Ежовые ягодицы",
+      "blocks": [
+        12,
+        11,
+        14
+      ],
+      "total": 37,
+      "chgkPlace": 18,
+      "place": 29
+    },
+    {
+      "name": "Кружок экстраверт",
+      "blocks": [
+        14,
+        8,
+        15
+      ],
+      "total": 37,
+      "chgkPlace": 27,
+      "place": 30
+    },
+    {
+      "name": "Пробковый ноктурлабиум",
+      "blocks": [
+        15,
+        7,
+        15
+      ],
+      "total": 37,
+      "chgkPlace": 42,
+      "place": 31
+    },
+    {
+      "name": "Сборная того или иного рода",
+      "blocks": [
+        12,
+        12,
+        13
+      ],
+      "total": 37,
+      "chgkPlace": 48,
+      "place": 32
+    },
+    {
+      "name": "Бесславные краснолюдки",
+      "blocks": [
+        13,
+        9,
+        14
+      ],
+      "total": 36,
+      "chgkPlace": 9,
+      "place": 33
+    },
+    {
+      "name": "Налево от Льежа",
+      "blocks": [
+        12,
+        12,
+        12
+      ],
+      "total": 36,
+      "chgkPlace": 33,
+      "place": 34
+    },
+    {
+      "name": "План Каплан",
+      "blocks": [
+        13,
+        10,
+        13
+      ],
+      "total": 36,
+      "chgkPlace": 39,
+      "place": 35
+    },
+    {
+      "name": "Приятный на ощупь",
+      "blocks": [
+        12,
+        10,
+        14
+      ],
+      "total": 36,
+      "chgkPlace": 41,
+      "place": 36
+    },
+    {
+      "name": "Твикс Пикс",
+      "blocks": [
+        12,
+        11,
+        13
+      ],
+      "total": 36,
+      "chgkPlace": 51,
+      "place": 37
+    },
+    {
+      "name": "Даша в Зоопарке",
+      "blocks": [
+        14,
+        7,
+        12
+      ],
+      "total": 33,
+      "chgkPlace": 16,
+      "place": 38
+    },
+    {
+      "name": "Нас семеро, вместе с Джимом",
+      "blocks": [
+        10,
+        9,
+        14
+      ],
+      "total": 33,
+      "chgkPlace": 34,
+      "place": 39
+    },
+    {
+      "name": "Улиточка",
+      "blocks": [
+        14,
+        8,
+        11
+      ],
+      "total": 33,
+      "chgkPlace": 52,
+      "place": 40
+    },
+    {
+      "name": "Кто оставил кролика с Борджиа?",
+      "blocks": [
+        9,
+        10,
+        13
+      ],
+      "total": 32,
+      "chgkPlace": 28,
+      "place": 41
+    },
+    {
+      "name": "Хождение под мухой",
+      "blocks": [
+        14,
+        6,
+        12
+      ],
+      "total": 32,
+      "chgkPlace": 53,
+      "place": 42
+    },
+    {
+      "name": "31-й пациент",
+      "blocks": [
+        12,
+        8,
+        11
+      ],
+      "total": 31,
+      "chgkPlace": 1,
+      "place": 43
+    },
+    {
+      "name": "или вася",
+      "blocks": [
+        11,
+        7,
+        13
+      ],
+      "total": 31,
+      "chgkPlace": 23,
+      "place": 44
+    },
+    {
+      "name": "Маленький запретный плот",
+      "blocks": [
+        13,
+        7,
+        11
+      ],
+      "total": 31,
+      "chgkPlace": 30,
+      "place": 45
+    },
+    {
+      "name": "Щодеколишні",
+      "blocks": [
+        12,
+        9,
+        6
+      ],
+      "total": 27,
+      "chgkPlace": 63,
+      "place": 46
+    },
+    {
+      "name": "Сфинкс-party",
+      "blocks": [
+        10,
+        6,
+        6
+      ],
+      "total": 22,
+      "chgkPlace": 50,
+      "place": 47
+    },
+    {
+      "name": "Liceum imienia Polonii Belgijskiej",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 5,
+      "place": 48
+    },
+    {
+      "name": "Non-Sense",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 6,
+      "place": 49
+    },
+    {
+      "name": "Plus Ultra",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 7,
+      "place": 50
+    },
+    {
+      "name": "Газлайтинг ван дер Львумбы",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 13,
+      "place": 51
+    },
+    {
+      "name": "Гдыгда",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 14,
+      "place": 52
+    },
+    {
+      "name": "Есть желающие",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 19,
+      "place": 53
+    },
+    {
+      "name": "Конский троян",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 26,
+      "place": 54
+    },
+    {
+      "name": "На всякий случай",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 31,
+      "place": 55
+    },
+    {
+      "name": "Одинокие ковбои",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 35,
+      "place": 56
+    },
+    {
+      "name": "Олеги Литвы",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 36,
+      "place": 57
+    },
+    {
+      "name": "Панические атаки",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 37,
+      "place": 58
+    },
+    {
+      "name": "Приемлемо",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 40,
+      "place": 59
+    },
+    {
+      "name": "Прыг-Скок",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 44,
+      "place": 60
+    },
+    {
+      "name": "Рыба-часы",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 45,
+      "place": 61
+    },
+    {
+      "name": "Центровые",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 57,
+      "place": 62
+    },
+    {
+      "name": "Щи loves you",
+      "blocks": [
+        0,
+        0,
+        0
+      ],
+      "total": 0,
+      "chgkPlace": 62,
+      "place": 63
+    }
+  ]
+}

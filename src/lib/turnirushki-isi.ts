@@ -1,3 +1,4 @@
+import sugrobushki2026 from "./turnirushki/isi/sugrobushki-2026.json";
 import vesnushki2024 from "./turnirushki/isi/vesnushki-2024.json";
 
 export interface IsiQualResult {
@@ -37,6 +38,7 @@ export interface IsiResults {
 
 const ALL: Record<string, IsiResults> = {
   [vesnushki2024.tournamentSlug]: vesnushki2024 as IsiResults,
+  [sugrobushki2026.tournamentSlug]: sugrobushki2026 as IsiResults,
 };
 
 export function getIsiResults(tournamentSlug: string): IsiResults | null {

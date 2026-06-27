@@ -1,5 +1,8 @@
 import drovushki2023 from "./turnirushki/ek/drovushki-exportnye-2023.json";
+import drovushki2024 from "./turnirushki/ek/drovushki-exportnye-2024.json";
+import drovushki2025 from "./turnirushki/ek/drovushki-exportnye-2025.json";
 import vesnushki2024 from "./turnirushki/ek/vesnushki-2024.json";
+import vesnushki2025 from "./turnirushki/ek/vesnushki-2025.json";
 
 export interface EkTeamResult {
   name: string;
@@ -96,7 +99,10 @@ export interface EkBasketRound {
 
 const ALL: Record<string, EkResults> = {
   [drovushki2023.tournamentSlug]: drovushki2023 as EkResults,
+  [drovushki2024.tournamentSlug]: drovushki2024 as EkResults,
+  [drovushki2025.tournamentSlug]: drovushki2025 as EkResults,
   [vesnushki2024.tournamentSlug]: vesnushki2024 as EkResults,
+  [vesnushki2025.tournamentSlug]: vesnushki2025 as EkResults,
 };
 
 export function getEkResults(tournamentSlug: string): EkResults | null {

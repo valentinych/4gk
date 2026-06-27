@@ -1,0 +1,490 @@
+{
+  "tournamentSlug": "drovushki-exportnye-2025",
+  "title": "Jeszcze żyjemy",
+  "source": "https://docs.google.com/spreadsheets/d/1t8N_Kkv1uqHPMEmWSBEZeiLjcMPiDTpWeVrAefCuSWU",
+  "teams": [
+    {
+      "number": 19,
+      "name": "Олеги Литвы",
+      "city": "сборная",
+      "total": 5,
+      "place": 0,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        -2,
+        3,
+        3,
+        -3,
+        0,
+        -5
+      ]
+    },
+    {
+      "number": 7,
+      "name": "Бесславные краснолюдки",
+      "city": "Вроцлав",
+      "total": 3,
+      "place": 0,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        null,
+        2,
+        3,
+        3,
+        3,
+        -3,
+        0,
+        -5
+      ]
+    },
+    {
+      "number": 3,
+      "name": "Plus Ultra",
+      "city": "Таллинн",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        1,
+        null,
+        2,
+        0,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 6,
+      "name": "Spandau Ballet",
+      "city": "Берлин",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        -1,
+        2,
+        null,
+        0,
+        0,
+        0,
+        0,
+        null
+      ]
+    },
+    {
+      "number": 10,
+      "name": "Даша в Зоопарке",
+      "city": "Вена",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        1,
+        2,
+        -1,
+        2,
+        0,
+        -2,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 11,
+      "name": "Два слова на букву К",
+      "city": "Мёрфельден-Вальдорф",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        -1,
+        2,
+        null,
+        3,
+        3,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 13,
+      "name": "Есть желающие",
+      "city": "Вроцлав",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        null,
+        1,
+        1,
+        2,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        -4,
+        null
+      ]
+    },
+    {
+      "number": 15,
+      "name": "или вася",
+      "city": "Прага",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        null,
+        2,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 17,
+      "name": "Мокрый горнонос",
+      "city": "Вроцлав",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        1,
+        2,
+        -1,
+        2,
+        0,
+        0,
+        0,
+        0,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 20,
+      "name": "Очень изменилась за лето",
+      "city": "сборная",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        1,
+        2,
+        2,
+        2,
+        3,
+        -2,
+        3,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 22,
+      "name": "Пассажиры LTG",
+      "city": "Вильнюс",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        -3,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 23,
+      "name": "Приемлемо",
+      "city": "Варшава",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        1,
+        0,
+        -1,
+        2,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 26,
+      "name": "Странные агенты",
+      "city": "Берлин",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        1,
+        2,
+        2,
+        2,
+        -2,
+        3,
+        3,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 28,
+      "name": "Хруст Дедули",
+      "city": "сборная",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 30,
+      "name": "Щодеколишні",
+      "city": "сборная",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        null,
+        1,
+        1,
+        2,
+        -1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 31,
+      "name": "Я буду аллюзией Лимонова",
+      "city": "сборная",
+      "total": 0,
+      "place": 0,
+      "rounds": [
+        1,
+        null,
+        null,
+        -1,
+        -1,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    },
+    {
+      "number": 16,
+      "name": "Как-то так",
+      "city": "Прага",
+      "total": 18,
+      "place": 1,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "number": 29,
+      "name": "Цифра 3",
+      "city": "Варшава",
+      "total": 13,
+      "place": 2,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        -2,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "number": 1,
+      "name": "4:20",
+      "city": "Краков",
+      "total": 10,
+      "place": 3,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        3,
+        3,
+        -2,
+        -3,
+        0,
+        0
+      ]
+    },
+    {
+      "number": 4,
+      "name": "Polish Space Marines",
+      "city": "Краков",
+      "total": 10,
+      "place": 4,
+      "rounds": [
+        1,
+        null,
+        1,
+        2,
+        2,
+        2,
+        -2,
+        0,
+        0,
+        0,
+        5,
+        0
+      ]
+    },
+    {
+      "number": 14,
+      "name": "И",
+      "city": "Дюссельдорф",
+      "total": 9,
+      "place": 5,
+      "rounds": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "number": 27,
+      "name": "Хор овец",
+      "city": "сборная",
+      "total": 8,
+      "place": 6,
+      "rounds": [
+        1,
+        -1,
+        1,
+        2,
+        2,
+        2,
+        0,
+        3,
+        -2,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "number": 25,
+      "name": "С нами Б-г",
+      "city": "Варшава",
+      "total": 6,
+      "place": 7,
+      "rounds": [
+        null,
+        null,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        6
+      ]
+    }
+  ]
+}

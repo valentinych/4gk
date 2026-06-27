@@ -1,0 +1,864 @@
+{
+  "tournamentSlug": "drovushki-exportnye-2024",
+  "title": "ЭК",
+  "seedSource": "ЧГК",
+  "format": "two-rounds",
+  "seeds": [
+    {
+      "chgk": 1,
+      "name": "Liceum imienia Polonii Belgijskiej"
+    },
+    {
+      "chgk": 2,
+      "name": "Олеги Литвы"
+    },
+    {
+      "chgk": 3,
+      "name": "На осторове Рухну прошёл дождь из клопов"
+    },
+    {
+      "chgk": 4,
+      "name": "Одинокие ковбои"
+    },
+    {
+      "chgk": 5,
+      "name": "На всякий случай"
+    },
+    {
+      "chgk": 6,
+      "name": "Polish Space Marines"
+    },
+    {
+      "chgk": 7,
+      "name": "Панические атаки"
+    },
+    {
+      "chgk": 8,
+      "name": "Пассажиры LTG"
+    },
+    {
+      "chgk": 9,
+      "name": "Прыг-скок"
+    },
+    {
+      "chgk": 10,
+      "name": "Центровые"
+    },
+    {
+      "chgk": 11,
+      "name": "31-й пациент"
+    },
+    {
+      "chgk": 12,
+      "name": "Просто чилим"
+    },
+    {
+      "chgk": 13,
+      "name": "Гэта элементарныя рэчы"
+    },
+    {
+      "chgk": 14,
+      "name": "4:20"
+    },
+    {
+      "chgk": 15,
+      "name": "Два слова на букву К"
+    },
+    {
+      "chgk": 16,
+      "name": "Non-Sense"
+    },
+    {
+      "chgk": 17,
+      "name": "Рыба-часы"
+    },
+    {
+      "chgk": 18,
+      "name": "Газлайтинг ван дер Львумбы"
+    },
+    {
+      "chgk": 19,
+      "name": "Plus Ultra"
+    },
+    {
+      "chgk": 20,
+      "name": "Сборная того или иного рода"
+    },
+    {
+      "chgk": 21,
+      "name": "Хы"
+    },
+    {
+      "chgk": 22,
+      "name": "Странные агенты"
+    },
+    {
+      "chgk": 23,
+      "name": "Сфинкс-party"
+    },
+    {
+      "chgk": 24,
+      "name": "Улиточка"
+    },
+    {
+      "chgk": 25,
+      "name": "6:56"
+    },
+    {
+      "chgk": 26,
+      "name": "Налево от Льежа"
+    },
+    {
+      "chgk": 27,
+      "name": "Самая большая лягушка"
+    },
+    {
+      "chgk": 28,
+      "name": "Как-то так"
+    },
+    {
+      "chgk": 29,
+      "name": "Пробковый ноктурламбиум"
+    },
+    {
+      "chgk": 30,
+      "name": "Человек-снежинка"
+    },
+    {
+      "chgk": 31,
+      "name": "Щи loves you"
+    },
+    {
+      "chgk": 32,
+      "name": "Кустохвостый гребнепал"
+    },
+    {
+      "chgk": 33,
+      "name": "Карт бланш"
+    },
+    {
+      "chgk": 34,
+      "name": "69/300"
+    },
+    {
+      "chgk": 35,
+      "name": "С нами Б-г (л)"
+    },
+    {
+      "chgk": 36,
+      "name": "Чем ниже горы, тем выше Кьеркегоры"
+    },
+    {
+      "chgk": 37,
+      "name": "Приятные на ощупь (л)"
+    },
+    {
+      "chgk": 38,
+      "name": "WarSowiak"
+    },
+    {
+      "chgk": 39,
+      "name": "или вася"
+    },
+    {
+      "chgk": 40,
+      "name": "Бесславные краснолюдки"
+    },
+    {
+      "chgk": 41,
+      "name": "Гдыгда (л)"
+    },
+    {
+      "chgk": 42,
+      "name": "Даша в Зоопарке (л)"
+    },
+    {
+      "chgk": 43,
+      "name": "Чайный сбор"
+    },
+    {
+      "chgk": 44,
+      "name": "Большие люди (л)"
+    },
+    {
+      "chgk": 45,
+      "name": "Храпбабули"
+    },
+    {
+      "chgk": 46,
+      "name": "Кто оставил кролика с Борджиа?"
+    },
+    {
+      "chgk": 47,
+      "name": "Хор овец (л)"
+    },
+    {
+      "chgk": 48,
+      "name": "Хождение под мухой (л)"
+    },
+    {
+      "chgk": 49,
+      "name": "Залитые кабины (л)"
+    },
+    {
+      "chgk": 50,
+      "name": "Твикс Пикс (л)"
+    }
+  ],
+  "allTeams": [
+    "Liceum imienia Polonii Belgijskiej",
+    "Олеги Литвы",
+    "На осторове Рухну прошёл дождь из клопов",
+    "Одинокие ковбои",
+    "На всякий случай",
+    "Polish Space Marines",
+    "Панические атаки",
+    "Пассажиры LTG",
+    "Прыг-скок",
+    "Центровые",
+    "31-й пациент",
+    "Просто чилим",
+    "Гэта элементарныя рэчы",
+    "4:20",
+    "Два слова на букву К",
+    "Non-Sense",
+    "Рыба-часы",
+    "Газлайтинг ван дер Львумбы",
+    "Plus Ultra",
+    "Сборная того или иного рода",
+    "Хы",
+    "Странные агенты",
+    "Сфинкс-party",
+    "Улиточка",
+    "6:56",
+    "Налево от Льежа",
+    "Самая большая лягушка",
+    "Как-то так",
+    "Пробковый ноктурламбиум",
+    "Человек-снежинка",
+    "Щи loves you",
+    "Кустохвостый гребнепал",
+    "Карт бланш",
+    "69/300",
+    "С нами Б-г (л)",
+    "Чем ниже горы, тем выше Кьеркегоры",
+    "Приятные на ощупь (л)",
+    "WarSowiak",
+    "или вася",
+    "Бесславные краснолюдки",
+    "Гдыгда (л)",
+    "Даша в Зоопарке (л)",
+    "Чайный сбор",
+    "Большие люди (л)",
+    "Храпбабули",
+    "Кто оставил кролика с Борджиа?",
+    "Хор овец (л)",
+    "Хождение под мухой (л)",
+    "Залитые кабины (л)",
+    "Твикс Пикс (л)",
+    "ЖмеR",
+    "Ежовые ягодицы (л)",
+    "Приемлемо (л)",
+    "И пусть никто не уйдёт без мерло! (л)",
+    "Нас семеро, вместе с Джимом (л)"
+  ],
+  "rounds": [
+    {
+      "number": 1,
+      "label": "Бой 1",
+      "groups": [
+        {
+          "id": "R11",
+          "label": "Бой 1",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Liceum imienia Polonii Belgijskiej",
+              "score": 450,
+              "place": 1,
+              "boutPoints": 450
+            },
+            {
+              "name": "Сборная того или иного рода",
+              "score": 170,
+              "place": 2,
+              "boutPoints": 170
+            },
+            {
+              "name": "Хы",
+              "score": 140,
+              "place": 3,
+              "boutPoints": 140
+            },
+            {
+              "name": "Бесславные краснолюдки",
+              "score": 110,
+              "place": 4,
+              "boutPoints": 110
+            },
+            {
+              "name": "Твикс Пикс",
+              "score": -20,
+              "place": 5,
+              "boutPoints": -20
+            }
+          ]
+        },
+        {
+          "id": "R12",
+          "label": "Бой 2",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Олеги Литвы",
+              "score": 400,
+              "place": 1,
+              "boutPoints": 400
+            },
+            {
+              "name": "Plus Ultra",
+              "score": 20,
+              "place": 4,
+              "boutPoints": 20
+            },
+            {
+              "name": "Странные агенты",
+              "score": 260,
+              "place": 2,
+              "boutPoints": 260
+            },
+            {
+              "name": "или вася",
+              "score": -10,
+              "place": 5,
+              "boutPoints": -10
+            },
+            {
+              "name": "Залитые кабины",
+              "score": 110,
+              "place": 3,
+              "boutPoints": 110
+            }
+          ]
+        },
+        {
+          "id": "R13",
+          "label": "Бой 3",
+          "venue": "",
+          "teams": [
+            {
+              "name": "На осторове Рухну прошёл дождь из клопов",
+              "score": 170,
+              "place": 3,
+              "boutPoints": 170
+            },
+            {
+              "name": "Газлайтинг ван дер Львумбы",
+              "score": 180,
+              "place": 2,
+              "boutPoints": 180
+            },
+            {
+              "name": "Сфинкс-party",
+              "score": 60,
+              "place": 4,
+              "boutPoints": 60
+            },
+            {
+              "name": "WarSowiak",
+              "score": 220,
+              "place": 1,
+              "boutPoints": 220
+            },
+            {
+              "name": "Хождение под мухой",
+              "score": 0,
+              "place": 5,
+              "boutPoints": 0
+            }
+          ]
+        },
+        {
+          "id": "R14",
+          "label": "Бой 4",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Одинокие ковбои",
+              "score": 710,
+              "place": 1,
+              "boutPoints": 710
+            },
+            {
+              "name": "Рыба-часы",
+              "score": 0,
+              "place": 4,
+              "boutPoints": 0
+            },
+            {
+              "name": "Улиточка",
+              "score": 0,
+              "place": 3,
+              "boutPoints": 0
+            },
+            {
+              "name": "Приятные на ощупь",
+              "score": 0,
+              "place": 5,
+              "boutPoints": 0
+            },
+            {
+              "name": "Хор овец",
+              "score": 80,
+              "place": 2,
+              "boutPoints": 80
+            }
+          ]
+        },
+        {
+          "id": "R15",
+          "label": "Бой 5",
+          "venue": "",
+          "teams": [
+            {
+              "name": "На всякий случай",
+              "score": 280,
+              "place": 2,
+              "boutPoints": 280
+            },
+            {
+              "name": "Non-Sense",
+              "score": 50,
+              "place": 5,
+              "boutPoints": 50
+            },
+            {
+              "name": "6:56",
+              "score": 80,
+              "place": 3,
+              "boutPoints": 80
+            },
+            {
+              "name": "Чем ниже горы, тем выше Кьеркегоры",
+              "score": 290,
+              "place": 1,
+              "boutPoints": 290
+            },
+            {
+              "name": "Кто оставил кролика с Борджиа?",
+              "score": 60,
+              "place": 4,
+              "boutPoints": 60
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "label": "Бой 2",
+      "groups": [
+        {
+          "id": "R21",
+          "label": "Бой 6",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Polish Space Marines",
+              "score": 100,
+              "place": 2,
+              "boutPoints": 100
+            },
+            {
+              "name": "Два слова на букву К",
+              "score": -60,
+              "place": 4,
+              "boutPoints": -60
+            },
+            {
+              "name": "Налево от Льежа",
+              "score": 230,
+              "place": 1,
+              "boutPoints": 230
+            },
+            {
+              "name": "С нами Б-г",
+              "score": 80,
+              "place": 3,
+              "boutPoints": 80
+            },
+            {
+              "name": "Храпбабули",
+              "score": -60,
+              "place": 4,
+              "boutPoints": -60
+            }
+          ]
+        },
+        {
+          "id": "R22",
+          "label": "Бой 7",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Панические атаки",
+              "score": 320,
+              "place": 1,
+              "boutPoints": 320
+            },
+            {
+              "name": "Самая большая лягушка",
+              "score": 200,
+              "place": 2,
+              "boutPoints": 200
+            },
+            {
+              "name": "69/300",
+              "score": 70,
+              "place": 3,
+              "boutPoints": 70
+            },
+            {
+              "name": "Большие люди",
+              "score": 70,
+              "place": 4,
+              "boutPoints": 70
+            }
+          ]
+        },
+        {
+          "id": "R23",
+          "label": "Бой 8",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Пассажиры LTG",
+              "score": 110,
+              "place": 2,
+              "boutPoints": 110
+            },
+            {
+              "name": "Гэта элементарныя рэчы",
+              "score": 40,
+              "place": 3,
+              "boutPoints": 40
+            },
+            {
+              "name": "Как-то так",
+              "score": 130,
+              "place": 1,
+              "boutPoints": 130
+            },
+            {
+              "name": "Карт бланш",
+              "score": 20,
+              "place": 4,
+              "boutPoints": 20
+            },
+            {
+              "name": "Чайный сбор",
+              "score": -30,
+              "place": 5,
+              "boutPoints": -30
+            }
+          ]
+        },
+        {
+          "id": "R24",
+          "label": "Бой 9",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Прыг-скок",
+              "score": 260,
+              "place": 1,
+              "boutPoints": 260
+            },
+            {
+              "name": "Просто чилим",
+              "score": 160,
+              "place": 2,
+              "boutPoints": 160
+            },
+            {
+              "name": "Пробковый ноктурламбиум",
+              "score": 80,
+              "place": 3,
+              "boutPoints": 80
+            },
+            {
+              "name": "Кустохвостый гребнепал",
+              "score": -30,
+              "place": 4,
+              "boutPoints": -30
+            },
+            {
+              "name": "Даша в Зоопарке",
+              "score": -40,
+              "place": 5,
+              "boutPoints": -40
+            }
+          ]
+        },
+        {
+          "id": "R25",
+          "label": "Бой 10",
+          "venue": "",
+          "teams": [
+            {
+              "name": "Центровые",
+              "score": 210,
+              "place": 1,
+              "boutPoints": 210
+            },
+            {
+              "name": "31-й пациент",
+              "score": 90,
+              "place": 3,
+              "boutPoints": 90
+            },
+            {
+              "name": "Человек-снежинка",
+              "score": 10,
+              "place": 5,
+              "boutPoints": 10
+            },
+            {
+              "name": "Щи loves you",
+              "score": 150,
+              "place": 2,
+              "boutPoints": 150
+            },
+            {
+              "name": "Гдыгда",
+              "score": 60,
+              "place": 4,
+              "boutPoints": 60
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "playoffRounds": [
+    {
+      "label": "Бой 11",
+      "venue": "",
+      "teams": [
+        {
+          "name": "Liceum imienia Polonii Belgijskiej",
+          "score": 420,
+          "place": 1
+        },
+        {
+          "name": "На всякий случай",
+          "score": 170,
+          "place": 2
+        },
+        {
+          "name": "Налево от Льежа",
+          "score": -30,
+          "place": 4
+        },
+        {
+          "name": "Щи Loves you",
+          "score": 90,
+          "place": 3
+        }
+      ]
+    },
+    {
+      "label": "Бой 12",
+      "venue": "",
+      "teams": [
+        {
+          "name": "Олеги Литвы",
+          "score": 310,
+          "place": 1
+        },
+        {
+          "name": "Сборная того или иного рода",
+          "score": -70,
+          "place": 4
+        },
+        {
+          "name": "Панические атаки",
+          "score": 240,
+          "place": 2
+        },
+        {
+          "name": "Polish Space Marines",
+          "score": -30,
+          "place": 3
+        }
+      ]
+    },
+    {
+      "label": "Бой 13",
+      "venue": "",
+      "teams": [
+        {
+          "name": "WarSowiak",
+          "score": 70,
+          "place": 4
+        },
+        {
+          "name": "Странные агенты",
+          "score": 120,
+          "place": 3
+        },
+        {
+          "name": "Как-то так",
+          "score": 210,
+          "place": 1
+        },
+        {
+          "name": "Самая большая лягушка",
+          "score": 190,
+          "place": 2
+        }
+      ]
+    },
+    {
+      "label": "Бой 14",
+      "venue": "",
+      "teams": [
+        {
+          "name": "Одинокие ковбои",
+          "score": 450,
+          "place": 1
+        },
+        {
+          "name": "Газлайтинг ван дер Львумбы",
+          "score": 250,
+          "place": 2
+        },
+        {
+          "name": "Прыг-скок",
+          "score": 50,
+          "place": 3
+        },
+        {
+          "name": "Пассажиры LTG",
+          "score": 20,
+          "place": 4
+        }
+      ]
+    },
+    {
+      "label": "Бой 15",
+      "venue": "",
+      "teams": [
+        {
+          "name": "Чем выше горы, тем ниже Кьеркегоры",
+          "score": 130,
+          "place": 3
+        },
+        {
+          "name": "Хор овец",
+          "score": 20,
+          "place": 4
+        },
+        {
+          "name": "Центровые",
+          "score": 140,
+          "place": 2
+        },
+        {
+          "name": "Просто чилим",
+          "score": 170,
+          "place": 1
+        }
+      ]
+    },
+    {
+      "label": "Бой 1",
+      "venue": "",
+      "teams": [
+        {
+          "name": "Liceum imienia Polonii Belgijskiej",
+          "score": 130,
+          "place": 3
+        },
+        {
+          "name": "Панические атаки",
+          "score": 220,
+          "place": 1
+        },
+        {
+          "name": "Самая большая лягушка",
+          "score": 60,
+          "place": 5
+        },
+        {
+          "name": "Одинокие ковбои",
+          "score": 190,
+          "place": 2
+        },
+        {
+          "name": "Просто чилим",
+          "score": 110,
+          "place": 4
+        }
+      ]
+    },
+    {
+      "label": "Бой 2",
+      "venue": "",
+      "teams": [
+        {
+          "name": "На всякий случай",
+          "score": 140,
+          "place": 2
+        },
+        {
+          "name": "Олеги Литвы",
+          "score": 210,
+          "place": 1
+        },
+        {
+          "name": "Как-то так",
+          "score": -30,
+          "place": 5
+        },
+        {
+          "name": "Газлайтинг ван дер Львумбы",
+          "score": 10,
+          "place": 4
+        },
+        {
+          "name": "Центровые",
+          "score": 40,
+          "place": 3
+        }
+      ]
+    }
+  ],
+  "quarterfinals": [],
+  "semifinals": [],
+  "final": {
+    "venue": "Финал Площадка 2 - зал 2, Вадим",
+    "teams": [
+      {
+        "name": "На всякий случай",
+        "score": 160,
+        "place": 2
+      },
+      {
+        "name": "Олеги Литвы",
+        "score": 110,
+        "place": 4
+      },
+      {
+        "name": "Панические атаки",
+        "score": 120,
+        "place": 3
+      },
+      {
+        "name": "Одинокие ковбои",
+        "score": 210,
+        "place": 1
+      }
+    ]
+  }
+}

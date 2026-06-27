@@ -11,7 +11,12 @@ import {
 } from "@/lib/turnirushki";
 import { hasBrainResults } from "@/lib/turnirushki-brain";
 import { hasEkResults } from "@/lib/turnirushki-ek";
+import { getTurnirushkaGames } from "@/lib/turnirushki-games";
 import { hasIsiResults } from "@/lib/turnirushki-isi";
+import { hasJeszczeResults } from "@/lib/turnirushki-jeszcze";
+import { hasKubokResults } from "@/lib/turnirushki-kubok";
+import { hasMusikalkaResults } from "@/lib/turnirushki-musikalka";
+import { hasOlympResults } from "@/lib/turnirushki-olymp";
 import { hasQuizResults } from "@/lib/turnirushki-quiz";
 import { hasKsiResults } from "@/lib/turnirushki-ksi";
 import { hasTroikaResults } from "@/lib/turnirushki-troika";
@@ -101,6 +106,44 @@ export function TurnirushkiPageClient() {
       emoji: "🎲",
       title: "ИСИ (Индивидуальная Своя Игра)",
       href: `/turnirushki/isi${tParam}`,
+    });
+  }
+  if (hasMusikalkaResults(current.slug)) {
+    tiles.push({
+      emoji: "🎵",
+      title: "Музыкалка",
+      href: `/turnirushki/musikalka${tParam}`,
+    });
+  }
+  if (hasOlympResults(current.slug)) {
+    tiles.push({
+      emoji: "🏅",
+      title: "Олимпийский кубок ЧГК",
+      href: `/turnirushki/olymp${tParam}`,
+    });
+  }
+  if (hasKubokResults(current.slug)) {
+    tiles.push({
+      emoji: "🤝",
+      title: "Кубок дружбы",
+      href: `/turnirushki/kubok${tParam}`,
+    });
+  }
+  if (hasJeszczeResults(current.slug)) {
+    tiles.push({
+      emoji: "🇵🇱",
+      title: "Jeszcze żyjemy",
+      href: `/turnirushki/jeszcze${tParam}`,
+    });
+  }
+  for (const game of getTurnirushkaGames(current.slug)) {
+    tiles.push({
+      emoji: game.emoji,
+      title: game.title,
+      href:
+        game.type === "haza-broadcast"
+          ? `/turnirushki/game/${game.slug}${tParam}`
+          : game.url ?? `/turnirushki/game/${game.slug}${tParam}`,
     });
   }
 

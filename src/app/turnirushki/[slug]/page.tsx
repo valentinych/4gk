@@ -13,13 +13,21 @@ import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import { getBrainResults } from "@/lib/turnirushki-brain";
 import { getEkResults } from "@/lib/turnirushki-ek";
 import { getIsiResults } from "@/lib/turnirushki-isi";
+import { getJeszczeResults } from "@/lib/turnirushki-jeszcze";
+import { getKubokResults } from "@/lib/turnirushki-kubok";
+import { getMusikalkaResults } from "@/lib/turnirushki-musikalka";
+import { getOlympResults } from "@/lib/turnirushki-olymp";
 import { getQuizResults } from "@/lib/turnirushki-quiz";
 import { getKsiAmateurTeamNames, getKsiResults } from "@/lib/turnirushki-ksi";
 import { getTroikaResults } from "@/lib/turnirushki-troika";
 import BrainResultsTable from "./BrainResultsTable";
 import EkResultsTable from "./EkResultsTable";
 import IsiResultsTable from "./IsiResultsTable";
+import JeszczeResultsTable from "./JeszczeResultsTable";
+import KubokResultsTable from "./KubokResultsTable";
 import KsiResultsTable from "./KsiResultsTable";
+import MusikalkaResultsTable from "./MusikalkaResultsTable";
+import OlympResultsTable from "./OlympResultsTable";
 import TroikaResultsTable from "./TroikaResultsTable";
 
 const titles: Record<string, string> = {
@@ -31,6 +39,10 @@ const titles: Record<string, string> = {
   "brain-ring": "Результаты Брейн-Ринга",
   troika: "Тройка",
   isi: "ИСИ (Индивидуальная Своя Игра)",
+  musikalka: "Музыкалка",
+  olymp: "Олимпийский кубок ЧГК",
+  kubok: "Кубок дружбы",
+  jeszcze: "Jeszcze żyjemy",
 };
 
 interface Person {
@@ -345,6 +357,62 @@ export default async function TurnirushkiSubPage({
             );
           }
           return <IsiResultsTable data={isi} />;
+        })()
+      ) : slug === "musikalka" ? (
+        (() => {
+          const mus = getMusikalkaResults(current.slug);
+          if (!mus) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по Музыкалке
+                </p>
+              </div>
+            );
+          }
+          return <MusikalkaResultsTable data={mus} />;
+        })()
+      ) : slug === "olymp" ? (
+        (() => {
+          const olymp = getOlympResults(current.slug);
+          if (!olymp) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по Олимпийскому кубку
+                </p>
+              </div>
+            );
+          }
+          return <OlympResultsTable data={olymp} />;
+        })()
+      ) : slug === "kubok" ? (
+        (() => {
+          const kubok = getKubokResults(current.slug);
+          if (!kubok) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по Кубку дружбы
+                </p>
+              </div>
+            );
+          }
+          return <KubokResultsTable data={kubok} />;
+        })()
+      ) : slug === "jeszcze" ? (
+        (() => {
+          const jeszcze = getJeszczeResults(current.slug);
+          if (!jeszcze) {
+            return (
+              <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center">
+                <p className="text-base font-medium text-foreground">
+                  Для этого турнира нет данных по Jeszcze żyjemy
+                </p>
+              </div>
+            );
+          }
+          return <JeszczeResultsTable data={jeszcze} />;
         })()
       ) : null}
     </div>

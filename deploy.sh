@@ -42,6 +42,6 @@ git push origin "$BRANCH"
 
 echo "==> Deploying on $HOST"
 ssh "${SSH_ARGS[@]}" "$HOST" \
-  "cd $REMOTE_DIR && git pull --ff-only && docker compose build app && docker compose up -d app && sleep 3 && docker compose ps app"
+  "cd $REMOTE_DIR && git pull --ff-only && chmod +x scripts/ensure-db-app-user.sh && ./scripts/ensure-db-app-user.sh && docker compose build app && docker compose up -d app && sleep 3 && docker compose ps app && curl -sf -o /dev/null -w 'calendar API: %{http_code}\n' http://localhost:3000/api/admin/calendar"
 
 echo "==> Done. https://4gk.pl/"

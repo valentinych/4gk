@@ -3,10 +3,18 @@ import { db } from "@/lib/db";
 import { requireOrganizer } from "@/lib/admin";
 
 export async function GET() {
-  const events = await db.calendarEvent.findMany({
-    orderBy: { startDate: "asc" },
-  });
-  return NextResponse.json(events);
+  try {
+    const events = await db.calendarEvent.findMany({
+      orderBy: { startDate: "asc" },
+    });
+    return NextResponse.json(events);
+  } catch (e) {
+    console.error("calendar list failed", e);
+    return NextResponse.json(
+      { error: "database unavailable" },
+      { status: 503 },
+    );
+  }
 }
 
 export async function POST(req: Request) {

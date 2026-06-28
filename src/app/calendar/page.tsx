@@ -253,6 +253,7 @@ export default function CalendarPage() {
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [rosterCounts, setRosterCounts] = useState<Record<string, number>>({});
   const [teamCounts, setTeamCounts] = useState<Record<string, number>>({});
   const [myRosterEventIds, setMyRosterEventIds] = useState<string[]>([]);
@@ -276,7 +277,16 @@ export default function CalendarPage() {
   const fetchEvents = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/calendar");
-      if (res.ok) setEvents(await res.json());
+      if (res.ok) {
+        setEvents(await res.json());
+        setLoadError(null);
+      } else {
+        setEvents([]);
+        setLoadError("Не удалось загрузить события. Попробуйте обновить страницу.");
+      }
+    } catch {
+      setEvents([]);
+      setLoadError("Не удалось загрузить события. Попробуйте обновить страницу.");
     } finally {
       setLoading(false);
     }
@@ -1307,6 +1317,12 @@ export default function CalendarPage() {
               </button>
             </p>
           )}
+        </div>
+      )}
+
+      {loadError && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {loadError}
         </div>
       )}
 

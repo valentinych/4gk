@@ -60,10 +60,9 @@ END
 ALTER ROLE postgres WITH LOGIN SUPERUSER PASSWORD 'postgres';
 EOF
 
-  docker compose run --rm -u postgres \
+  docker compose run --rm -i -u postgres \
     -v "${VOLUME_NAME}:/var/lib/postgresql/data" \
-    -v "${sql_file}:/tmp/fix-roles.sql:ro" \
-    db sh -c "postgres --single -D /var/lib/postgresql/data postgres < /tmp/fix-roles.sql"
+    db postgres --single -D /var/lib/postgresql/data postgres <"$sql_file"
   rm -f "$sql_file"
 
   docker compose up -d db

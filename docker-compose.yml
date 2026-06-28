@@ -13,7 +13,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -U 4gk_app || pg_isready -h localhost"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -U fourgk_app || pg_isready -h localhost"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -28,7 +28,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_APP_USER:-4gk_app}:${POSTGRES_APP_PASSWORD:-4gk_app_local}@db:5432/4gk?schema=public&connection_limit=5
+      DATABASE_URL: postgresql://${POSTGRES_APP_USER:-fourgk_app}:${POSTGRES_APP_PASSWORD:-4gk_app_local}@db:5432/4gk?schema=public&connection_limit=5
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://4gk.pl}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}

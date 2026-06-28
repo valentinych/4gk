@@ -45,11 +45,26 @@ recover_via_single_user() {
   docker compose stop app umami 2>/dev/null || true
   docker compose stop db
 
-  local sql
-  sql="DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${APP_USER}') THEN CREATE ROLE ${APP_USER} WITH LOGIN PASSWORD '${APP_PASSWORD}'; ELSE ALTER ROLE ${APP_USER} WITH LOGIN PASSWORD '${APP_PASSWORD}'; END IF; END \$\$; ALTER ROLE postgres WITH LOGIN SUPERUSER PASSWORD 'postgres';"
+  local sql_file
+  sql_file="$(mktemp)"
+  cat >"$sql_file" <<EOF
+DO \$body\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${APP_USER}') THEN
+    CREATE ROLE ${APP_USER} WITH LOGIN PASSWORD '${APP_PASSWORD}';
+  ELSE
+    ALTER ROLE ${APP_USER} WITH LOGIN PASSWORD '${APP_PASSWORD}';
+  END IF;
+END
+\$body\$;
+ALTER ROLE postgres WITH LOGIN SUPERUSER PASSWORD 'postgres';
+EOF
 
-  docker compose run --rm -u postgres -v "${VOLUME_NAME}:/var/lib/postgresql/data" db sh -c \
-    "echo \"$sql\" | postgres --single -D /var/lib/postgresql/data postgres"
+  docker compose run --rm -u postgres \
+    -v "${VOLUME_NAME}:/var/lib/postgresql/data" \
+    -v "${sql_file}:/tmp/fix-roles.sql:ro" \
+    db sh -c "postgres --single -D /var/lib/postgresql/data postgres < /tmp/fix-roles.sql"
+  rm -f "$sql_file"
 
   docker compose up -d db
   for _ in $(seq 1 30); do

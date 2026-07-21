@@ -20,12 +20,17 @@ export function sortConfirmedByName(list: DsDisplayParticipant[]): DsDisplayPart
   );
 }
 
-export function sortWaitlistByRegistration(
-  list: DsDisplayParticipant[],
-): DsDisplayParticipant[] {
-  return [...list].sort(
-    (a, b) => parseRegisteredAt(a.registeredAt) - parseRegisteredAt(b.registeredAt),
-  );
+function compareByRating(a: DsDisplayParticipant, b: DsDisplayParticipant): number {
+  const posA = a.ratingPosition ?? a.rating ?? Number.POSITIVE_INFINITY;
+  const posB = b.ratingPosition ?? b.rating ?? Number.POSITIVE_INFINITY;
+  if (posA !== posB) return posA - posB;
+  const scoreCmp = (b.ratingScore ?? 0) - (a.ratingScore ?? 0);
+  if (scoreCmp !== 0) return scoreCmp;
+  return parseRegisteredAt(a.registeredAt) - parseRegisteredAt(b.registeredAt);
+}
+
+export function sortWaitlistByRating(list: DsDisplayParticipant[]): DsDisplayParticipant[] {
+  return [...list].sort(compareByRating);
 }
 
 export function buildDisplayList(participants: DsDisplayParticipant[]): {
@@ -34,10 +39,10 @@ export function buildDisplayList(participants: DsDisplayParticipant[]): {
   displayList: DsDisplayParticipant[];
 } {
   const confirmed = sortConfirmedByName(participants.filter((p) => !p.inWaitlist));
-  const activeWaitlist = sortWaitlistByRegistration(
+  const activeWaitlist = sortWaitlistByRating(
     participants.filter((p) => p.inWaitlist && !p.adminRemoved),
   );
-  const removedWaitlist = sortWaitlistByRegistration(
+  const removedWaitlist = sortWaitlistByRating(
     participants.filter((p) => p.inWaitlist && p.adminRemoved),
   );
   const waitlist = [...activeWaitlist, ...removedWaitlist];

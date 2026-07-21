@@ -211,7 +211,7 @@ export function ParticipantsTable({
                         className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted"
                       >
                         Лист ожидания — {counts.waitlist}{" "}
-                        <span className="font-normal normal-case">(по времени заявки)</span>
+                        <span className="font-normal normal-case">(по рейтингу)</span>
                       </td>
                     </tr>
                   )}

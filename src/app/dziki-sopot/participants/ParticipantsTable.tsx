@@ -187,7 +187,7 @@ export function ParticipantsTable({
               <th className="px-3 py-2.5 text-right hidden sm:table-cell">Место</th>
               <th className="px-3 py-2.5 text-left hidden lg:table-cell">Зарегистрировалась</th>
               <th className="px-3 py-2.5 text-left">Категория</th>
-              {isAdmin && <th className="px-2 py-2.5 w-10" />}
+              {isAdmin && <th className="px-2 py-2.5 w-16" />}
             </tr>
           </thead>
           <tbody>
@@ -291,24 +291,37 @@ export function ParticipantsTable({
                       <td className="px-2 py-2 text-center">
                         {isBusy ? (
                           <Loader2 className="mx-auto h-4 w-4 animate-spin text-muted" />
-                        ) : !p.inWaitlist ? (
-                          <button
-                            type="button"
-                            title="Убрать из списка участников"
-                            onClick={() => handleOverride(p.participantKey, "remove")}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
                         ) : (
-                          <button
-                            type="button"
-                            title="Добавить в список участников"
-                            onClick={() => handleOverride(p.participantKey, "confirm")}
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-green-600 hover:bg-green-50 transition-colors"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-center gap-0.5">
+                            {!p.adminRemoved && (
+                              <button
+                                type="button"
+                                title={
+                                  p.inWaitlist
+                                    ? "Отметить как отзаявившуюся"
+                                    : "Убрать из списка участников"
+                                }
+                                onClick={() => handleOverride(p.participantKey, "remove")}
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            )}
+                            {p.inWaitlist && (
+                              <button
+                                type="button"
+                                title={
+                                  p.adminRemoved
+                                    ? "Вернуть в список участников"
+                                    : "Добавить в список участников"
+                                }
+                                onClick={() => handleOverride(p.participantKey, "confirm")}
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-green-600 hover:bg-green-50 transition-colors"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </td>
                     )}

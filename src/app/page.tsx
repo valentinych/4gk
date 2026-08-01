@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { ArrowRight, Trophy, Globe, Calendar } from "lucide-react";
 import RecentGames from "@/components/RecentGames";
+import { HomeCalendarSection } from "@/components/calendar/HomeCalendarSection";
 
 const leagues = [
   {
@@ -129,6 +130,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <HomeCalendarSection />
 
       {/* CTA / Recent Games */}
       <RecentGames />

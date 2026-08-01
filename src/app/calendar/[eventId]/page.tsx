@@ -22,6 +22,7 @@ import {
   ChevronDown,
   ChevronUp,
   UserPlus,
+  ClipboardList,
 } from "lucide-react";
 import { getCityColor } from "@/data/calendar";
 
@@ -336,6 +337,10 @@ export default function EventDetailPage() {
   /* ─── Delete submitted roster (organizer) ─── */
   const [removingRoster, setRemovingRoster] = useState<number | null>(null);
 
+  /* ─── Roster CTA (current user) ─── */
+  const [hasMyRoster, setHasMyRoster] = useState(false);
+  const [isRegisteredNoRoster, setIsRegisteredNoRoster] = useState(false);
+
   /* ─── Auto-action from URL (?action=join|withdraw) ─── */
   const autoActionRan = useRef(false);
 
@@ -355,6 +360,28 @@ export default function EventDetailPage() {
   }, [eventId]);
 
   useEffect(() => { loadTeams(); }, [loadTeams]);
+
+  useEffect(() => {
+    if (!userId) {
+      setHasMyRoster(false);
+      setIsRegisteredNoRoster(false);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/roster/counts")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const mine: string[] = data.mine ?? [];
+        const registered: string[] = data.registered ?? [];
+        setHasMyRoster(mine.includes(eventId));
+        setIsRegisteredNoRoster(registered.includes(eventId));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, eventId]);
 
   /* ─── Search debounce ─── */
   useEffect(() => {
@@ -770,6 +797,12 @@ export default function EventDetailPage() {
         ? `Достигнут лимит команд (${event.participantLimit}) — приём закрыт`
         : null;
 
+  const rosterState = hasMyRoster
+    ? "submitted"
+    : isRegisteredNoRoster || !!myActiveEntry
+      ? "no-roster"
+      : "none";
+
   return (
     <div id="page-event" className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
       {/* Back */}
@@ -781,6 +814,52 @@ export default function EventDetailPage() {
         <ArrowLeft className="h-4 w-4" />
         Календарь
       </Link>
+
+      {/* Roster CTA */}
+      <div id="page-event-roster-cta" className="mb-6">
+        {!userId ? (
+          <Link
+            href={`/auth/signin?callbackUrl=${encodeURIComponent(`/account/roster/${eventId}`)}`}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-accent px-6 py-4 text-base font-bold text-white shadow-md transition-colors hover:bg-accent-hover sm:text-lg"
+          >
+            <ClipboardList className="h-6 w-6 shrink-0" />
+            Войти и подать состав
+          </Link>
+        ) : (
+          <Link
+            href={`/account/roster/${eventId}`}
+            className={`flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-md transition-colors sm:text-lg ${
+              rosterState === "submitted"
+                ? "bg-emerald-600 hover:bg-emerald-700"
+                : rosterState === "no-roster"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-accent hover:bg-accent-hover"
+            }`}
+          >
+            {rosterState === "submitted" ? (
+              <>
+                <CheckCircle2 className="h-6 w-6 shrink-0" />
+                Состав подан — изменить
+              </>
+            ) : rosterState === "no-roster" ? (
+              <>
+                <ClipboardList className="h-6 w-6 shrink-0" />
+                Подать состав
+              </>
+            ) : (
+              <>
+                <ClipboardList className="h-6 w-6 shrink-0" />
+                Подать состав
+              </>
+            )}
+          </Link>
+        )}
+        {userId && rosterState === "no-roster" && (
+          <p className="mt-2 text-center text-xs text-red-600">
+            Команда зарегистрирована, но состав ещё не подан
+          </p>
+        )}
+      </div>
 
       {/* Event header */}
       <div id="page-event-header" className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">

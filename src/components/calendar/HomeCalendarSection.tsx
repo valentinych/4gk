@@ -7,7 +7,7 @@ import { CalendarWidget } from "@/components/calendar/CalendarWidget";
 export function HomeCalendarSection() {
   return (
     <section id="page-home-calendar" className="border-y border-border py-12">
-      <div id="page-home-calendar-inner" className="mx-auto max-w-6xl px-4 sm:px-6">
+      <div id="page-home-calendar-inner" className="mx-auto max-w-5xl px-4 sm:px-6">
         <div id="page-home-calendar-header" className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Календарь</h2>

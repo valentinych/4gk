@@ -196,38 +196,52 @@ export function DzikiSopotPageClient() {
       {tiles.length > 0 && (
         <div id="page-dziki-sopot-tiles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((tile) => {
-            const isExternal = tile.href?.startsWith("http");
-            if (isExternal) {
-              return (
-                <a
-                  key={tile.slug}
-                  href={tile.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
-                >
-                  <span className="mt-0.5 shrink-0 text-2xl leading-none">{tile.emoji}</span>
-                  <span className="text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
+            if (!tile.href) return null;
+            const isExternal = tile.href.startsWith("http");
+            const body = (
+              <>
+                <span className="mt-0.5 shrink-0 text-2xl leading-none">{tile.emoji}</span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
                     {tile.title}
                   </span>
-                </a>
-              );
-            }
-            if (tile.href) {
-              return (
-                <Link
-                  key={tile.slug}
-                  href={tile.href}
-                  className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
-                >
-                  <span className="mt-0.5 shrink-0 text-2xl leading-none">{tile.emoji}</span>
-                  <span className="text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
-                    {tile.title}
-                  </span>
-                </Link>
-              );
-            }
-            return null;
+                  {tile.note && (
+                    <span className="mt-1 block text-xs text-muted">{tile.note}</span>
+                  )}
+                </span>
+              </>
+            );
+            return (
+              <div
+                key={tile.slug}
+                className="group flex flex-col rounded-xl border border-border bg-surface transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
+              >
+                {isExternal ? (
+                  <a
+                    href={tile.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-1 items-start gap-3.5 p-5"
+                  >
+                    {body}
+                  </a>
+                ) : (
+                  <Link href={tile.href} className="flex flex-1 items-start gap-3.5 p-5">
+                    {body}
+                  </Link>
+                )}
+                {tile.ratingUrl && (
+                  <a
+                    href={tile.ratingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-5 pb-4 text-xs font-medium text-accent hover:underline"
+                  >
+                    Сайт рейтинга
+                  </a>
+                )}
+              </div>
+            );
           })}
         </div>
       )}

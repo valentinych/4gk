@@ -14,10 +14,16 @@ interface ScheduleItem {
   joinHref?: string;
 }
 
+interface ScheduleVenue {
+  name: string;
+  mapUrl: string;
+}
+
 interface ScheduleBlock {
   title?: string;
   venue?: string;
   venueMapUrl?: string;
+  venues?: ScheduleVenue[];
   items: ScheduleItem[];
   note?: string;
 }
@@ -74,8 +80,16 @@ const DS_SCHEDULE_2026: ScheduleDay[] = [
       },
       {
         title: "Dziki dzwięk",
-        venue: "Aquapark Sopot (ресторан)",
-        venueMapUrl: DS_AQUAPARK_VENUE.mapUrl,
+        venues: [
+          {
+            name: "Hotel Aqua Sopot — Destigo Hotels",
+            mapUrl: DS_HOTEL_AQUA_VENUE.mapUrl,
+          },
+          {
+            name: "Aquapark Sopot (ресторан)",
+            mapUrl: DS_AQUAPARK_VENUE.mapUrl,
+          },
+        ],
         items: [
           {
             time: "15:00–17:00",
@@ -89,14 +103,12 @@ const DS_SCHEDULE_2026: ScheduleDay[] = [
       },
       {
         title: "Dzika Czerń",
-        venue: "Hotel Aqua Sopot — Destigo Hotels",
-        venueMapUrl: DS_HOTEL_AQUA_VENUE.mapUrl,
+        venue: "Aquapark Sopot (ресторан)",
+        venueMapUrl: DS_AQUAPARK_VENUE.mapUrl,
         items: [{ time: "19:30", title: "Квиз с элементами чернухи" }],
       },
       {
         title: "Dzika Noc",
-        venue: "Aquapark Sopot (ресторан)",
-        venueMapUrl: DS_AQUAPARK_VENUE.mapUrl,
         items: [{ time: "21:30", title: "Свободное от игр время" }],
       },
     ],
@@ -115,7 +127,7 @@ const DS_SCHEDULE_2026: ScheduleDay[] = [
             title: "Возможная перестрелка, закрытие, награждение",
           },
           {
-            time: "около 15:00–15:30",
+            time: "15:30",
             title: "Завершение турнира",
             note: "обед для желающих (по заказу) после награждения",
           },
@@ -124,6 +136,21 @@ const DS_SCHEDULE_2026: ScheduleDay[] = [
     ],
   },
 ];
+
+function VenueLink({ name, mapUrl }: ScheduleVenue) {
+  return (
+    <a
+      href={mapUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-0.5 inline-flex items-center gap-1 text-xs text-accent hover:underline"
+    >
+      <MapPin className="h-3 w-3" />
+      {name}
+      <ExternalLink className="h-3 w-3 opacity-60" />
+    </a>
+  );
+}
 
 function ScheduleItemRow({ item }: { item: ScheduleItem }) {
   return (
@@ -231,27 +258,24 @@ export function DsSchedulePage() {
               key={`${day.heading}-${block.title ?? blockIdx}`}
               className={blockIdx > 0 ? "border-t border-border" : ""}
             >
-              {(block.title || block.venue) && (
+              {(block.title || block.venue || block.venues) && (
                 <div className="border-b border-border/60 bg-surface/80 px-5 py-2.5">
                   {block.title && (
                     <p className="text-sm font-semibold">{block.title}</p>
                   )}
-                  {block.venue && (
+                  {block.venues ? (
+                    <div className="flex flex-col items-start">
+                      {block.venues.map((venue) => (
+                        <VenueLink key={venue.mapUrl} {...venue} />
+                      ))}
+                    </div>
+                  ) : block.venue ? (
                     block.venueMapUrl ? (
-                      <a
-                        href={block.venueMapUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-accent hover:underline"
-                      >
-                        <MapPin className="h-3 w-3" />
-                        {block.venue}
-                        <ExternalLink className="h-3 w-3 opacity-60" />
-                      </a>
+                      <VenueLink name={block.venue} mapUrl={block.venueMapUrl} />
                     ) : (
                       <p className="text-xs text-muted">{block.venue}</p>
                     )
-                  )}
+                  ) : null}
                 </div>
               )}
 

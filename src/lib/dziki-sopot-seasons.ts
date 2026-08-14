@@ -40,6 +40,8 @@ export interface DsLandingTile {
   emoji: string;
   title: string;
   href?: string;
+  note?: string;
+  ratingUrl?: string;
 }
 
 export interface DsVenue {
@@ -64,26 +66,8 @@ export const DS_VENUES_2026: DsVenue[] = [
   },
 ];
 
-/** Tiles for upcoming season (2026) */
+/** Tiles for upcoming season (2026), 3 per row on large screens */
 export const DS_CURRENT_TILES: DsLandingTile[] = [
-  {
-    slug: "registration",
-    emoji: "📝",
-    title: "Регистрация",
-    href: "https://forms.gle/oyfmJnro1q9S2Ydj8",
-  },
-  {
-    slug: "sync-ostrovok",
-    emoji: "🎲",
-    title: "Регистрация на синхрон «Островок Бесконечности: шестой Супервыпуск»",
-    href: "/calendar/ds-2026-sync-ostrovok",
-  },
-  {
-    slug: "sync-chudove",
-    emoji: "🎲",
-    title: "Регистрация на синхрон «Чудове Чудовисько»",
-    href: "/calendar/ds-2026-sync-chudove",
-  },
   {
     slug: "participants",
     emoji: "👥",
@@ -103,16 +87,50 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     href: "/dziki-sopot/regulations",
   },
   {
-    slug: "lunch",
-    emoji: "🍽️",
-    title: "Заказать обед (до 30.08.26)",
-    href: DS_LUNCH_ORDER_URL,
+    slug: "registration",
+    emoji: "📝",
+    title: "Регистрация на турнир",
+    href: "https://forms.gle/oyfmJnro1q9S2Ydj8",
+  },
+  {
+    slug: "sync-ostrovok",
+    emoji: "🎲",
+    title: "Регистрация на синхрон «Островок Бесконечности: шестой Супервыпуск»",
+    href: "/calendar/ds-2026-sync-ostrovok",
+    note: "до 14:00 3 сентября",
+    ratingUrl: "https://rating.chgk.info/tournament/13404",
+  },
+  {
+    slug: "sync-chudove",
+    emoji: "🎲",
+    title: "Регистрация на синхрон «Чудове Чудовисько»",
+    href: "/calendar/ds-2026-sync-chudove",
+    note: "до 14:00 3 сентября",
+    ratingUrl: "https://rating.chgk.info/tournament/14015",
   },
   {
     slug: "roster",
     emoji: "📋",
     title: "Подать состав на двухдневный турнир Dziki Sopot",
     href: "/dziki-sopot/roster",
+  },
+  {
+    slug: "roster-ostrovok",
+    emoji: "📋",
+    title: "Подать состав на «Островок Бесконечности: шестой Супервыпуск»",
+    href: "/dziki-sopot/roster-ostrovok",
+  },
+  {
+    slug: "roster-chudove",
+    emoji: "📋",
+    title: "Подать состав на «Чудове Чудовисько»",
+    href: "/dziki-sopot/roster-chudove",
+  },
+  {
+    slug: "lunch",
+    emoji: "🍽️",
+    title: "Заказать обед (до 30.08.26)",
+    href: DS_LUNCH_ORDER_URL,
   },
 ];
 

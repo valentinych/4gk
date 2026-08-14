@@ -24,7 +24,7 @@ import { ratingChgkResultsQuery } from "@/lib/chgk-tournament-results";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import { DsSchedulePage } from "./DsSchedulePage";
-import { DsRosterPage } from "./DsRosterPage";
+import { DsRosterPage, type DsRosterVariant } from "./DsRosterPage";
 import { DsRegulationsPage } from "./DsRegulationsPage";
 import { ensureDsFridaySyncEvents } from "@/lib/ds-friday-syncs";
 
@@ -38,6 +38,8 @@ const PAGE_TITLES: Record<string, string> = {
   "results-chgk": "Результаты Что? Где? Когда?",
   schedule: "Расписание Dziki Sopot 2026",
   roster: "Подать состав — Dziki Sopot 2026",
+  "roster-ostrovok": "Подать состав — Островок Бесконечности",
+  "roster-chudove": "Подать состав — Чудове Чудовисько",
   regulations: "Положение о турнире Dziki Sopot 2026",
 };
 
@@ -281,7 +283,16 @@ export default async function DzikiSopotSlugPage({ params, searchParams }: Props
     );
   }
 
-  if (slug === "roster") {
+  const rosterVariant: DsRosterVariant | null =
+    slug === "roster"
+      ? "main"
+      : slug === "roster-ostrovok"
+        ? "ostrovok"
+        : slug === "roster-chudove"
+          ? "chudove"
+          : null;
+
+  if (rosterVariant) {
     await ensureDsFridaySyncEvents();
     return (
       <div id="page-ds-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
@@ -294,10 +305,10 @@ export default async function DzikiSopotSlugPage({ params, searchParams }: Props
         </Link>
         <div id="page-ds-slug-header" className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {PAGE_TITLES.roster}
+            {PAGE_TITLES[slug]}
           </h1>
         </div>
-        <DsRosterPage />
+        <DsRosterPage variant={rosterVariant} />
       </div>
     );
   }

@@ -25,6 +25,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { getCityColor } from "@/data/calendar";
+import { GuestJoinForm } from "@/components/calendar/GuestJoinForm";
 
 const MONTHS_GEN = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -92,6 +93,7 @@ interface EventData {
   registrationClosesAt?: string | null;
   participantLimit?: number | null;
   closeOnLimit?: boolean | null;
+  allowGuestJoin?: boolean;
 }
 
 interface TeamEntry {
@@ -107,6 +109,9 @@ interface TeamEntry {
   addedAt: string;
   withdrawnAt: string | null;
   isReserve: boolean;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactTelegram?: string | null;
 }
 
 interface ChgkTeamResult {
@@ -707,6 +712,11 @@ export default function EventDetailPage() {
     const activeEntry = entry && !entry.withdrawnAt ? entry : undefined;
 
     if (action === "join") {
+      if (event?.allowGuestJoin) {
+        autoActionRan.current = true;
+        router.replace(`/calendar/${eventId}`);
+        return;
+      }
       // Skip auto-trigger if registration is blocked — user will see
       // the red "Регистрация недоступна" banner and can read why.
       const nowMs = Date.now();
@@ -815,7 +825,8 @@ export default function EventDetailPage() {
         Календарь
       </Link>
 
-      {/* Roster CTA */}
+      {/* Roster CTA — hidden for guest-join events unless the user is signed in */}
+      {!(event.allowGuestJoin && !userId) && (
       <div id="page-event-roster-cta" className="mb-6">
         {!userId ? (
           <Link
@@ -860,6 +871,7 @@ export default function EventDetailPage() {
           </p>
         )}
       </div>
+      )}
 
       {/* Event header */}
       <div id="page-event-header" className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">
@@ -1157,8 +1169,44 @@ export default function EventDetailPage() {
           </div>
         )}
 
+        {/* ─── Guest join (no login required) ─── */}
+        {event.allowGuestJoin && !isOrganizer && (
+          <div id="page-event-guest-join-wrap" className="border-b border-border px-5 py-4">
+            {alreadyJoined ? (
+              <div className="flex items-center gap-2 text-sm text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>
+                  Ваша команда зарегистрирована:{" "}
+                  <strong>{myEntry?.displayName ?? myEntry?.teamName}</strong>
+                </span>
+                {userId && (
+                  <button
+                    onClick={() => handleRemove(myEntry!.id)}
+                    disabled={removing === myEntry?.id}
+                    className="ml-auto flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+                  >
+                    {removing === myEntry?.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
+                    Отозвать заявку
+                  </button>
+                )}
+              </div>
+            ) : registrationBlocked ? (
+              <div className="inline-flex flex-col gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <span className="font-medium">Регистрация недоступна</span>
+                <span className="text-xs">{blockedReason}</span>
+              </div>
+            ) : (
+              <GuestJoinForm
+                eventId={eventId}
+                telegramRequired={!session?.user?.chgkId}
+                onSuccess={() => loadTeams()}
+              />
+            )}
+          </div>
+        )}
+
         {/* ─── Player: join ─── */}
-        {!isOrganizer && userId && (
+        {!event.allowGuestJoin && !isOrganizer && userId && (
           <div id="page-event-player-join" className="border-b border-border px-5 py-4">
             {alreadyJoined ? (
               <div className="flex items-center gap-2 text-sm text-emerald-700">
@@ -1425,7 +1473,7 @@ export default function EventDetailPage() {
         )}
 
         {/* ─── Not logged in ─── */}
-        {!userId && (
+        {!event.allowGuestJoin && !userId && (
           <div id="page-event-signin-cta" className="border-b border-border px-5 py-4">
             <Link
               href={`/auth/signin?callbackUrl=/calendar/${event.id}`}
@@ -1566,6 +1614,13 @@ export default function EventDetailPage() {
                             </span>
                           )}
                         </div>
+                        {isOrganizer && (team.contactTelegram || team.contactName) && (
+                          <p className="mt-1 text-xs text-muted">
+                            {team.contactTelegram && <span>tg: {team.contactTelegram}</span>}
+                            {team.contactTelegram && team.contactName && " · "}
+                            {team.contactName && <span>{team.contactName}</span>}
+                          </p>
+                        )}
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-xs">
                         {isWithdrawn ? (

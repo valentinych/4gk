@@ -22,6 +22,7 @@ import {
   formatEventDateTime,
   TYPE_LABELS,
 } from "@/lib/calendar-display";
+import { isDsFridaySync } from "@/lib/ds-friday-syncs";
 import { formatWarsawShort } from "@/lib/time";
 
 const formatShortDateTime = (iso: string) => formatWarsawShort(iso);
@@ -258,6 +259,15 @@ export function CalendarEventCard({
               </Link>
             );
           })()}
+        {!isLoggedIn && isDsFridaySync(event.id) && (
+          <Link
+            href={eventUrl(event)}
+            className="inline-flex items-center gap-1 rounded-lg border border-accent/30 bg-accent/5 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+          >
+            <UserPlus className="h-3 w-3" />
+            Заявиться
+          </Link>
+        )}
         {isLoggedIn && (
           <Link
             href={`/account/roster/${event.id}`}

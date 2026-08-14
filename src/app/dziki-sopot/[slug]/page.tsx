@@ -24,6 +24,7 @@ import { ratingChgkResultsQuery } from "@/lib/chgk-tournament-results";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import { DsSchedulePage } from "./DsSchedulePage";
+import { ensureDsFridaySyncEvents } from "@/lib/ds-friday-syncs";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -256,6 +257,7 @@ export default async function DzikiSopotSlugPage({ params, searchParams }: Props
   const { slug } = await params;
 
   if (slug === "schedule") {
+    await ensureDsFridaySyncEvents();
     return (
       <div id="page-ds-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
         <Link

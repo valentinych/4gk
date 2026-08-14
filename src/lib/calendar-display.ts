@@ -1,4 +1,5 @@
 import type { CalendarEvent } from "@/data/calendar";
+import { isDsFridaySync } from "@/lib/ds-friday-syncs";
 
 export const MONTHS_RU = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -40,6 +41,9 @@ export function eventUrl(
   }
   if (isDzikiSopotEvent(event)) {
     return action ? "/dziki-sopot/participants" : "/dziki-sopot";
+  }
+  if (isDsFridaySync(event.id)) {
+    return `/calendar/${event.id}`;
   }
   return action
     ? `/calendar/${event.id}?action=${action}`

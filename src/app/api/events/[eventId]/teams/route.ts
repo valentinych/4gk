@@ -1,14 +1,103 @@
+import { randomBytes } from "crypto";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchPlayerCurrentTeam } from "@/lib/chgk";
 import { allocateManualTeamChgkId } from "@/lib/event-teams";
+import { ensureDsFridaySyncEvents, isDsFridaySync } from "@/lib/ds-friday-syncs";
 
 type Params = { params: Promise<{ eventId: string }> };
 
+interface RosterPlayerInput {
+  chgkId?: number | null;
+  lastName: string;
+  firstName: string;
+  patronymic?: string | null;
+  isCaptain?: boolean;
+  isBase?: boolean;
+  sortOrder?: number;
+}
+
+function parseRosterPlayers(raw: unknown): RosterPlayerInput[] {
+  if (!Array.isArray(raw)) return [];
+  const players: RosterPlayerInput[] = [];
+  for (const [i, p] of raw.entries()) {
+    if (!p || typeof p !== "object") continue;
+    const row = p as RosterPlayerInput;
+    const lastName = String(row.lastName ?? "").trim();
+    const firstName = String(row.firstName ?? "").trim();
+    if (!lastName || !firstName) continue;
+    players.push({
+      chgkId: typeof row.chgkId === "number" ? row.chgkId : null,
+      lastName,
+      firstName,
+      patronymic: row.patronymic?.trim() || null,
+      isCaptain: !!row.isCaptain,
+      isBase: !!row.isBase,
+      sortOrder: row.sortOrder ?? i,
+    });
+  }
+  return players;
+}
+
+async function saveOptionalRoster(opts: {
+  eventId: string;
+  userId: string | null;
+  teamName: string;
+  teamChgkId: number | null;
+  city: string | null;
+  players: RosterPlayerInput[];
+}) {
+  if (opts.players.length === 0) return;
+  let userId = opts.userId;
+  if (!userId) {
+    const guest = await db.user.create({
+      data: { name: opts.teamName, role: "PLAYER" },
+    });
+    userId = guest.id;
+  }
+  const playerRows = opts.players.map((p, i) => ({
+    chgkId: p.chgkId ?? null,
+    lastName: p.lastName,
+    firstName: p.firstName,
+    patronymic: p.patronymic,
+    isCaptain: p.isCaptain ?? false,
+    isBase: p.isBase ?? false,
+    sortOrder: p.sortOrder ?? i,
+  }));
+  const fields = {
+    teamName: opts.teamName,
+    teamChgkId: opts.teamChgkId,
+    city: opts.city,
+  };
+
+  await db.teamRoster.upsert({
+    where: { eventId_userId: { eventId: opts.eventId, userId } },
+    create: {
+      eventId: opts.eventId,
+      userId,
+      ...fields,
+      players: { create: playerRows },
+    },
+    update: {
+      ...fields,
+      updatedAt: new Date(),
+      players: { deleteMany: {}, create: playerRows },
+    },
+  });
+}
+
 export async function GET(_req: Request, { params }: Params) {
   const { eventId } = await params;
+
+  if (isDsFridaySync(eventId)) {
+    await ensureDsFridaySyncEvents();
+  }
+
+  const session = await getServerSession(authOptions);
+  const isOrganizer =
+    session?.user?.role === "ADMIN" || session?.user?.role === "ORGANIZER";
 
   const [event, teams, rosters] = await Promise.all([
     db.calendarEvent.findUnique({ where: { id: eventId } }),
@@ -27,9 +116,11 @@ export async function GET(_req: Request, { params }: Params) {
         withdrawnAt: true,
         isReserve: true,
         manualEntry: true,
+        contactName: true,
+        contactEmail: true,
+        contactTelegram: true,
       },
     }),
-    // TeamRoster submissions for this event – used to show "has roster" badge
     db.teamRoster.findMany({
       where: { eventId },
       select: { teamChgkId: true },
@@ -61,25 +152,48 @@ export async function GET(_req: Request, { params }: Params) {
       registrationClosesAt: event.registrationClosesAt?.toISOString() ?? null,
       participantLimit: event.participantLimit,
       closeOnLimit: event.closeOnLimit,
+      allowGuestJoin: isDsFridaySync(event.id),
     },
     teams: teams.map((t) => ({
-      ...t,
+      id: t.id,
+      teamChgkId: t.teamChgkId,
+      teamName: t.teamName,
+      displayName: t.displayName,
+      city: t.city,
+      playersCount: t.playersCount,
+      addedBy: t.addedBy,
+      addedAt: t.addedAt,
+      withdrawnAt: t.withdrawnAt,
+      isReserve: t.isReserve,
+      manualEntry: t.manualEntry,
       hasRoster: rosterChgkIds.has(t.teamChgkId),
+      ...(isOrganizer
+        ? {
+            contactName: t.contactName,
+            contactEmail: t.contactEmail,
+            contactTelegram: t.contactTelegram,
+          }
+        : {}),
     })),
-    // How many rosters have been submitted total (useful for organizer)
     rosterCount: rosters.length,
   });
 }
 
 export async function POST(req: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { eventId } = await params;
+
+  if (isDsFridaySync(eventId)) {
+    await ensureDsFridaySyncEvents();
   }
 
-  const { eventId } = await params;
   const event = await db.calendarEvent.findUnique({ where: { id: eventId } });
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
+
+  const guestJoin = isDsFridaySync(eventId);
+  if (!session?.user?.id && !guestJoin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const body = (await req.json()) as {
     teamChgkId?: number;
@@ -90,12 +204,16 @@ export async function POST(req: Request, { params }: Params) {
     contactName?: string;
     contactEmail?: string;
     contactTelegram?: string;
+    players?: unknown;
   };
 
-  const role = session.user.role;
+  const role = session?.user?.role;
   const isOrganizer = role === "ADMIN" || role === "ORGANIZER";
+  const userId = session?.user?.id ?? null;
+  const linkedChgkId = session?.user?.chgkId ?? null;
+  const telegramRequired = !isOrganizer && (!userId || !linkedChgkId);
+  const rosterPlayers = parseRosterPlayers(body.players);
 
-  // Enforce registration window for non-organizers
   if (!isOrganizer) {
     const now = new Date();
     if (event.registrationOpensAt && now < event.registrationOpensAt) {
@@ -128,6 +246,22 @@ export async function POST(req: Request, { params }: Params) {
   let contactEmail: string | null = null;
   let contactTelegram: string | null = null;
 
+  const cn = body.contactName?.trim() ?? "";
+  const ce = body.contactEmail?.trim() ?? "";
+  const ct = body.contactTelegram?.trim() ?? "";
+
+  if (telegramRequired && !ct) {
+    return NextResponse.json(
+      { error: "Укажите Telegram для связи" },
+      { status: 400 },
+    );
+  }
+  if (cn || ce || ct) {
+    contactName = cn || null;
+    contactEmail = ce || null;
+    contactTelegram = ct || null;
+  }
+
   if (body.manualEntry) {
     const name = body.teamName?.trim();
     if (!name) {
@@ -138,10 +272,7 @@ export async function POST(req: Request, { params }: Params) {
     manualEntry = true;
     teamChgkId = await allocateManualTeamChgkId(eventId);
 
-    if (!isOrganizer) {
-      const cn = body.contactName?.trim() ?? "";
-      const ce = body.contactEmail?.trim() ?? "";
-      const ct = body.contactTelegram?.trim() ?? "";
+    if (!isOrganizer && !guestJoin) {
       if (!cn) {
         return NextResponse.json({ error: "Укажите имя капитана" }, { status: 400 });
       }
@@ -151,25 +282,24 @@ export async function POST(req: Request, { params }: Params) {
           { status: 400 },
         );
       }
-      contactName = cn;
-      contactEmail = ce || null;
-      contactTelegram = ct || null;
     }
-  } else if (isOrganizer) {
-    if (!body.teamChgkId || !body.teamName?.trim()) {
-      return NextResponse.json({ error: "teamChgkId and teamName required" }, { status: 400 });
+  } else if (body.teamChgkId && body.teamName?.trim() && (guestJoin || isOrganizer || userId)) {
+    teamChgkId = Number(body.teamChgkId);
+    if (!Number.isFinite(teamChgkId) || teamChgkId <= 0) {
+      return NextResponse.json({ error: "Некорректный ID команды" }, { status: 400 });
     }
-    teamChgkId = body.teamChgkId;
     teamName = body.teamName.trim();
-  } else {
-    // Regular player — derive team from CHGK profile
+    city = body.city?.trim() || null;
+  } else if (isOrganizer) {
+    return NextResponse.json({ error: "teamChgkId and teamName required" }, { status: 400 });
+  } else if (userId) {
     const user = await db.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: userId },
       select: { chgkId: true },
     });
     if (!user?.chgkId) {
       return NextResponse.json(
-        { error: "Привяжите CHGK ID в настройках профиля, чтобы присоединиться" },
+        { error: "Выберите команду из рейтинга или укажите название вручную" },
         { status: 400 },
       );
     }
@@ -182,11 +312,16 @@ export async function POST(req: Request, { params }: Params) {
     }
     teamChgkId = team.teamId;
     teamName = team.teamName;
+  } else {
+    return NextResponse.json(
+      { error: "Выберите команду из рейтинга или укажите название вручную" },
+      { status: 400 },
+    );
   }
 
   const displayName = body.displayName?.trim() || null;
+  const withdrawToken = !userId ? randomBytes(24).toString("hex") : undefined;
 
-  // Determine if this new (or restored) registration should be a reserve
   async function resolveReserve(): Promise<{ isReserve: boolean; reject?: string }> {
     if (!event!.participantLimit) return { isReserve: false };
     const activeCount = await db.eventTeam.count({
@@ -204,11 +339,26 @@ export async function POST(req: Request, { params }: Params) {
     return { isReserve: false };
   }
 
-  // If the team was previously withdrawn for this event, restore the entry
-  // (clears withdrawnAt, updates adder/timestamp)
   const existing = await db.eventTeam.findUnique({
     where: { eventId_teamChgkId: { eventId, teamChgkId } },
   });
+
+  async function persistRoster(teamIdForCount: string) {
+    await saveOptionalRoster({
+      eventId,
+      userId,
+      teamName,
+      teamChgkId: manualEntry ? null : teamChgkId,
+      city,
+      players: rosterPlayers,
+    });
+    if (rosterPlayers.length > 0) {
+      await db.eventTeam.update({
+        where: { id: teamIdForCount },
+        data: { playersCount: rosterPlayers.length },
+      });
+    }
+  }
 
   if (existing) {
     if (existing.withdrawnAt) {
@@ -219,7 +369,7 @@ export async function POST(req: Request, { params }: Params) {
         data: {
           withdrawnAt: null,
           withdrawnBy: null,
-          addedBy: session.user.id,
+          addedBy: userId,
           addedAt: new Date(),
           selfJoined: !isOrganizer,
           teamName,
@@ -229,11 +379,16 @@ export async function POST(req: Request, { params }: Params) {
           contactName,
           contactEmail,
           contactTelegram,
-          playersCount: null,
+          playersCount: rosterPlayers.length || null,
           isReserve,
+          ...(withdrawToken ? { withdrawToken } : {}),
         },
       });
-      return NextResponse.json(restored, { status: 200 });
+      await persistRoster(restored.id);
+      return NextResponse.json(
+        { ...restored, withdrawToken: withdrawToken ?? restored.withdrawToken },
+        { status: 200 },
+      );
     }
     return NextResponse.json(
       { error: "Эта команда уже добавлена к событию" },
@@ -256,12 +411,15 @@ export async function POST(req: Request, { params }: Params) {
         contactName,
         contactEmail,
         contactTelegram,
-        addedBy: session.user.id,
+        addedBy: userId,
         selfJoined: !isOrganizer,
         isReserve,
+        playersCount: rosterPlayers.length || null,
+        withdrawToken,
       },
     });
-    return NextResponse.json(entry, { status: 201 });
+    await persistRoster(entry.id);
+    return NextResponse.json({ ...entry, withdrawToken }, { status: 201 });
   } catch (err: unknown) {
     const e = err as { code?: string };
     if (e?.code === "P2002") {

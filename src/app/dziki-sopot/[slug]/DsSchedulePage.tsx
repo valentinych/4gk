@@ -1,8 +1,8 @@
-import { Clock, ExternalLink, MapPin, Navigation } from "lucide-react";
+import { Clock, ExternalLink, MapPin, Navigation, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { DS_VENUES_2026 } from "@/lib/dziki-sopot-seasons";
+import { DS_FRIDAY_SYNCS } from "@/lib/ds-friday-syncs";
 
-const DS_REGISTRATION_URL = "https://forms.gle/oyfmJnro1q9S2Ydj8";
 const DS_LUNCH_ORDER_URL = "https://forms.gle/icWjh6o7dgnh8Akj6";
 
 const [DS_AQUAPARK_VENUE, DS_HOTEL_AQUA_VENUE] = DS_VENUES_2026;
@@ -12,6 +12,8 @@ interface ScheduleItem {
   title: string;
   note?: string;
   link?: { href: string; label: string };
+  ratingUrl?: string;
+  joinHref?: string;
 }
 
 interface ScheduleBlock {
@@ -39,14 +41,18 @@ const DS_SCHEDULE_2026: ScheduleDay[] = [
           {
             time: "18:00",
             title: "Рейтинговый синхрон «Островок Бесконечности: шестой Супервыпуск»",
+            ratingUrl: DS_FRIDAY_SYNCS[0].ratingUrl,
+            joinHref: `/calendar/${DS_FRIDAY_SYNCS[0].id}`,
           },
           {
             time: "18:00",
             title: "Рейтинговый синхрон «Чудове Чудовисько»",
+            ratingUrl: DS_FRIDAY_SYNCS[1].ratingUrl,
+            joinHref: `/calendar/${DS_FRIDAY_SYNCS[1].id}`,
           },
         ],
         note:
-          "Оплата: 25 zł / 5 EUR с человека (на месте наличными). Обязательная регистрация по ссылке. Очень просим заявиться не позднее 14:00 четверга 3 сентября (в этот раз число мест ограничено!).",
+          "Оплата: 25 zł / 5 EUR с человека (на месте наличными). Обязательная регистрация. Очень просим заявиться не позднее 14:00 четверга 3 сентября (в этот раз число мест ограничено!).",
       },
     ],
   },
@@ -137,18 +143,44 @@ function ScheduleItemRow({ item }: { item: ScheduleItem }) {
         )}
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-medium">{item.title}</p>
+        {item.ratingUrl ? (
+          <p className="text-sm font-medium">
+            <a
+              href={item.ratingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-accent hover:underline"
+            >
+              {item.title}
+            </a>
+          </p>
+        ) : (
+          <p className="text-sm font-medium">{item.title}</p>
+        )}
         {item.note && <p className="mt-0.5 text-xs text-muted">{item.note}</p>}
-        {item.link && (
-          <a
-            href={item.link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
-          >
-            {item.link.label}
-            <ExternalLink className="h-3 w-3" />
-          </a>
+        {(item.joinHref || item.link) && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {item.joinHref && (
+            <Link
+              href={item.joinHref}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Заявиться
+            </Link>
+          )}
+          {item.link && (
+            <a
+              href={item.link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+            >
+              {item.link.label}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
         )}
       </div>
     </div>
@@ -234,17 +266,6 @@ export function DsSchedulePage() {
               {block.note && (
                 <div className="border-t border-border bg-amber-50/50 px-5 py-3.5 text-xs leading-relaxed text-muted">
                   <p>{block.note}</p>
-                  {block.note.includes("регистрация") && (
-                    <a
-                      href={DS_REGISTRATION_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-accent-hover"
-                    >
-                      Регистрация
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  )}
                 </div>
               )}
             </div>

@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Calendar, ChevronDown, Trophy } from "lucide-react";
+import { Calendar, ChevronDown, MapPin, Navigation, Trophy } from "lucide-react";
 import Link from "next/link";
 import {
   DS_ALL_YEARS,
   DS_ARCHIVE_TILES,
   DS_CURRENT_TILES,
   DS_UPCOMING_YEAR,
+  DS_VENUES_2026,
   isArchiveYear,
   parseDsYear,
   type DsLandingTile,
@@ -159,6 +160,37 @@ export function DzikiSopotPageClient() {
           </div>
         </div>
       </div>
+
+      {isUpcoming && (
+        <div id="page-dziki-sopot-venues" className="mb-8">
+          <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted">
+            Места проведения
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {DS_VENUES_2026.map((venue) => (
+              <a
+                key={venue.mapUrl}
+                href={venue.mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-amber-200 hover:bg-amber-50/40"
+              >
+                <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold leading-snug">
+                    {venue.name}
+                    {venue.subtitle && (
+                      <span className="font-normal text-muted"> ({venue.subtitle})</span>
+                    )}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">{venue.description}</p>
+                </div>
+                <Navigation className="h-4 w-4 shrink-0 text-muted" />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tiles */}
       {tiles.length > 0 && (

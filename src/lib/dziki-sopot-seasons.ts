@@ -40,6 +40,28 @@ export interface DsLandingTile {
   href?: string;
 }
 
+export interface DsVenue {
+  name: string;
+  subtitle?: string;
+  description: string;
+  mapUrl: string;
+}
+
+/** Venues for the upcoming 2026 season */
+export const DS_VENUES_2026: DsVenue[] = [
+  {
+    name: "Aquapark Sopot",
+    subtitle: "ресторан",
+    description: "Основная программа 5–6 сентября",
+    mapUrl: "https://maps.app.goo.gl/VLBnyYiYCSeiyGyk8",
+  },
+  {
+    name: "Hotel Aqua Sopot — Destigo Hotels",
+    description: "Синхроны 4 сентября и кнопки 5 сентября",
+    mapUrl: "https://maps.app.goo.gl/Srm6QvWDs77QJHfc8",
+  },
+];
+
 /** Tiles for upcoming season (2026) */
 export const DS_CURRENT_TILES: DsLandingTile[] = [
   {
@@ -53,6 +75,12 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     emoji: "👥",
     title: "Участники",
     href: "/dziki-sopot/participants",
+  },
+  {
+    slug: "schedule",
+    emoji: "🗓️",
+    title: "Расписание",
+    href: "/dziki-sopot/schedule",
   },
 ];
 

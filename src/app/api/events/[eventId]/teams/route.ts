@@ -274,7 +274,7 @@ export async function POST(req: Request, { params }: Params) {
 
     if (!isOrganizer && !guestJoin) {
       if (!cn) {
-        return NextResponse.json({ error: "Укажите имя капитана" }, { status: 400 });
+        return NextResponse.json({ error: "Укажите имя представителя" }, { status: 400 });
       }
       if (!ce && !ct) {
         return NextResponse.json(

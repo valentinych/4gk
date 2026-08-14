@@ -559,7 +559,7 @@ function EditForm({
     setError(null);
 
     if (!contactName.trim()) {
-      setError("Укажите имя капитана");
+      setError("Укажите имя представителя");
       return;
     }
     if (!contactEmail.trim() && !contactTelegram.trim()) {
@@ -685,7 +685,7 @@ function EditForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
-            Имя капитана *
+            Имя представителя *
           </label>
           <input
             type="text"
@@ -823,7 +823,7 @@ function RegisterForm({
     setError(null);
 
     if (!contactName.trim()) {
-      setError("Укажите имя капитана");
+      setError("Укажите имя представителя");
       return;
     }
     if (!contactEmail.trim() && !contactTelegram.trim()) {
@@ -1009,7 +1009,7 @@ function RegisterForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
-            Имя капитана *
+            Имя представителя *
           </label>
           <input
             type="text"
@@ -1027,7 +1027,7 @@ function RegisterForm({
             type="email"
             value={contactEmail}
             onChange={(e) => setContactEmail(e.target.value)}
-            placeholder="captain@example.com"
+            placeholder="contact@example.com"
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
           />
         </div>

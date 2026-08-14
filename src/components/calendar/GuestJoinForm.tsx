@@ -41,6 +41,7 @@ export function GuestJoinForm({
   heading = "Заявка на синхрон",
   submitLabel = "Заявиться",
   requireRoster = false,
+  allowRoster = true,
   copyToEvents = [],
 }: {
   eventId: string;
@@ -49,6 +50,7 @@ export function GuestJoinForm({
   heading?: string;
   submitLabel?: string;
   requireRoster?: boolean;
+  allowRoster?: boolean;
   copyToEvents?: { id: string; label: string }[];
 }) {
   const [manualEntry, setManualEntry] = useState(false);
@@ -372,7 +374,7 @@ export function GuestJoinForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
-            Имя капитана
+            Имя представителя
           </label>
           <input
             type="text"
@@ -407,6 +409,7 @@ export function GuestJoinForm({
         </div>
       </div>
 
+      {(allowRoster || requireRoster) && (
       <div>
         {!requireRoster && (
           <button
@@ -500,6 +503,7 @@ export function GuestJoinForm({
           </div>
         )}
       </div>
+      )}
 
       {copyToEvents.length > 0 && (
         <div className="space-y-2 rounded-lg border border-border bg-surface p-3">

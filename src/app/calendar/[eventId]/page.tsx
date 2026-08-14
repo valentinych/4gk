@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { getCityColor } from "@/data/calendar";
 import { GuestJoinForm } from "@/components/calendar/GuestJoinForm";
+import { isDsFridaySync } from "@/lib/ds-friday-syncs";
 
 const MONTHS_GEN = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -544,7 +545,7 @@ export default function EventDetailPage() {
       return;
     }
     if (!joinContactName.trim()) {
-      setJoinError("Укажите имя капитана");
+      setJoinError("Укажите имя представителя");
       return;
     }
     if (!joinContactEmail.trim() && !joinContactTelegram.trim()) {
@@ -1194,6 +1195,7 @@ export default function EventDetailPage() {
               <GuestJoinForm
                 eventId={eventId}
                 telegramRequired={!session?.user?.chgkId}
+                allowRoster={!isDsFridaySync(eventId)}
                 onSuccess={() => loadTeams()}
               />
             )}
@@ -1332,7 +1334,7 @@ export default function EventDetailPage() {
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">
-                      Имя капитана
+                      Имя представителя
                     </label>
                     <input
                       type="text"

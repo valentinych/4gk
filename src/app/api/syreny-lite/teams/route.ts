@@ -137,7 +137,7 @@ export async function POST(req: Request) {
   const contactTelegram = body.contactTelegram?.trim() ?? "";
 
   if (!contactName) {
-    return NextResponse.json({ error: "Укажите имя капитана" }, { status: 400 });
+    return NextResponse.json({ error: "Укажите имя представителя" }, { status: 400 });
   }
   if (!contactEmail && !contactTelegram) {
     return NextResponse.json(

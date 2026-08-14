@@ -109,7 +109,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const contactTelegram = body.contactTelegram?.trim() ?? "";
 
   if (contactName !== undefined && !contactName) {
-    return NextResponse.json({ error: "Укажите имя капитана" }, { status: 400 });
+    return NextResponse.json({ error: "Укажите имя представителя" }, { status: 400 });
   }
   // Require at least one channel only when contact fields are being updated.
   const touchingContacts =

@@ -85,6 +85,12 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     href: "/dziki-sopot/schedule",
   },
   {
+    slug: "regulations",
+    emoji: "📜",
+    title: "Положение о турнире",
+    href: "/dziki-sopot/regulations",
+  },
+  {
     slug: "lunch",
     emoji: "🍽️",
     title: "Заказать обед (до 30.08.26)",

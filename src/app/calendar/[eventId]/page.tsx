@@ -825,54 +825,6 @@ export default function EventDetailPage() {
         Календарь
       </Link>
 
-      {/* Roster CTA — hidden for guest-join events unless the user is signed in */}
-      {!(event.allowGuestJoin && !userId) && (
-      <div id="page-event-roster-cta" className="mb-6">
-        {!userId ? (
-          <Link
-            href={`/auth/signin?callbackUrl=${encodeURIComponent(`/account/roster/${eventId}`)}`}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-accent px-6 py-4 text-base font-bold text-white shadow-md transition-colors hover:bg-accent-hover sm:text-lg"
-          >
-            <ClipboardList className="h-6 w-6 shrink-0" />
-            Войти и подать состав
-          </Link>
-        ) : (
-          <Link
-            href={`/account/roster/${eventId}`}
-            className={`flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-bold text-white shadow-md transition-colors sm:text-lg ${
-              rosterState === "submitted"
-                ? "bg-emerald-600 hover:bg-emerald-700"
-                : rosterState === "no-roster"
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-accent hover:bg-accent-hover"
-            }`}
-          >
-            {rosterState === "submitted" ? (
-              <>
-                <CheckCircle2 className="h-6 w-6 shrink-0" />
-                Состав подан — изменить
-              </>
-            ) : rosterState === "no-roster" ? (
-              <>
-                <ClipboardList className="h-6 w-6 shrink-0" />
-                Подать состав
-              </>
-            ) : (
-              <>
-                <ClipboardList className="h-6 w-6 shrink-0" />
-                Подать состав
-              </>
-            )}
-          </Link>
-        )}
-        {userId && rosterState === "no-roster" && (
-          <p className="mt-2 text-center text-xs text-red-600">
-            Команда зарегистрирована, но состав ещё не подан
-          </p>
-        )}
-      </div>
-      )}
-
       {/* Event header */}
       <div id="page-event-header" className="mb-8 rounded-2xl border border-border bg-surface p-6 shadow-sm">
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -977,6 +929,49 @@ export default function EventDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Roster CTA — after event info; hidden for guest-join unless signed in */}
+      {!(event.allowGuestJoin && !userId) && (
+        <div id="page-event-roster-cta" className="mb-6">
+          {!userId ? (
+            <Link
+              href={`/auth/signin?callbackUrl=${encodeURIComponent(`/account/roster/${eventId}`)}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accent-hover"
+            >
+              <ClipboardList className="h-4 w-4 shrink-0" />
+              Войти и подать состав
+            </Link>
+          ) : (
+            <Link
+              href={`/account/roster/${eventId}`}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors ${
+                rosterState === "submitted"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : rosterState === "no-roster"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-accent hover:bg-accent-hover"
+              }`}
+            >
+              {rosterState === "submitted" ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  Состав подан — изменить
+                </>
+              ) : (
+                <>
+                  <ClipboardList className="h-4 w-4 shrink-0" />
+                  Подать состав
+                </>
+              )}
+            </Link>
+          )}
+          {userId && rosterState === "no-roster" && (
+            <p className="mt-2 text-xs text-red-600">
+              Команда зарегистрирована, но состав ещё не подан
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Teams section */}
       <div id="page-event-teams" className="rounded-2xl border border-border bg-surface shadow-sm">

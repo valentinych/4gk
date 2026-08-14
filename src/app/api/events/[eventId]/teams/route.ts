@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchPlayerCurrentTeam } from "@/lib/chgk";
 import { allocateManualTeamChgkId } from "@/lib/event-teams";
-import { ensureDsFridaySyncEvents, isDsFridaySync } from "@/lib/ds-friday-syncs";
+import { ensureDsFridaySyncEvents, allowsDsGuestJoin, isDsFridaySync } from "@/lib/ds-friday-syncs";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -91,7 +91,7 @@ async function saveOptionalRoster(opts: {
 export async function GET(_req: Request, { params }: Params) {
   const { eventId } = await params;
 
-  if (isDsFridaySync(eventId)) {
+  if (isDsFridaySync(eventId) || allowsDsGuestJoin(eventId)) {
     await ensureDsFridaySyncEvents();
   }
 
@@ -152,7 +152,7 @@ export async function GET(_req: Request, { params }: Params) {
       registrationClosesAt: event.registrationClosesAt?.toISOString() ?? null,
       participantLimit: event.participantLimit,
       closeOnLimit: event.closeOnLimit,
-      allowGuestJoin: isDsFridaySync(event.id),
+      allowGuestJoin: allowsDsGuestJoin(event.id),
     },
     teams: teams.map((t) => ({
       id: t.id,
@@ -183,14 +183,14 @@ export async function POST(req: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
   const { eventId } = await params;
 
-  if (isDsFridaySync(eventId)) {
+  if (isDsFridaySync(eventId) || allowsDsGuestJoin(eventId)) {
     await ensureDsFridaySyncEvents();
   }
 
   const event = await db.calendarEvent.findUnique({ where: { id: eventId } });
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
-  const guestJoin = isDsFridaySync(eventId);
+  const guestJoin = allowsDsGuestJoin(eventId);
   if (!session?.user?.id && !guestJoin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -389,6 +389,10 @@ export async function POST(req: Request, { params }: Params) {
         { ...restored, withdrawToken: withdrawToken ?? restored.withdrawToken },
         { status: 200 },
       );
+    }
+    if (rosterPlayers.length > 0) {
+      await persistRoster(existing.id);
+      return NextResponse.json({ ...existing, rosterUpdated: true }, { status: 200 });
     }
     return NextResponse.json(
       { error: "Эта команда уже добавлена к событию" },

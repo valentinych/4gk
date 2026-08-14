@@ -1,9 +1,7 @@
 import { Clock, ExternalLink, MapPin, Navigation, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { DS_VENUES_2026 } from "@/lib/dziki-sopot-seasons";
+import { DS_LUNCH_ORDER_URL, DS_VENUES_2026 } from "@/lib/dziki-sopot-seasons";
 import { DS_FRIDAY_SYNCS } from "@/lib/ds-friday-syncs";
-
-const DS_LUNCH_ORDER_URL = "https://forms.gle/icWjh6o7dgnh8Akj6";
 
 const [DS_AQUAPARK_VENUE, DS_HOTEL_AQUA_VENUE] = DS_VENUES_2026;
 

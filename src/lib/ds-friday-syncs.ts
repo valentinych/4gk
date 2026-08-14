@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { DS_VENUES_2026 } from "@/lib/dziki-sopot-seasons";
+import { DS_MAIN_EVENT_ID, DS_VENUES_2026 } from "@/lib/dziki-sopot-seasons";
 
 const hotelAqua = DS_VENUES_2026.find((v) => v.name.startsWith("Hotel Aqua"))!;
 
@@ -33,6 +33,10 @@ const DS_FRIDAY_SYNC_IDS = new Set(DS_FRIDAY_SYNCS.map((s) => s.id));
 
 export function isDsFridaySync(eventId: string): boolean {
   return DS_FRIDAY_SYNC_IDS.has(eventId);
+}
+
+export function allowsDsGuestJoin(eventId: string): boolean {
+  return isDsFridaySync(eventId) || eventId === DS_MAIN_EVENT_ID;
 }
 
 export function dsFridaySyncById(eventId: string): DsFridaySyncDef | undefined {

@@ -38,10 +38,18 @@ export function GuestJoinForm({
   eventId,
   telegramRequired,
   onSuccess,
+  heading = "Заявка на синхрон",
+  submitLabel = "Заявиться",
+  requireRoster = false,
+  copyToEvents = [],
 }: {
   eventId: string;
   telegramRequired: boolean;
   onSuccess: () => void;
+  heading?: string;
+  submitLabel?: string;
+  requireRoster?: boolean;
+  copyToEvents?: { id: string; label: string }[];
 }) {
   const [manualEntry, setManualEntry] = useState(false);
   const [query, setQuery] = useState("");
@@ -57,12 +65,13 @@ export function GuestJoinForm({
   const [contactEmail, setContactEmail] = useState("");
   const [contactTelegram, setContactTelegram] = useState("");
 
-  const [showRoster, setShowRoster] = useState(false);
+  const [showRoster, setShowRoster] = useState(requireRoster);
   const [players, setPlayers] = useState<RosterPlayer[]>([]);
   const [playerQuery, setPlayerQuery] = useState("");
   const [playerResults, setPlayerResults] = useState<ChgkPlayer[]>([]);
   const [playerSearching, setPlayerSearching] = useState(false);
   const playerSearchRef = useRef<HTMLDivElement>(null);
+  const [copyIds, setCopyIds] = useState<Set<string>>(new Set());
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,21 +202,28 @@ export function GuestJoinForm({
     payload.contactTelegram = contactTelegram.trim();
 
     const filledPlayers = players.filter((p) => p.lastName.trim() && p.firstName.trim());
-    if (showRoster && filledPlayers.length > 0) {
+    if (requireRoster && filledPlayers.length === 0) {
+      setError("Добавьте хотя бы одного игрока в состав");
+      return;
+    }
+    if ((showRoster || requireRoster) && filledPlayers.length > 0) {
       payload.players = filledPlayers;
     }
 
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/events/${eventId}/teams`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Ошибка");
-        return;
+      const targets = [eventId, ...[...copyIds].filter((id) => id !== eventId)];
+      for (const id of targets) {
+        const res = await fetch(`/api/events/${id}/teams`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "Ошибка");
+          return;
+        }
       }
       onSuccess();
     } catch {
@@ -223,7 +239,7 @@ export function GuestJoinForm({
       onSubmit={handleSubmit}
       className="space-y-4 rounded-xl border border-accent/20 bg-accent/5 p-5"
     >
-      <h3 className="text-sm font-bold">Заявка на синхрон</h3>
+      <h3 className="text-sm font-bold">{heading}</h3>
 
       <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
         <input
@@ -358,15 +374,22 @@ export function GuestJoinForm({
       </div>
 
       <div>
-        <button
-          type="button"
-          onClick={() => setShowRoster((v) => !v)}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
-        >
-          <UserPlus className="h-4 w-4" />
-          {showRoster ? "Скрыть предварительный состав" : "Предварительный состав (необязательно)"}
-        </button>
-        {showRoster && (
+        {!requireRoster && (
+          <button
+            type="button"
+            onClick={() => setShowRoster((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:underline"
+          >
+            <UserPlus className="h-4 w-4" />
+            {showRoster ? "Скрыть предварительный состав" : "Предварительный состав (необязательно)"}
+          </button>
+        )}
+        {requireRoster && (
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+            Состав команды
+          </p>
+        )}
+        {(showRoster || requireRoster) && (
           <div className="mt-3 space-y-3 rounded-lg border border-border bg-surface p-3">
             <div ref={playerSearchRef} className="relative">
               <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
@@ -444,6 +467,32 @@ export function GuestJoinForm({
         )}
       </div>
 
+      {copyToEvents.length > 0 && (
+        <div className="space-y-2 rounded-lg border border-border bg-surface p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+            Также подать этот состав на синхроны
+          </p>
+          {copyToEvents.map((ev) => (
+            <label key={ev.id} className="flex cursor-pointer items-start gap-2 text-sm select-none">
+              <input
+                type="checkbox"
+                checked={copyIds.has(ev.id)}
+                onChange={(e) => {
+                  setCopyIds((prev) => {
+                    const next = new Set(prev);
+                    if (e.target.checked) next.add(ev.id);
+                    else next.delete(ev.id);
+                    return next;
+                  });
+                }}
+                className="mt-0.5 rounded"
+              />
+              <span>{ev.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <button
@@ -452,7 +501,7 @@ export function GuestJoinForm({
         className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-        Заявиться
+        {submitLabel}
       </button>
     </form>
   );

@@ -24,6 +24,7 @@ import { ratingChgkResultsQuery } from "@/lib/chgk-tournament-results";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import TeamsTable from "@/app/ochp/[slug]/TeamsTable";
 import { DsSchedulePage } from "./DsSchedulePage";
+import { DsRosterPage } from "./DsRosterPage";
 import { ensureDsFridaySyncEvents } from "@/lib/ds-friday-syncs";
 
 type Props = {
@@ -35,6 +36,7 @@ const PAGE_TITLES: Record<string, string> = {
   "rating-page":  "Страница турнира на сайте рейтинга",
   "results-chgk": "Результаты Что? Где? Когда?",
   schedule: "Расписание Dziki Sopot 2026",
+  roster: "Подать состав — Dziki Sopot 2026",
 };
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
@@ -273,6 +275,27 @@ export default async function DzikiSopotSlugPage({ params, searchParams }: Props
           </h1>
         </div>
         <DsSchedulePage />
+      </div>
+    );
+  }
+
+  if (slug === "roster") {
+    await ensureDsFridaySyncEvents();
+    return (
+      <div id="page-ds-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+        <Link
+          href="/dziki-sopot"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Назад к Dziki Sopot
+        </Link>
+        <div id="page-ds-slug-header" className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            {PAGE_TITLES.roster}
+          </h1>
+        </div>
+        <DsRosterPage />
       </div>
     );
   }

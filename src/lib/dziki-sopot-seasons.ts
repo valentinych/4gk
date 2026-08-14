@@ -1,3 +1,5 @@
+export const DS_MAIN_EVENT_ID = "cmmw82nst000asf012sw62tlo";
+export const DS_LUNCH_ORDER_URL = "https://forms.gle/icWjh6o7dgnh8Akj6";
 export const DS_UPCOMING_YEAR = 2026;
 export const DS_ARCHIVE_YEARS = [2025, 2024] as const;
 export type DsArchiveYear = (typeof DS_ARCHIVE_YEARS)[number];
@@ -81,6 +83,18 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     emoji: "🗓️",
     title: "Расписание",
     href: "/dziki-sopot/schedule",
+  },
+  {
+    slug: "lunch",
+    emoji: "🍽️",
+    title: "Заказать обед (до 30.08.26)",
+    href: DS_LUNCH_ORDER_URL,
+  },
+  {
+    slug: "roster",
+    emoji: "📋",
+    title: "Подать состав на двухдневный турнир Dziki Sopot",
+    href: "/dziki-sopot/roster",
   },
 ];
 

@@ -73,6 +73,18 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     href: "https://forms.gle/oyfmJnro1q9S2Ydj8",
   },
   {
+    slug: "sync-ostrovok",
+    emoji: "🎲",
+    title: "Регистрация на синхрон «Островок Бесконечности: шестой Супервыпуск»",
+    href: "/calendar/ds-2026-sync-ostrovok",
+  },
+  {
+    slug: "sync-chudove",
+    emoji: "🎲",
+    title: "Регистрация на синхрон «Чудове Чудовисько»",
+    href: "/calendar/ds-2026-sync-chudove",
+  },
+  {
     slug: "participants",
     emoji: "👥",
     title: "Участники",

@@ -61,6 +61,8 @@ export function GuestJoinForm({
 
   const [manualName, setManualName] = useState("");
   const [city, setCity] = useState("");
+  const [customName, setCustomName] = useState(false);
+  const [displayName, setDisplayName] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactTelegram, setContactTelegram] = useState("");
@@ -134,6 +136,7 @@ export function GuestJoinForm({
     setQuery(t.name);
     setShowDropdown(false);
     if (!city && t.town?.name) setCity(t.town.name);
+    if (customName) setDisplayName(t.name);
   }
 
   function addPlayer(p: ChgkPlayer) {
@@ -194,6 +197,7 @@ export function GuestJoinForm({
         teamChgkId: selectedTeam.id,
         teamName: selectedTeam.name,
         city: city.trim() || selectedTeam.town?.name || "",
+        displayName: customName ? displayName.trim() || null : null,
       };
     }
 
@@ -250,6 +254,8 @@ export function GuestJoinForm({
             setSelectedTeam(null);
             setResults([]);
             setQuery("");
+            setCustomName(false);
+            setDisplayName("");
           }}
           className="rounded"
         />
@@ -283,6 +289,8 @@ export function GuestJoinForm({
                 onClick={() => {
                   setQuery("");
                   setSelectedTeam(null);
+                  setCustomName(false);
+                  setDisplayName("");
                 }}
                 className="text-muted hover:text-foreground"
               >
@@ -320,6 +328,32 @@ export function GuestJoinForm({
             onChange={(e) => setManualName(e.target.value)}
             className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
           />
+        </div>
+      )}
+
+      {selectedTeam && !manualEntry && (
+        <div>
+          <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
+            <input
+              type="checkbox"
+              checked={customName}
+              onChange={(e) => {
+                setCustomName(e.target.checked);
+                if (e.target.checked && !displayName) setDisplayName(selectedTeam.name);
+              }}
+              className="rounded"
+            />
+            Разовое название
+          </label>
+          {customName && (
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Разовое название команды..."
+              className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+            />
+          )}
         </div>
       )}
 

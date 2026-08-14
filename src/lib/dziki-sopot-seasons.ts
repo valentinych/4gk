@@ -41,7 +41,6 @@ export interface DsLandingTile {
   title: string;
   href?: string;
   note?: string;
-  ratingUrl?: string;
 }
 
 export interface DsVenue {
@@ -97,16 +96,14 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     emoji: "🎲",
     title: "Регистрация на синхрон «Островок Бесконечности: шестой Супервыпуск»",
     href: "/calendar/ds-2026-sync-ostrovok",
-    note: "до 14:00 3 сентября",
-    ratingUrl: "https://rating.chgk.info/tournament/13404",
+    note: "4 сентября 18.00",
   },
   {
     slug: "sync-chudove",
     emoji: "🎲",
     title: "Регистрация на синхрон «Чудове Чудовисько»",
     href: "/calendar/ds-2026-sync-chudove",
-    note: "до 14:00 3 сентября",
-    ratingUrl: "https://rating.chgk.info/tournament/14015",
+    note: "4 сентября 18.00",
   },
   {
     slug: "roster",

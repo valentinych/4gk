@@ -230,16 +230,6 @@ export function DzikiSopotPageClient() {
                     {body}
                   </Link>
                 )}
-                {tile.ratingUrl && (
-                  <a
-                    href={tile.ratingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-5 pb-4 text-xs font-medium text-accent hover:underline"
-                  >
-                    Сайт рейтинга
-                  </a>
-                )}
               </div>
             );
           })}

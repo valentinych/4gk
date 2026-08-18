@@ -13,6 +13,12 @@ export type DsDisplayParticipant = DsParticipant & {
   participantKey: string;
   adminRemoved: boolean;
   adminConfirmed: boolean;
+  /** EventTeam.id on the main DS calendar event, if mapped. */
+  eventTeamId: string | null;
+  /** One-time name from EventTeam.displayName. */
+  displayName: string | null;
+  /** Rating/official name shown muted when a one-time name is set. */
+  officialName: string;
 };
 
 export function participantKey(
@@ -65,6 +71,9 @@ export function applyDsOverrides(
         categoryLabel: "",
         adminRemoved: true,
         adminConfirmed: false,
+        eventTeamId: null,
+        displayName: null,
+        officialName: p.team,
       };
     }
 
@@ -78,6 +87,9 @@ export function applyDsOverrides(
         categoryLabel: slot?.categoryLabel ?? p.categoryLabel,
         adminRemoved: false,
         adminConfirmed: true,
+        eventTeamId: null,
+        displayName: null,
+        officialName: p.team,
       };
     }
 
@@ -86,6 +98,9 @@ export function applyDsOverrides(
       participantKey: key,
       adminRemoved: false,
       adminConfirmed: false,
+      eventTeamId: null,
+      displayName: null,
+      officialName: p.team,
     };
   });
 }

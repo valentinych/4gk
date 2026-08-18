@@ -2,10 +2,14 @@
 
 import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ExternalLink, Loader2, X } from "lucide-react";
+import { Check, ExternalLink, Loader2, Pencil, X } from "lucide-react";
 import type { ParticipantCategory } from "@/lib/ds-participants";
 import type { DsDisplayParticipant } from "@/lib/ds-participants-overrides";
-import { buildDisplayList, countParticipants } from "@/lib/ds-participants-display";
+import {
+  buildDisplayList,
+  countParticipants,
+  participantShownName,
+} from "@/lib/ds-participants-display";
 
 const RATING_LOCK_DATE_LABEL = "14.05.2026";
 
@@ -92,6 +96,22 @@ export function ParticipantsTable({
       });
       if (!res.ok) return;
       startTransition(() => router.refresh());
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function handleDisplayName(key: string, displayName: string | null) {
+    setBusyKey(key);
+    try {
+      const res = await fetch("/api/dziki-sopot/participants/display-name", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, displayName }),
+      });
+      if (!res.ok) return false;
+      startTransition(() => router.refresh());
+      return true;
     } finally {
       setBusyKey(null);
     }
@@ -227,19 +247,12 @@ export function ParticipantsTable({
                     </td>
 
                     <td className={`px-3 py-2 font-medium ${strike ? "line-through" : ""}`}>
-                      {p.teamId > 0 ? (
-                        <a
-                          href={`https://rating.chgk.info/teams/${p.teamId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 hover:text-accent transition-colors"
-                        >
-                          {p.team}
-                          <ExternalLink className="h-3 w-3 opacity-40 shrink-0" />
-                        </a>
-                      ) : (
-                        p.team
-                      )}
+                      <TeamNameCell
+                        p={p}
+                        isAdmin={isAdmin}
+                        busy={isBusy}
+                        onSave={(name) => handleDisplayName(p.participantKey, name)}
+                      />
                     </td>
 
                     <td
@@ -333,5 +346,112 @@ export function ParticipantsTable({
         </table>
       </div>
     </>
+  );
+}
+
+function TeamNameCell({
+  p,
+  isAdmin,
+  busy,
+  onSave,
+}: {
+  p: DsDisplayParticipant;
+  isAdmin: boolean;
+  busy: boolean;
+  onSave: (displayName: string | null) => Promise<boolean | void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const shown = participantShownName(p);
+  const hasCustom = !!p.displayName && p.displayName !== p.officialName;
+
+  function startEdit() {
+    setValue(p.displayName ?? "");
+    setEditing(true);
+  }
+
+  async function save(next: string | null) {
+    const ok = await onSave(next);
+    if (ok !== false) setEditing(false);
+  }
+
+  const nameEl =
+    p.teamId > 0 ? (
+      <a
+        href={`https://rating.chgk.info/teams/${p.teamId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 hover:text-accent transition-colors"
+      >
+        {shown}
+        <ExternalLink className="h-3 w-3 opacity-40 shrink-0" />
+      </a>
+    ) : (
+      <span>{shown}</span>
+    );
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {nameEl}
+        {hasCustom && (
+          <span className="text-xs font-normal text-muted">({p.officialName})</span>
+        )}
+        {isAdmin && !editing && (
+          <button
+            type="button"
+            title="Разовое название"
+            disabled={busy}
+            onClick={startEdit}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted hover:bg-accent/10 hover:text-accent transition-colors disabled:opacity-50"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+      {isAdmin && editing && (
+        <div className="flex flex-wrap items-center gap-1.5 font-normal">
+          <input
+            type="text"
+            value={value}
+            disabled={busy}
+            autoFocus
+            placeholder="Разовое название..."
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void save(value.trim() || null);
+              if (e.key === "Escape") setEditing(false);
+            }}
+            className="w-52 max-w-full rounded-md border border-border bg-surface px-2 py-1 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+          />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => save(value.trim() || null)}
+            className="inline-flex items-center rounded-md border border-accent/30 bg-accent/10 px-2 py-1 text-xs font-medium text-accent hover:bg-accent/20 transition-colors disabled:opacity-50"
+          >
+            Сохранить
+          </button>
+          {p.displayName && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => save(null)}
+              className="inline-flex items-center rounded-md border border-border px-2 py-1 text-xs font-medium text-muted hover:bg-muted/20 transition-colors disabled:opacity-50"
+            >
+              Сбросить
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setEditing(false)}
+            className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium text-muted hover:text-foreground transition-colors disabled:opacity-50"
+          >
+            Отмена
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

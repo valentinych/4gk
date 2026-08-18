@@ -4,6 +4,14 @@ import {
   loadDsOverrides,
   type DsDisplayParticipant,
 } from "@/lib/ds-participants-overrides";
+import { db } from "@/lib/db";
+import { DS_MAIN_EVENT_ID } from "@/lib/dziki-sopot-seasons";
+
+export function participantShownName(
+  p: Pick<DsDisplayParticipant, "displayName" | "team">,
+): string {
+  return p.displayName || p.team;
+}
 
 export function parseRegisteredAt(raw: string): number {
   if (!raw.trim()) return Number.POSITIVE_INFINITY;
@@ -16,8 +24,50 @@ export function parseRegisteredAt(raw: string): number {
 
 export function sortConfirmedByName(list: DsDisplayParticipant[]): DsDisplayParticipant[] {
   return [...list].sort((a, b) =>
-    a.team.localeCompare(b.team, "ru", { sensitivity: "base" }),
+    participantShownName(a).localeCompare(participantShownName(b), "ru", { sensitivity: "base" }),
   );
+}
+
+type EventTeamNameRow = {
+  id: string;
+  teamChgkId: number;
+  teamName: string;
+  displayName: string | null;
+};
+
+function normTeamName(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+/** Overlay EventTeam.displayName from the main DS calendar event onto sheet rows. */
+function applyEventTeamNames(
+  participants: DsDisplayParticipant[],
+  teams: EventTeamNameRow[],
+): DsDisplayParticipant[] {
+  const byChgkId = new Map<number, EventTeamNameRow>();
+  const byName = new Map<string, EventTeamNameRow>();
+  for (const t of teams) {
+    if (t.teamChgkId > 0 && !byChgkId.has(t.teamChgkId)) byChgkId.set(t.teamChgkId, t);
+    for (const raw of [t.teamName, t.displayName]) {
+      if (!raw) continue;
+      const key = normTeamName(raw);
+      if (!byName.has(key)) byName.set(key, t);
+    }
+  }
+
+  return participants.map((p) => {
+    const et =
+      p.teamId > 0
+        ? byChgkId.get(p.teamId)
+        : byName.get(normTeamName(p.team));
+    if (!et) return p;
+    return {
+      ...p,
+      eventTeamId: et.id,
+      displayName: et.displayName,
+      officialName: et.teamName || p.team,
+    };
+  });
 }
 
 function compareByRating(a: DsDisplayParticipant, b: DsDisplayParticipant): number {
@@ -62,10 +112,15 @@ export function countParticipants(participants: DsDisplayParticipant[]) {
 }
 
 export async function fetchDsParticipantsForDisplay() {
-  const [{ participants, ratingReleaseDate }, overrides] = await Promise.all([
+  const [{ participants, ratingReleaseDate }, overrides, eventTeams] = await Promise.all([
     fetchDsParticipants(),
     loadDsOverrides(),
+    db.eventTeam.findMany({
+      where: { eventId: DS_MAIN_EVENT_ID },
+      select: { id: true, teamChgkId: true, teamName: true, displayName: true },
+    }),
   ]);
   const withOverrides = applyDsOverrides(participants, overrides);
-  return { participants: withOverrides, ratingReleaseDate, overrides };
+  const withNames = applyEventTeamNames(withOverrides, eventTeams);
+  return { participants: withNames, ratingReleaseDate, overrides };
 }

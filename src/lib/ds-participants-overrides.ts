@@ -21,11 +21,19 @@ export type DsDisplayParticipant = DsParticipant & {
   officialName: string;
 };
 
+/** ASCII unit separator. NUL cannot be stored in Postgres JSONB. */
+const NAME_KEY_SEP = "\u001f";
+
 export function participantKey(
   p: Pick<DsParticipant, "teamId" | "team" | "registeredAt">,
 ): string {
   if (p.teamId > 0) return `id:${p.teamId}`;
-  return `n:${p.team}\0${p.registeredAt}`;
+  return `n:${p.team}${NAME_KEY_SEP}${p.registeredAt}`;
+}
+
+/** Accept legacy NUL-separated keys from in-flight UIs. */
+export function normalizeParticipantKey(key: string): string {
+  return key.replace(/\0/g, NAME_KEY_SEP);
 }
 
 export async function loadDsOverrides(): Promise<DsOverrides> {
@@ -34,9 +42,13 @@ export async function loadDsOverrides(): Promise<DsOverrides> {
     return { removed: [], confirmed: [] };
   }
   const v = row.value as Partial<DsOverrides>;
+  const keys = (arr: unknown): string[] =>
+    Array.isArray(arr)
+      ? arr.filter((k): k is string => typeof k === "string").map(normalizeParticipantKey)
+      : [];
   return {
-    removed: Array.isArray(v.removed) ? v.removed.filter((k) => typeof k === "string") : [],
-    confirmed: Array.isArray(v.confirmed) ? v.confirmed.filter((k) => typeof k === "string") : [],
+    removed: keys(v.removed),
+    confirmed: keys(v.confirmed),
   };
 }
 
@@ -110,15 +122,16 @@ export async function setDsOverride(
   action: "remove" | "confirm",
 ): Promise<DsOverrides> {
   const overrides = await loadDsOverrides();
+  const canonical = normalizeParticipantKey(key);
   const removed = new Set(overrides.removed);
   const confirmed = new Set(overrides.confirmed);
 
   if (action === "remove") {
-    confirmed.delete(key);
-    removed.add(key);
+    confirmed.delete(canonical);
+    removed.add(canonical);
   } else {
-    removed.delete(key);
-    confirmed.add(key);
+    removed.delete(canonical);
+    confirmed.add(canonical);
   }
 
   const next: DsOverrides = {

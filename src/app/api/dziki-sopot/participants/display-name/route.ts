@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { fetchDsParticipants } from "@/lib/ds-participants";
-import { participantKey } from "@/lib/ds-participants-overrides";
+import {
+  normalizeParticipantKey,
+  participantKey,
+} from "@/lib/ds-participants-overrides";
 import { DS_MAIN_EVENT_ID } from "@/lib/dziki-sopot-seasons";
 import { allocateManualTeamChgkId } from "@/lib/event-teams";
 
@@ -28,7 +31,9 @@ export async function POST(req: Request) {
     typeof body.displayName === "string" ? body.displayName.trim() || null : null;
 
   const { participants } = await fetchDsParticipants();
-  const p = participants.find((row) => participantKey(row) === key);
+  const p = participants.find(
+    (row) => participantKey(row) === normalizeParticipantKey(key),
+  );
   if (!p) {
     return NextResponse.json({ error: "Unknown participant" }, { status: 404 });
   }

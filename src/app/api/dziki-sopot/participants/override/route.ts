@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { fetchDsParticipants } from "@/lib/ds-participants";
 import {
+  normalizeParticipantKey,
   participantKey,
   setDsOverride,
 } from "@/lib/ds-participants-overrides";
@@ -25,11 +26,12 @@ export async function POST(req: Request) {
   }
 
   const { participants } = await fetchDsParticipants();
+  const canonical = normalizeParticipantKey(key);
   const validKeys = new Set(participants.map((p) => participantKey(p)));
-  if (!validKeys.has(key)) {
+  if (!validKeys.has(canonical)) {
     return NextResponse.json({ error: "Unknown participant" }, { status: 404 });
   }
 
-  const overrides = await setDsOverride(key, action);
+  const overrides = await setDsOverride(canonical, action);
   return NextResponse.json({ ok: true, overrides });
 }

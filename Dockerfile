@@ -26,6 +26,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Hidden /reel tool: yt-dlp extracts YouTube audio, ffmpeg cuts MP3.
+RUN apk add --no-cache ffmpeg python3 py3-pip ca-certificates \
+  && pip3 install --break-system-packages --no-cache-dir -U yt-dlp
+
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Download, Loader2, Scissors } from "lucide-react";
-import { formatSeconds, parseTimecode } from "@/lib/reel";
+import { useEffect, useMemo, useState } from "react";
+import { Download, ExternalLink, Loader2, Scissors } from "lucide-react";
+import { formatSeconds, MAX_COOKIES_BYTES, parseTimecode } from "@/lib/reel";
+
+const COOKIES_KEY = "4gk-reel-cookies";
 
 function filenameFromDisposition(header: string | null): string {
   if (!header) return "clip.mp3";
@@ -18,13 +20,31 @@ function filenameFromDisposition(header: string | null): string {
   return plain?.[1] || "clip.mp3";
 }
 
+function persistCookies(value: string) {
+  try {
+    if (value) localStorage.setItem(COOKIES_KEY, value);
+    else localStorage.removeItem(COOKIES_KEY);
+  } catch {
+    /* quota / private mode */
+  }
+}
+
 export function ReelClient() {
   const [url, setUrl] = useState("");
   const [startStr, setStartStr] = useState("0:00");
   const [endStr, setEndStr] = useState("0:30");
+  const [cookies, setCookies] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [doneName, setDoneName] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      setCookies(localStorage.getItem(COOKIES_KEY) ?? "");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const preview = useMemo(() => {
     const start = parseTimecode(startStr);
@@ -35,6 +55,28 @@ export function ReelClient() {
     return `${formatSeconds(start)} → ${formatSeconds(end)} (${formatSeconds(dur)})`;
   }, [startStr, endStr]);
 
+  function setAndStoreCookies(next: string) {
+    setCookies(next);
+    persistCookies(next);
+  }
+
+  async function handleCookiesFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > MAX_COOKIES_BYTES) {
+      setError("Файл cookies слишком большой (максимум 512 КБ).");
+      return;
+    }
+    const text = await file.text();
+    setAndStoreCookies(text);
+    setError(null);
+  }
+
+  function clearCookies() {
+    setAndStoreCookies("");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -42,22 +84,32 @@ export function ReelClient() {
     setDoneName(null);
 
     try {
+      const payload: { url: string; start: string; end: string; cookies?: string } = {
+        url,
+        start: startStr,
+        end: endStr,
+      };
+      const cookiesTrim = cookies.trim();
+      if (cookiesTrim) payload.cookies = cookiesTrim;
+
       const res = await fetch("/api/reel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, start: startStr, end: endStr }),
+        body: JSON.stringify(payload),
       });
 
       const type = res.headers.get("Content-Type") ?? "";
       if (!res.ok || !type.includes("audio/mpeg")) {
         let message = "Не удалось скачать фрагмент.";
+        let detail: string | undefined;
         try {
-          const data = (await res.json()) as { error?: string };
+          const data = (await res.json()) as { error?: string; detail?: string };
           if (data.error) message = data.error;
+          if (data.detail) detail = data.detail;
         } catch {
           /* ignore */
         }
-        setError(message);
+        setError(detail && detail !== message ? `${message}\n${detail}` : message);
         return;
       }
 
@@ -78,6 +130,8 @@ export function ReelClient() {
       setLoading(false);
     }
   }
+
+  const hasCookies = Boolean(cookies.trim());
 
   return (
     <div id="page-reel" className="mx-auto max-w-lg px-4 py-12 sm:py-20">
@@ -152,6 +206,73 @@ export function ReelClient() {
           <p className="text-xs text-muted">Фрагмент: {preview}</p>
         )}
 
+        <div id="page-reel-cookies" className="rounded-lg border border-border bg-background/60 p-3 space-y-2">
+          <p className="text-xs leading-relaxed text-muted">
+            YouTube блокирует датацентр; один раз экспортируйте cookies из браузера, где вы
+            залогинены на YouTube, и вставьте сюда.
+          </p>
+          <p className="text-xs leading-relaxed text-muted">
+            <a
+              href="https://www.youtube.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
+            >
+              Открыть YouTube
+              <ExternalLink className="h-3 w-3" />
+            </a>
+            {" "}в новой вкладке, войдите, затем экспорт через расширение Chrome
+            «Get cookies.txt LOCALLY».
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <label
+              htmlFor="reel-cookies-file"
+              className="inline-flex cursor-pointer items-center rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-muted/10"
+            >
+              Загрузить cookies.txt
+            </label>
+            <input
+              id="reel-cookies-file"
+              type="file"
+              accept=".txt,text/plain"
+              disabled={loading}
+              onChange={handleCookiesFile}
+              className="sr-only"
+            />
+            {hasCookies && (
+              <>
+                <span className="text-xs text-emerald-700">Cookies сохранены в этом браузере</span>
+                <button
+                  type="button"
+                  onClick={clearCookies}
+                  disabled={loading}
+                  className="text-xs font-medium text-red-700 hover:underline disabled:opacity-50"
+                >
+                  Удалить cookies
+                </button>
+              </>
+            )}
+          </div>
+          <label htmlFor="reel-cookies" className="block text-xs font-medium text-muted">
+            Или вставьте cookies.txt
+          </label>
+          <textarea
+            id="reel-cookies"
+            value={cookies.length > 8000 ? "" : cookies}
+            onChange={(e) => setAndStoreCookies(e.target.value)}
+            placeholder={
+              hasCookies && cookies.length > 8000
+                ? "Cookies сохранены. Вставьте новый файл, чтобы заменить."
+                : "# Netscape HTTP Cookie File"
+            }
+            disabled={loading}
+            rows={4}
+            spellCheck={false}
+            autoComplete="off"
+            className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-accent/60 focus:ring-2 focus:ring-accent/20"
+          />
+        </div>
+
         <button
           type="submit"
           disabled={loading || !url.trim()}
@@ -169,7 +290,7 @@ export function ReelClient() {
       {error && (
         <div
           id="page-reel-error"
-          className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 whitespace-pre-wrap"
         >
           {error}
         </div>

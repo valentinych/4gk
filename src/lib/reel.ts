@@ -2,6 +2,14 @@
 
 export const MAX_CLIP_SECONDS = 15 * 60;
 export const MAX_URL_LENGTH = 2048;
+export const MAX_COOKIES_BYTES = 512 * 1024;
+
+/** Netscape cookies.txt from a browser extension, or a dump that mentions youtube.com. */
+export function looksLikeNetscapeCookies(raw: string): boolean {
+  const text = raw.replace(/^\uFEFF/, "").trim();
+  if (!text) return false;
+  return text.startsWith("#") || /youtube\.com/i.test(text);
+}
 
 const YT_HOSTS = new Set([
   "youtube.com",

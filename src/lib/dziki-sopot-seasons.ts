@@ -129,6 +129,12 @@ export const DS_CURRENT_TILES: DsLandingTile[] = [
     title: "Заказать обед (до 30.08.26)",
     href: DS_LUNCH_ORDER_URL,
   },
+  {
+    slug: "tshirts",
+    emoji: "👕",
+    title: "Заказ маек",
+    href: "https://forms.gle/mDhkai5rTvKQBnpR9",
+  },
 ];
 
 /** Tiles for archive seasons */

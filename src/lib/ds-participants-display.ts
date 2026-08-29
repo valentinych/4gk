@@ -101,13 +101,15 @@ export function buildDisplayList(participants: DsDisplayParticipant[]): {
 
 export function countParticipants(participants: DsDisplayParticipant[]) {
   const { confirmed, waitlist } = buildDisplayList(participants);
+  const activeWaitlist = waitlist.filter((p) => !p.adminRemoved);
   return {
     time: participants.filter((p) => !p.inWaitlist && p.category === "time").length,
     vk: participants.filter((p) => !p.inWaitlist && p.category === "vk").length,
     rating: participants.filter((p) => !p.inWaitlist && p.category === "rating").length,
     ds2: participants.filter((p) => !p.inWaitlist && p.category === "ds2").length,
     confirmed: confirmed.length,
-    waitlist: waitlist.length,
+    waitlist: activeWaitlist.length,
+    total: confirmed.length + activeWaitlist.length,
   };
 }
 
@@ -123,4 +125,10 @@ export async function fetchDsParticipantsForDisplay() {
   const withOverrides = applyDsOverrides(participants, overrides);
   const withNames = applyEventTeamNames(withOverrides, eventTeams);
   return { participants: withNames, ratingReleaseDate, overrides };
+}
+
+/** Confirmed + active waitlist, same total as /dziki-sopot/participants. */
+export async function countDsMainEventTeams(): Promise<number> {
+  const { participants } = await fetchDsParticipantsForDisplay();
+  return countParticipants(participants).total;
 }

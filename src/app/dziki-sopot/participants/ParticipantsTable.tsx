@@ -134,7 +134,7 @@ export function ParticipantsTable({
         id="page-ds-participants-summary"
         className="mb-6 -mt-4 flex flex-wrap items-center gap-3 text-sm text-muted"
       >
-        <span>{participants.length} команд</span>
+        <span>{counts.total} команд</span>
         <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium shadow-sm">
           Рейтинг зафиксирован на релиз{" "}
           <span className="font-semibold text-foreground">
@@ -230,7 +230,7 @@ export function ParticipantsTable({
                         colSpan={isAdmin ? 8 : 7}
                         className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted"
                       >
-                        Лист ожидания — {counts.waitlist}{" "}
+                        Лист ожидания — {waitlist.length}{" "}
                         <span className="font-normal normal-case">(по рейтингу)</span>
                       </td>
                     </tr>

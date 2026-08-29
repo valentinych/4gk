@@ -28,6 +28,7 @@ import { getCityColor } from "@/data/calendar";
 import { GuestJoinForm } from "@/components/calendar/GuestJoinForm";
 import { isDzikiSopotEvent } from "@/lib/calendar-display";
 import { isDsFridaySync } from "@/lib/ds-friday-syncs";
+import { DS_MAIN_EVENT_ID } from "@/lib/dziki-sopot-seasons";
 
 const MONTHS_GEN = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -347,6 +348,7 @@ export default function EventDetailPage() {
   /* ─── Roster CTA (current user) ─── */
   const [hasMyRoster, setHasMyRoster] = useState(false);
   const [isRegisteredNoRoster, setIsRegisteredNoRoster] = useState(false);
+  const [overlayTeamCount, setOverlayTeamCount] = useState<number | null>(null);
 
   /* ─── Auto-action from URL (?action=join|withdraw) ─── */
   const autoActionRan = useRef(false);
@@ -369,9 +371,11 @@ export default function EventDetailPage() {
   useEffect(() => { loadTeams(); }, [loadTeams]);
 
   useEffect(() => {
-    if (!userId) {
+    const needCounts = !!userId || eventId === DS_MAIN_EVENT_ID;
+    if (!needCounts) {
       setHasMyRoster(false);
       setIsRegisteredNoRoster(false);
+      setOverlayTeamCount(null);
       return;
     }
     let cancelled = false;
@@ -379,6 +383,13 @@ export default function EventDetailPage() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
+        const count = data.teamCounts?.[eventId];
+        setOverlayTeamCount(typeof count === "number" ? count : null);
+        if (!userId) {
+          setHasMyRoster(false);
+          setIsRegisteredNoRoster(false);
+          return;
+        }
         const mine: string[] = data.mine ?? [];
         const registered: string[] = data.registered ?? [];
         setHasMyRoster(mine.includes(eventId));
@@ -789,6 +800,10 @@ export default function EventDetailPage() {
   const sortedWithdrawn = sortTeamList(withdrawnTeams, sortKey, sortDir);
   const sortedTeams = [...sortedActive, ...sortedReserve, ...sortedWithdrawn];
   const activeTeamsCount = activeTeams.length;
+  const shownTeamCount =
+    eventId === DS_MAIN_EVENT_ID && overlayTeamCount != null
+      ? overlayTeamCount
+      : activeTeamsCount;
 
   // Registration window + limit status (computed on client, timezone-safe)
   const now = Date.now();
@@ -981,9 +996,9 @@ export default function EventDetailPage() {
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted" />
             <h2 className="font-bold">Команды</h2>
-            {activeTeamsCount > 0 && (
+            {shownTeamCount > 0 && (
               <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-muted">
-                {activeTeamsCount}
+                {shownTeamCount}
                 {event.participantLimit != null && `/${event.participantLimit}`}
               </span>
             )}
@@ -1738,7 +1753,7 @@ export default function EventDetailPage() {
 
         {teams.length > 0 && (
           <div id="page-event-teams-footer" className="border-t border-border px-5 py-3 text-xs text-muted">
-            {activeTeamsCount} {teamCountWord(activeTeamsCount)}
+            {shownTeamCount} {teamCountWord(shownTeamCount)}
             {event.participantLimit != null && (
               <span className="ml-1 text-muted/70">/ {event.participantLimit}</span>
             )}

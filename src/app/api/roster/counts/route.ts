@@ -8,6 +8,8 @@ import {
   SYRENY_LITE_HIDDEN_TEAM_NAMES,
   normalizeSyrenyLiteName,
 } from "@/lib/syreny-lite";
+import { DS_MAIN_EVENT_ID } from "@/lib/dziki-sopot-seasons";
+import { countDsMainEventTeams } from "@/lib/ds-participants-display";
 
 const TEAM_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -98,6 +100,14 @@ export async function GET() {
     if (hiddenCount > 0) {
       result.teamCounts[SYRENY_LITE_EVENT_ID] -= hiddenCount;
     }
+  }
+
+  // Main Dziki Sopot: calendar cards should match /dziki-sopot/participants
+  // (confirmed + active waitlist), not leftover EventTeam rows.
+  try {
+    result.teamCounts[DS_MAIN_EVENT_ID] = await countDsMainEventTeams();
+  } catch {
+    /* keep EventTeam count */
   }
 
   if (isOrganizer) {

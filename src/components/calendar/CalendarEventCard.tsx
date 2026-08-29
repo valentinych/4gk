@@ -20,6 +20,7 @@ import { getCityColor, type CalendarEvent } from "@/data/calendar";
 import {
   eventUrl,
   formatEventDateTime,
+  isDzikiSopotEvent,
   TYPE_LABELS,
 } from "@/lib/calendar-display";
 import { isDsFridaySync } from "@/lib/ds-friday-syncs";
@@ -187,6 +188,7 @@ export function CalendarEventCard({
           </a>
         )}
         {isLoggedIn &&
+          !isDzikiSopotEvent(event) &&
           (() => {
             const nowMs = Date.now();
             const opens = event.registrationOpensAt

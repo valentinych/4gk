@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { getCityColor } from "@/data/calendar";
 import { GuestJoinForm } from "@/components/calendar/GuestJoinForm";
+import { isDzikiSopotEvent } from "@/lib/calendar-display";
 import { isDsFridaySync } from "@/lib/ds-friday-syncs";
 
 const MONTHS_GEN = [
@@ -1166,7 +1167,7 @@ export default function EventDetailPage() {
         )}
 
         {/* ─── Guest join (no login required) ─── */}
-        {event.allowGuestJoin && !isOrganizer && (
+        {event.allowGuestJoin && !isOrganizer && !isDzikiSopotEvent(event) && (
           <div id="page-event-guest-join-wrap" className="border-b border-border px-5 py-4">
             {alreadyJoined ? (
               <div className="flex items-center gap-2 text-sm text-emerald-700">
@@ -1203,7 +1204,7 @@ export default function EventDetailPage() {
         )}
 
         {/* ─── Player: join ─── */}
-        {!event.allowGuestJoin && !isOrganizer && userId && (
+        {!event.allowGuestJoin && !isOrganizer && userId && !isDzikiSopotEvent(event) && (
           <div id="page-event-player-join" className="border-b border-border px-5 py-4">
             {alreadyJoined ? (
               <div className="flex items-center gap-2 text-sm text-emerald-700">
@@ -1470,7 +1471,7 @@ export default function EventDetailPage() {
         )}
 
         {/* ─── Not logged in ─── */}
-        {!event.allowGuestJoin && !userId && (
+        {!event.allowGuestJoin && !userId && !isDzikiSopotEvent(event) && (
           <div id="page-event-signin-cta" className="border-b border-border px-5 py-4">
             <Link
               href={`/auth/signin?callbackUrl=/calendar/${event.id}`}

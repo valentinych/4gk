@@ -1648,7 +1648,7 @@ function EventCard({
             <ExternalLink className="h-3 w-3" />
           </a>
         )}
-        {isLoggedIn && (() => {
+        {isLoggedIn && !isDzikiSopotEvent(event) && (() => {
           const nowMs = Date.now();
           const opens = event.registrationOpensAt ? new Date(event.registrationOpensAt).getTime() : null;
           const closes = event.registrationClosesAt ? new Date(event.registrationClosesAt).getTime() : null;

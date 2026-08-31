@@ -19,6 +19,8 @@ export type DsDisplayParticipant = DsParticipant & {
   displayName: string | null;
   /** Rating/official name shown muted when a one-time name is set. */
   officialName: string;
+  /** TeamRoster submitted for the main DS calendar event. */
+  hasRoster: boolean;
 };
 
 /** ASCII unit separator. NUL cannot be stored in Postgres JSONB. */
@@ -86,6 +88,7 @@ export function applyDsOverrides(
         eventTeamId: null,
         displayName: null,
         officialName: p.team,
+        hasRoster: false,
       };
     }
 
@@ -102,6 +105,7 @@ export function applyDsOverrides(
         eventTeamId: null,
         displayName: null,
         officialName: p.team,
+        hasRoster: false,
       };
     }
 
@@ -113,6 +117,7 @@ export function applyDsOverrides(
       eventTeamId: null,
       displayName: null,
       officialName: p.team,
+      hasRoster: false,
     };
   });
 }

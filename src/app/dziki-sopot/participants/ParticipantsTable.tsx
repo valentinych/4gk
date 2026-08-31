@@ -2,7 +2,7 @@
 
 import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ExternalLink, Loader2, Pencil, X } from "lucide-react";
+import { Check, CheckCircle2, ExternalLink, Loader2, Pencil, X } from "lucide-react";
 import type { ParticipantCategory } from "@/lib/ds-participants";
 import type { DsDisplayParticipant } from "@/lib/ds-participants-overrides";
 import {
@@ -48,17 +48,6 @@ const CAT_CONFIG: Record<
     badgeCls: "bg-gray-100 text-gray-500",
   },
 };
-
-function fmtTimestamp(raw: string): string {
-  if (!raw) return "—";
-  const parts = raw.trim().split(" ");
-  const datePart = parts[0] ?? "";
-  const timePart = parts[1] ?? "";
-  const [day, month] = datePart.split(".");
-  const timeShort = timePart.slice(0, 5);
-  if (!day || !month) return raw;
-  return `${day}.${month} ${timeShort}`;
-}
 
 function TrafficLight({ confirmed }: { confirmed: boolean }) {
   if (!confirmed) return <span className="inline-block h-3 w-3" />;
@@ -203,9 +192,11 @@ export function ParticipantsTable({
               <th className="px-3 py-2.5 text-center w-6" title="Статус участия" />
               <th className="px-3 py-2.5 text-center w-8">#</th>
               <th className="px-3 py-2.5 text-left">Команда</th>
+              <th className="px-1.5 py-2.5 text-center w-14 whitespace-nowrap" title="Подан состав">
+                Состав
+              </th>
               <th className="px-3 py-2.5 text-left hidden sm:table-cell">Город</th>
               <th className="px-3 py-2.5 text-right hidden sm:table-cell">Место</th>
-              <th className="px-3 py-2.5 text-left hidden lg:table-cell">Зарегистрировалась</th>
               <th className="px-3 py-2.5 text-left">Категория</th>
               {isAdmin && <th className="px-2 py-2.5 w-16" />}
             </tr>
@@ -255,6 +246,18 @@ export function ParticipantsTable({
                       />
                     </td>
 
+                    <td className="px-1.5 py-2 text-center">
+                      {p.hasRoster ? (
+                        <span title="Состав подан" className="inline-flex justify-center">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-hidden />
+                        </span>
+                      ) : (
+                        <span title="Состав не подан" className="text-muted/40">
+                          —
+                        </span>
+                      )}
+                    </td>
+
                     <td
                       className={`px-3 py-2 text-muted hidden sm:table-cell ${strike ? "line-through" : ""}`}
                     >
@@ -269,10 +272,6 @@ export function ParticipantsTable({
                       ) : (
                         <span className="text-muted">—</span>
                       )}
-                    </td>
-
-                    <td className="px-3 py-2 text-xs text-muted tabular-nums hidden lg:table-cell whitespace-nowrap">
-                      {fmtTimestamp(p.registeredAt)}
                     </td>
 
                     <td className="px-3 py-2">

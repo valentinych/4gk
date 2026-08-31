@@ -91,9 +91,9 @@ function ParticipantsSkeleton() {
             <div className="h-3 w-3 rounded-full bg-muted/25" />
             <div className="h-3 w-6 rounded bg-muted/20" />
             <div className="h-3 flex-1 rounded bg-muted/20" />
+            <div className="h-4 w-4 rounded-full bg-muted/20" />
             <div className="hidden sm:block h-3 w-20 rounded bg-muted/15" />
             <div className="hidden sm:block h-3 w-10 rounded bg-muted/15" />
-            <div className="hidden lg:block h-3 w-24 rounded bg-muted/15" />
             <div className="h-5 w-24 rounded-full bg-muted/20" />
           </div>
         ))}

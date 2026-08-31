@@ -35,6 +35,11 @@ type EventTeamNameRow = {
   displayName: string | null;
 };
 
+type RosterRow = {
+  teamChgkId: number | null;
+  teamName: string;
+};
+
 function normTeamName(s: string): string {
   return s.trim().toLowerCase();
 }
@@ -43,6 +48,7 @@ function normTeamName(s: string): string {
 function applyEventTeamNames(
   participants: DsDisplayParticipant[],
   teams: EventTeamNameRow[],
+  rosters: RosterRow[],
 ): DsDisplayParticipant[] {
   const byChgkId = new Map<number, EventTeamNameRow>();
   const byName = new Map<string, EventTeamNameRow>();
@@ -55,17 +61,42 @@ function applyEventTeamNames(
     }
   }
 
+  const rosterChgkIds = new Set<number>();
+  const rosterNames = new Set<string>();
+  for (const r of rosters) {
+    if (r.teamChgkId && r.teamChgkId > 0) {
+      rosterChgkIds.add(r.teamChgkId);
+      const linked = byChgkId.get(r.teamChgkId);
+      if (linked) {
+        for (const raw of [linked.teamName, linked.displayName]) {
+          if (raw) rosterNames.add(normTeamName(raw));
+        }
+      }
+    }
+    if (r.teamName) rosterNames.add(normTeamName(r.teamName));
+  }
+
   return participants.map((p) => {
     const et =
       p.teamId > 0
         ? byChgkId.get(p.teamId)
         : byName.get(normTeamName(p.team));
-    if (!et) return p;
+
+    const nameHit = [p.team, et?.teamName, et?.displayName]
+      .filter((s): s is string => !!s)
+      .some((s) => rosterNames.has(normTeamName(s)));
+    const hasRoster =
+      (p.teamId > 0 && rosterChgkIds.has(p.teamId)) ||
+      (et != null && et.teamChgkId > 0 && rosterChgkIds.has(et.teamChgkId)) ||
+      nameHit;
+
+    if (!et) return { ...p, hasRoster };
     return {
       ...p,
       eventTeamId: et.id,
       displayName: et.displayName,
       officialName: et.teamName || p.team,
+      hasRoster,
     };
   });
 }
@@ -114,16 +145,20 @@ export function countParticipants(participants: DsDisplayParticipant[]) {
 }
 
 export async function fetchDsParticipantsForDisplay() {
-  const [{ participants, ratingReleaseDate }, overrides, eventTeams] = await Promise.all([
+  const [{ participants, ratingReleaseDate }, overrides, eventTeams, rosters] = await Promise.all([
     fetchDsParticipants(),
     loadDsOverrides(),
     db.eventTeam.findMany({
       where: { eventId: DS_MAIN_EVENT_ID },
       select: { id: true, teamChgkId: true, teamName: true, displayName: true },
     }),
+    db.teamRoster.findMany({
+      where: { eventId: DS_MAIN_EVENT_ID },
+      select: { teamChgkId: true, teamName: true },
+    }),
   ]);
   const withOverrides = applyDsOverrides(participants, overrides);
-  const withNames = applyEventTeamNames(withOverrides, eventTeams);
+  const withNames = applyEventTeamNames(withOverrides, eventTeams, rosters);
   return { participants: withNames, ratingReleaseDate, overrides };
 }
 

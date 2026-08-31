@@ -35,7 +35,7 @@ function parseRosterPlayers(raw: unknown): RosterPlayerInput[] {
       firstName,
       patronymic: row.patronymic?.trim() || null,
       isCaptain: !!row.isCaptain,
-      isBase: !!row.isBase,
+      isBase: row.isBase === true,
       sortOrder: row.sortOrder ?? i,
     });
   }

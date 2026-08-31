@@ -1,4 +1,4 @@
-import { fetchTeamBasePlayerIds } from "@/lib/chgk";
+import { fetchCurrentSeasonBasePlayerIds } from "@/lib/chgk";
 
 /** Б = base roster, Л = legionnaire. Never К. */
 export function rosterFlag(isBase: boolean): "Б" | "Л" {
@@ -12,6 +12,11 @@ export function playerIsBase(
   return typeof chgkId === "number" && basePlayerIds.has(chgkId);
 }
 
+function trustedClientIsBase(value: unknown): boolean {
+  return value === true;
+}
+
+/** Current-season base IDs only (empty set = season not filled yet). */
 export async function loadBasePlayerIdsByTeam(
   teamChgkIds: Array<number | null | undefined>,
 ): Promise<Map<number, Set<number>>> {
@@ -21,19 +26,25 @@ export async function loadBasePlayerIdsByTeam(
     ),
   ];
   const entries = await Promise.all(
-    unique.map(async (id) => [id, await fetchTeamBasePlayerIds(id)] as const),
+    unique.map(async (id) => [id, await fetchCurrentSeasonBasePlayerIds(id)] as const),
   );
   return new Map(entries);
 }
 
-/** Players without a rating ID, or not on the team's rating base, are legionnaires. */
-export async function withBaseFlags<T extends { chgkId?: number | null }>(
+/**
+ * If the current rating season has a base roster, flags come from rating.
+ * Otherwise (no team, or current season empty) the client's isBase is kept.
+ */
+export async function withBaseFlags<T extends { chgkId?: number | null; isBase?: boolean }>(
   teamChgkId: number | null | undefined,
   players: T[],
 ): Promise<(T & { isBase: boolean })[]> {
   if (!teamChgkId || teamChgkId <= 0) {
-    return players.map((p) => ({ ...p, isBase: false }));
+    return players.map((p) => ({ ...p, isBase: trustedClientIsBase(p.isBase) }));
   }
-  const ids = await fetchTeamBasePlayerIds(teamChgkId);
+  const ids = await fetchCurrentSeasonBasePlayerIds(teamChgkId);
+  if (ids.size === 0) {
+    return players.map((p) => ({ ...p, isBase: trustedClientIsBase(p.isBase) }));
+  }
   return players.map((p) => ({ ...p, isBase: playerIsBase(p.chgkId, ids) }));
 }

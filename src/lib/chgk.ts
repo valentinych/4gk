@@ -72,6 +72,8 @@ export async function fetchPlayerTournaments(playerId: number): Promise<ChgkTour
 export interface TeamRosterInfo {
   basePlayers: ChgkPlayer[];
   recentPlayers: ChgkPlayer[];
+  /** True when the current rating season has a non-empty base roster (no previous-season fallback). */
+  currentSeasonFilled: boolean;
 }
 
 /**
@@ -156,16 +158,30 @@ export async function fetchTeamBasePlayerIds(
   return ids;
 }
 
+/** Current rating season base IDs only — no previous-season fallback. */
+export async function fetchCurrentSeasonBasePlayerIds(teamId: number): Promise<Set<number>> {
+  const seasonId = await fetchCurrentSeasonId();
+  if (!seasonId) return new Set();
+  return fetchTeamBasePlayerIds(teamId, seasonId);
+}
+
 /**
  * Returns base roster players (current season, or previous if current is empty).
  * `recentPlayers` is kept in the return shape for API compatibility but is always empty.
+ * `currentSeasonFilled` is true only when the current season itself has entries.
  */
 export async function fetchTeamRosterInfo(
   teamId: number,
   seasonId?: number,
 ): Promise<TeamRosterInfo> {
-  const basePlayerIds = await fetchTeamBasePlayerIds(teamId, seasonId);
-  if (!basePlayerIds.size) return { basePlayers: [], recentPlayers: [] };
+  const resolvedSeason = seasonId ?? (await fetchCurrentSeasonId()) ?? undefined;
+  const currentIds = await playerIdsFromSeason(teamId, resolvedSeason);
+  const currentSeasonFilled = currentIds.size > 0;
+  const basePlayerIds =
+    currentSeasonFilled || seasonId !== undefined || !resolvedSeason
+      ? currentIds
+      : await playerIdsFromSeason(teamId, resolvedSeason - 1);
+  if (!basePlayerIds.size) return { basePlayers: [], recentPlayers: [], currentSeasonFilled };
 
   const baseIds = [...basePlayerIds].slice(0, 25);
   const playerResults = await Promise.all(baseIds.map((id) => fetchPlayer(id)));
@@ -177,6 +193,7 @@ export async function fetchTeamRosterInfo(
   return {
     basePlayers: baseIds.map((id) => playerMap.get(id)).filter((p): p is ChgkPlayer => !!p),
     recentPlayers: [],
+    currentSeasonFilled,
   };
 }
 

@@ -72,6 +72,7 @@ export function GuestJoinForm({
   const [showRoster, setShowRoster] = useState(requireRoster);
   const [players, setPlayers] = useState<RosterPlayer[]>([]);
   const [basePlayerIds, setBasePlayerIds] = useState<Set<number>>(new Set());
+  const [baseLoaded, setBaseLoaded] = useState(true);
   const [playerQuery, setPlayerQuery] = useState("");
   const [playerResults, setPlayerResults] = useState<ChgkPlayer[]>([]);
   const [playerSearching, setPlayerSearching] = useState(false);
@@ -80,6 +81,7 @@ export function GuestJoinForm({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canEditBase = baseLoaded && basePlayerIds.size === 0;
 
   useEffect(() => {
     if (manualEntry || !query.trim() || selectedTeam) {
@@ -124,12 +126,14 @@ export function GuestJoinForm({
   useEffect(() => {
     if (!selectedTeam) {
       setBasePlayerIds(new Set());
+      setBaseLoaded(true);
       setPlayers((prev) =>
         prev.map((p) => ({ ...p, isCaptain: false, isBase: false })),
       );
       return;
     }
     let cancelled = false;
+    setBaseLoaded(false);
     fetch(`/api/chgk/team-players?teamId=${selectedTeam.id}`)
       .then((r) => r.json())
       .then((ids: unknown) => {
@@ -150,6 +154,9 @@ export function GuestJoinForm({
         setPlayers((prev) =>
           prev.map((p) => ({ ...p, isCaptain: false, isBase: false })),
         );
+      })
+      .finally(() => {
+        if (!cancelled) setBaseLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -207,6 +214,10 @@ export function GuestJoinForm({
         sortOrder: prev.length,
       },
     ]);
+  }
+
+  function setPlayerIsBase(idx: number, isBase: boolean) {
+    setPlayers((prev) => prev.map((x, i) => (i === idx ? { ...x, isBase } : x)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -464,6 +475,11 @@ export function GuestJoinForm({
         )}
         {(showRoster || requireRoster) && (
           <div className="mt-3 space-y-3 rounded-lg border border-border bg-surface p-3">
+            {canEditBase && selectedTeam ? (
+              <p className="text-xs text-muted">
+                Базовый состав 2026/27 ещё не заполнен — можно указать Б или Л вручную.
+              </p>
+            ) : null}
             <div ref={playerSearchRef} className="relative">
               <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2">
                 {playerSearching ? (
@@ -519,7 +535,28 @@ export function GuestJoinForm({
                   placeholder="Имя"
                   className="w-full rounded-md border border-border px-2 py-1.5 text-sm"
                 />
-                {p.isBase ? (
+                {canEditBase ? (
+                  <span className="inline-flex shrink-0 overflow-hidden rounded border border-border text-[10px] font-bold">
+                    <button
+                      type="button"
+                      aria-pressed={p.isBase}
+                      aria-label="Базовый состав"
+                      onClick={() => setPlayerIsBase(idx, true)}
+                      className={`px-1.5 py-0.5 ${p.isBase ? "bg-blue-50 text-blue-700" : "text-muted"}`}
+                    >
+                      Б
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={!p.isBase}
+                      aria-label="Легионер"
+                      onClick={() => setPlayerIsBase(idx, false)}
+                      className={`px-1.5 py-0.5 ${!p.isBase ? "bg-amber-50 text-amber-600" : "text-muted"}`}
+                    >
+                      Л
+                    </button>
+                  </span>
+                ) : p.isBase ? (
                   <span className="shrink-0 text-[10px] font-bold text-blue-700" title="Базовый состав">
                     Б
                   </span>

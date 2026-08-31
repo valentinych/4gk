@@ -35,12 +35,13 @@ export async function GET(_req: Request, { params }: Params) {
   const baseByTeam = await loadBasePlayerIdsByTeam(rosters.map((r) => r.teamChgkId));
 
   for (const roster of rosters) {
-    const baseIds =
+    const currentSeasonIds =
       roster.teamChgkId != null && roster.teamChgkId > 0
         ? (baseByTeam.get(roster.teamChgkId) ?? new Set<number>())
         : null;
+    const useRating = currentSeasonIds != null && currentSeasonIds.size > 0;
     for (const p of roster.players) {
-      const isBase = baseIds ? playerIsBase(p.chgkId, baseIds) : p.isBase;
+      const isBase = useRating ? playerIsBase(p.chgkId, currentSeasonIds) : p.isBase;
       const flag = rosterFlag(isBase);
 
       const cols = [

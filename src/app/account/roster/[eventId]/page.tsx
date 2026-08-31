@@ -18,6 +18,7 @@ export interface SuggestedTeamData {
   city: string | null;
   basePlayers: ChgkPlayer[];
   recentPlayers: ChgkPlayer[];
+  currentSeasonFilled: boolean;
 }
 
 export default async function RosterPage({ params }: Props) {
@@ -65,6 +66,7 @@ export default async function RosterPage({ params }: Props) {
           city: currentTeam.city ?? null,
           basePlayers: rosterInfo.basePlayers,
           recentPlayers: rosterInfo.recentPlayers,
+          currentSeasonFilled: rosterInfo.currentSeasonFilled,
         };
       }
     } catch {

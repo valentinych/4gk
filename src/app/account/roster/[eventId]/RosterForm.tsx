@@ -99,7 +99,9 @@ export default function RosterForm({
   const [players, setPlayers] = useState<RosterPlayer[]>(() => {
     if (initialRoster) return initialRoster.players;
     if (suggestion) {
-      return suggestion.basePlayers.map((p, i) => chgkPlayerToRoster(p, true, i));
+      return suggestion.basePlayers.map((p, i) =>
+        chgkPlayerToRoster(p, suggestion.currentSeasonFilled, i),
+      );
     }
     return [];
   });
@@ -110,9 +112,18 @@ export default function RosterForm({
     suggestion?.recentPlayers ?? [],
   );
 
-  // Base player IDs for the selected team (for auto-detect when searching)
-  const [basePlayerIds, setBasePlayerIds] = useState<Set<number>>(new Set());
+  // Current-season base IDs only (empty = season not filled → manual Б/Л).
+  const [basePlayerIds, setBasePlayerIds] = useState<Set<number>>(() => {
+    if (suggestion?.currentSeasonFilled) {
+      return new Set(suggestion.basePlayers.map((p) => p.id));
+    }
+    return new Set();
+  });
+  const [baseLoaded, setBaseLoaded] = useState(
+    (initialRoster?.teamChgkId ?? suggestion?.teamId ?? null) === null || suggestion != null,
+  );
   const [rosterLoading, setRosterLoading] = useState(false);
+  const canEditBase = baseLoaded && basePlayerIds.size === 0;
 
   // Team search
   const [teamQuery, setTeamQuery] = useState("");
@@ -142,6 +153,7 @@ export default function RosterForm({
   useEffect(() => {
     if (!teamChgkId) {
       setBasePlayerIds(new Set());
+      setBaseLoaded(true);
       return;
     }
     // On the very first render the team comes from suggestedTeamData or an
@@ -149,40 +161,53 @@ export default function RosterForm({
     const skipFill = isInitialTeam.current;
     isInitialTeam.current = false;
     if (skipFill && suggestion) {
-      setBasePlayerIds(new Set(suggestion.basePlayers.map((p) => p.id)));
+      setBasePlayerIds(
+        suggestion.currentSeasonFilled
+          ? new Set(suggestion.basePlayers.map((p) => p.id))
+          : new Set(),
+      );
+      setBaseLoaded(true);
       return;
     }
 
     if (skipFill) {
+      setBaseLoaded(false);
       fetch(`/api/chgk/team-players?teamId=${teamChgkId}`)
         .then((r) => r.json())
         .then((raw: unknown) => {
           const ids = new Set(Array.isArray(raw) ? (raw as number[]) : []);
           setBasePlayerIds(ids);
-          setPlayers((prev) =>
-            prev.map((p) => ({
-              ...p,
-              isBase: typeof p.chgkId === "number" && ids.has(p.chgkId),
-            })),
-          );
+          if (ids.size > 0) {
+            setPlayers((prev) =>
+              prev.map((p) => ({
+                ...p,
+                isBase: typeof p.chgkId === "number" && ids.has(p.chgkId),
+              })),
+            );
+          }
         })
-        .catch(() => setBasePlayerIds(new Set()));
+        .catch(() => setBasePlayerIds(new Set()))
+        .finally(() => setBaseLoaded(true));
       return;
     }
 
     setRosterLoading(true);
+    setBaseLoaded(false);
     fetch(`/api/chgk/team-roster?teamId=${teamChgkId}`)
       .then((r) => r.json())
-      .then((data: { basePlayers: ChgkPlayer[]; recentPlayers: ChgkPlayer[] }) => {
+      .then((data: { basePlayers: ChgkPlayer[]; recentPlayers: ChgkPlayer[]; currentSeasonFilled?: boolean }) => {
         const base = data.basePlayers ?? [];
         const recent = data.recentPlayers ?? [];
-        const ids = new Set(base.map((p) => p.id));
-        setBasePlayerIds(ids);
-        setPlayers(base.map((p, i) => chgkPlayerToRoster(p, true, i)));
+        const filled = !!data.currentSeasonFilled;
+        setBasePlayerIds(filled ? new Set(base.map((p) => p.id)) : new Set());
+        setPlayers(base.map((p, i) => chgkPlayerToRoster(p, filled, i)));
         setRecentSuggestions(recent);
       })
       .catch(() => setBasePlayerIds(new Set()))
-      .finally(() => setRosterLoading(false));
+      .finally(() => {
+        setRosterLoading(false);
+        setBaseLoaded(true);
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamChgkId]);
 
@@ -434,6 +459,7 @@ export default function RosterForm({
                 onClick={() => {
                   setTeamChgkId(null);
                   setBasePlayerIds(new Set());
+                  setBaseLoaded(true);
                   setPlayers([]);
                   setRecentSuggestions([]);
                 }}
@@ -453,6 +479,11 @@ export default function RosterForm({
             Игроки ({players.length})
           </h2>
         </div>
+        {canEditBase && teamChgkId ? (
+          <p className="mb-3 text-xs text-muted">
+            Базовый состав 2026/27 ещё не заполнен — можно указать Б или Л вручную.
+          </p>
+        ) : null}
 
         {/* Player search */}
         <div ref={playerSearchRef} className="relative mb-3">
@@ -531,7 +562,28 @@ export default function RosterForm({
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-3">
                     {p.chgkId && <span className="text-xs font-mono text-muted">ID: {p.chgkId}</span>}
-                    {p.isBase ? (
+                    {canEditBase ? (
+                      <span className="inline-flex overflow-hidden rounded-full border border-border text-xs font-medium">
+                        <button
+                          type="button"
+                          aria-pressed={p.isBase}
+                          aria-label="Базовый состав"
+                          onClick={() => updatePlayer(idx, { isBase: true })}
+                          className={`px-2 py-0.5 ${p.isBase ? "bg-blue-50 text-blue-700" : "text-muted hover:text-foreground"}`}
+                        >
+                          Б
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={!p.isBase}
+                          aria-label="Легионер"
+                          onClick={() => updatePlayer(idx, { isBase: false })}
+                          className={`px-2 py-0.5 ${!p.isBase ? "bg-amber-50 text-amber-700" : "text-muted hover:text-foreground"}`}
+                        >
+                          Л
+                        </button>
+                      </span>
+                    ) : p.isBase ? (
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                         Базовый состав
                       </span>

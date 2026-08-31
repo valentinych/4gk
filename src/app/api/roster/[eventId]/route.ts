@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { withBaseFlags } from "@/lib/roster-flags";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -65,43 +66,34 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: "At least one player is required" }, { status: 400 });
   }
 
+  const teamChgkId = body.teamChgkId ?? null;
+  const flagged = await withBaseFlags(teamChgkId, body.players);
+  const playerRows = flagged.map((p, i) => ({
+    chgkId: p.chgkId ?? null,
+    lastName: p.lastName.trim(),
+    firstName: p.firstName.trim(),
+    patronymic: p.patronymic?.trim() || null,
+    isCaptain: p.isCaptain ?? false,
+    isBase: p.isBase,
+    sortOrder: p.sortOrder ?? i,
+  }));
+
   const roster = await db.teamRoster.upsert({
     where: { eventId_userId: { eventId, userId: session.user.id } },
     create: {
       eventId,
       userId: session.user.id,
       teamName: body.teamName.trim(),
-      teamChgkId: body.teamChgkId ?? null,
+      teamChgkId,
       city: body.city?.trim() || null,
-      players: {
-        create: body.players.map((p, i) => ({
-          chgkId: p.chgkId ?? null,
-          lastName: p.lastName.trim(),
-          firstName: p.firstName.trim(),
-          patronymic: p.patronymic?.trim() || null,
-          isCaptain: p.isCaptain ?? false,
-          isBase: p.isBase ?? false,
-          sortOrder: p.sortOrder ?? i,
-        })),
-      },
+      players: { create: playerRows },
     },
     update: {
       teamName: body.teamName.trim(),
-      teamChgkId: body.teamChgkId ?? null,
+      teamChgkId,
       city: body.city?.trim() || null,
       updatedAt: new Date(),
-      players: {
-        deleteMany: {},
-        create: body.players.map((p, i) => ({
-          chgkId: p.chgkId ?? null,
-          lastName: p.lastName.trim(),
-          firstName: p.firstName.trim(),
-          patronymic: p.patronymic?.trim() || null,
-          isCaptain: p.isCaptain ?? false,
-          isBase: p.isBase ?? false,
-          sortOrder: p.sortOrder ?? i,
-        })),
-      },
+      players: { deleteMany: {}, create: playerRows },
     },
     include: { players: { orderBy: { sortOrder: "asc" } } },
   });

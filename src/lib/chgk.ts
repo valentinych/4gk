@@ -127,36 +127,45 @@ export async function fetchCurrentSeasonId(): Promise<number | null> {
   }
 }
 
-/** Returns IDs of players in a team's current-season base roster. */
-export async function fetchTeamBasePlayerIds(
+async function playerIdsFromSeason(
   teamId: number,
   seasonId?: number,
 ): Promise<Set<number>> {
-  const resolvedSeason = seasonId ?? (await fetchCurrentSeasonId()) ?? undefined;
-  const entries = await fetchTeamSeasons(teamId, resolvedSeason);
+  const entries = await fetchTeamSeasons(teamId, seasonId);
   const ids = new Set<number>();
   for (const e of entries) {
-    if (!resolvedSeason || e.idseason === resolvedSeason) ids.add(e.idplayer);
+    if (!seasonId || e.idseason === seasonId) ids.add(e.idplayer);
   }
   return ids;
 }
 
 /**
- * Returns base roster players (current season only). `recentPlayers` is kept
- * in the return shape for API compatibility but is always empty.
+ * Returns IDs of players in a team's current-season base roster.
+ * If the current season has no entries yet (common early in a season),
+ * falls back to the previous season — unless a specific `seasonId` is passed.
+ */
+export async function fetchTeamBasePlayerIds(
+  teamId: number,
+  seasonId?: number,
+): Promise<Set<number>> {
+  const resolvedSeason = seasonId ?? (await fetchCurrentSeasonId()) ?? undefined;
+  const ids = await playerIdsFromSeason(teamId, resolvedSeason);
+  if (ids.size === 0 && seasonId === undefined && resolvedSeason) {
+    return playerIdsFromSeason(teamId, resolvedSeason - 1);
+  }
+  return ids;
+}
+
+/**
+ * Returns base roster players (current season, or previous if current is empty).
+ * `recentPlayers` is kept in the return shape for API compatibility but is always empty.
  */
 export async function fetchTeamRosterInfo(
   teamId: number,
   seasonId?: number,
 ): Promise<TeamRosterInfo> {
-  const resolvedSeason = seasonId ?? (await fetchCurrentSeasonId()) ?? undefined;
-  const entries = await fetchTeamSeasons(teamId, resolvedSeason);
-  if (!entries.length) return { basePlayers: [], recentPlayers: [] };
-
-  const basePlayerIds = new Set<number>();
-  for (const e of entries) {
-    if (!resolvedSeason || e.idseason === resolvedSeason) basePlayerIds.add(e.idplayer);
-  }
+  const basePlayerIds = await fetchTeamBasePlayerIds(teamId, seasonId);
+  if (!basePlayerIds.size) return { basePlayers: [], recentPlayers: [] };
 
   const baseIds = [...basePlayerIds].slice(0, 25);
   const playerResults = await Promise.all(baseIds.map((id) => fetchPlayer(id)));

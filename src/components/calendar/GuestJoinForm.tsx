@@ -71,6 +71,7 @@ export function GuestJoinForm({
 
   const [showRoster, setShowRoster] = useState(requireRoster);
   const [players, setPlayers] = useState<RosterPlayer[]>([]);
+  const [basePlayerIds, setBasePlayerIds] = useState<Set<number>>(new Set());
   const [playerQuery, setPlayerQuery] = useState("");
   const [playerResults, setPlayerResults] = useState<ChgkPlayer[]>([]);
   const [playerSearching, setPlayerSearching] = useState(false);
@@ -121,6 +122,41 @@ export function GuestJoinForm({
   }, [playerQuery]);
 
   useEffect(() => {
+    if (!selectedTeam) {
+      setBasePlayerIds(new Set());
+      setPlayers((prev) =>
+        prev.map((p) => ({ ...p, isCaptain: false, isBase: false })),
+      );
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/chgk/team-players?teamId=${selectedTeam.id}`)
+      .then((r) => r.json())
+      .then((ids: unknown) => {
+        if (cancelled) return;
+        const set = new Set(Array.isArray(ids) ? (ids as number[]) : []);
+        setBasePlayerIds(set);
+        setPlayers((prev) =>
+          prev.map((p) => ({
+            ...p,
+            isCaptain: false,
+            isBase: typeof p.chgkId === "number" && set.has(p.chgkId),
+          })),
+        );
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setBasePlayerIds(new Set());
+        setPlayers((prev) =>
+          prev.map((p) => ({ ...p, isCaptain: false, isBase: false })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedTeam]);
+
+  useEffect(() => {
     function onClick(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
@@ -150,8 +186,8 @@ export function GuestJoinForm({
         lastName: p.surname,
         firstName: p.name,
         patronymic: p.patronymic || null,
-        isCaptain: prev.length === 0,
-        isBase: true,
+        isCaptain: false,
+        isBase: basePlayerIds.has(p.id),
         sortOrder: prev.length,
       },
     ]);
@@ -166,7 +202,7 @@ export function GuestJoinForm({
         lastName: "",
         firstName: "",
         patronymic: null,
-        isCaptain: prev.length === 0,
+        isCaptain: false,
         isBase: false,
         sortOrder: prev.length,
       },
@@ -483,6 +519,15 @@ export function GuestJoinForm({
                   placeholder="Имя"
                   className="w-full rounded-md border border-border px-2 py-1.5 text-sm"
                 />
+                {p.isBase ? (
+                  <span className="shrink-0 text-[10px] font-bold text-blue-700" title="Базовый состав">
+                    Б
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-[10px] font-bold text-amber-600" title="Легионер">
+                    Л
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => setPlayers((prev) => prev.filter((_, i) => i !== idx))}

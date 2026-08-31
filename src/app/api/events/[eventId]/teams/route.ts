@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchPlayerCurrentTeam } from "@/lib/chgk";
 import { allocateManualTeamChgkId } from "@/lib/event-teams";
+import { withBaseFlags } from "@/lib/roster-flags";
 import { ensureDsFridaySyncEvents, allowsDsGuestJoin, isDsFridaySync } from "@/lib/ds-friday-syncs";
 
 type Params = { params: Promise<{ eventId: string }> };
@@ -57,13 +58,14 @@ async function saveOptionalRoster(opts: {
     });
     userId = guest.id;
   }
-  const playerRows = opts.players.map((p, i) => ({
+  const flagged = await withBaseFlags(opts.teamChgkId, opts.players);
+  const playerRows = flagged.map((p, i) => ({
     chgkId: p.chgkId ?? null,
     lastName: p.lastName,
     firstName: p.firstName,
     patronymic: p.patronymic,
     isCaptain: p.isCaptain ?? false,
-    isBase: p.isBase ?? false,
+    isBase: p.isBase,
     sortOrder: p.sortOrder ?? i,
   }));
   const fields = {

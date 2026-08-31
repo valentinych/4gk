@@ -144,15 +144,29 @@ export default function RosterForm({
       setBasePlayerIds(new Set());
       return;
     }
-    // On the very first render the team comes from suggestedTeamData which already
-    // pre-filled the players — don't overwrite them.
-    if (isInitialTeam.current) {
-      isInitialTeam.current = false;
-      // Still build the basePlayerIds set from the suggestion data
-      if (suggestion) {
-        const ids = new Set(suggestion.basePlayers.map((p) => p.id));
-        setBasePlayerIds(ids);
-      }
+    // On the very first render the team comes from suggestedTeamData or an
+    // existing roster — don't overwrite the player list.
+    const skipFill = isInitialTeam.current;
+    isInitialTeam.current = false;
+    if (skipFill && suggestion) {
+      setBasePlayerIds(new Set(suggestion.basePlayers.map((p) => p.id)));
+      return;
+    }
+
+    if (skipFill) {
+      fetch(`/api/chgk/team-players?teamId=${teamChgkId}`)
+        .then((r) => r.json())
+        .then((raw: unknown) => {
+          const ids = new Set(Array.isArray(raw) ? (raw as number[]) : []);
+          setBasePlayerIds(ids);
+          setPlayers((prev) =>
+            prev.map((p) => ({
+              ...p,
+              isBase: typeof p.chgkId === "number" && ids.has(p.chgkId),
+            })),
+          );
+        })
+        .catch(() => setBasePlayerIds(new Set()));
       return;
     }
 

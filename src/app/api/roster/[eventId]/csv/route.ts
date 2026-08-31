@@ -2,6 +2,11 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import {
+  loadBasePlayerIdsByTeam,
+  playerIsBase,
+  rosterFlag,
+} from "@/lib/roster-flags";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -27,12 +32,16 @@ export async function GET(_req: Request, { params }: Params) {
 
   const BOM = "\uFEFF";
   const rows: string[] = [];
+  const baseByTeam = await loadBasePlayerIdsByTeam(rosters.map((r) => r.teamChgkId));
 
   for (const roster of rosters) {
+    const baseIds =
+      roster.teamChgkId != null && roster.teamChgkId > 0
+        ? (baseByTeam.get(roster.teamChgkId) ?? new Set<number>())
+        : null;
     for (const p of roster.players) {
-      let flag = "Л";
-      if (p.isCaptain) flag = "К";
-      else if (p.isBase) flag = "Б";
+      const isBase = baseIds ? playerIsBase(p.chgkId, baseIds) : p.isBase;
+      const flag = rosterFlag(isBase);
 
       const cols = [
         roster.teamChgkId ?? "",

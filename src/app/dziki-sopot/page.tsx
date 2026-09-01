@@ -17,10 +17,13 @@ function Fallback() {
 }
 
 export default async function DzikiSopotPage() {
-  try {
-    await ensureDsHazaWidget();
-  } catch (e) {
-    if (!isPrismaMissingTable(e)) throw e;
+  // Docker build has no DATABASE_URL; skip seeding so the page can prerender.
+  if (process.env.DATABASE_URL) {
+    try {
+      await ensureDsHazaWidget();
+    } catch (e) {
+      if (!isPrismaMissingTable(e)) throw e;
+    }
   }
 
   return (

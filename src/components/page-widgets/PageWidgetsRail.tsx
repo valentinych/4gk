@@ -6,7 +6,12 @@ import { useSession } from "next-auth/react";
 import { ChevronLeft, Loader2, Plus, Trash2, X } from "lucide-react";
 import ChgkResults from "@/app/ochp/[slug]/ChgkResults";
 import { useToast } from "@/components/Toaster";
-import type { PageWidgetDto } from "@/lib/page-widgets";
+import {
+  PAGE_WIDGET_HAZA,
+  PAGE_WIDGET_LINK,
+  PAGE_WIDGETS_CHANGED_EVENT,
+  type PageWidgetDto,
+} from "@/lib/page-widgets";
 
 export function PageWidgetsRail() {
   const pathname = usePathname();
@@ -19,6 +24,9 @@ export function PageWidgetsRail() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
+  const [addType, setAddType] = useState<typeof PAGE_WIDGET_HAZA | typeof PAGE_WIDGET_LINK>(
+    PAGE_WIDGET_HAZA,
+  );
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -52,9 +60,8 @@ export function PageWidgetsRail() {
     return () => window.removeEventListener("keydown", onKey);
   }, [activeId, open]);
 
-  const visible = widgets != null && (widgets.length > 0 || isAdmin);
-  if (status === "loading" && widgets == null) return null;
-  if (!visible) return null;
+  if (status === "loading") return null;
+  if (!isAdmin) return null;
 
   const active = widgets?.find((w) => w.id === activeId) ?? null;
   const showingResults = open && active?.broadcastId != null;
@@ -66,7 +73,7 @@ export function PageWidgetsRail() {
       const res = await fetch("/api/page-widgets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: pathname, title, url, type: "haza" }),
+        body: JSON.stringify({ path: pathname, title, url, type: addType }),
       });
       const json = (await res.json()) as PageWidgetDto & { error?: string };
       if (!res.ok) {
@@ -76,6 +83,7 @@ export function PageWidgetsRail() {
       setTitle("");
       setUrl("");
       toast("Плитка добавлена", "success");
+      window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
       await load(pathname);
     } catch {
       toast("Не удалось сохранить", "error");
@@ -98,6 +106,7 @@ export function PageWidgetsRail() {
       }
       if (activeId === id) setActiveId(null);
       toast("Плитка удалена", "success");
+      window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
       await load(pathname);
     } catch {
       toast("Не удалось удалить", "error");
@@ -177,22 +186,41 @@ export function PageWidgetsRail() {
               <div className="space-y-3">
                 {widgets != null && widgets.length === 0 && !isAdmin ? null : (
                   <ul className="space-y-2">
-                    {(widgets ?? []).map((w) => (
+                    {(widgets ?? []).map((w) => {
+                      const tileClass =
+                        "min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 py-3 text-left hover:bg-surface-hover";
+                      const tileInner = (
+                        <>
+                          <span className="block text-sm font-medium">{w.title}</span>
+                          <span className="mt-0.5 block truncate text-xs text-muted">
+                            {w.url}
+                          </span>
+                        </>
+                      );
+                      return (
                       <li key={w.id}>
                         <div className="flex items-stretch gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (w.broadcastId == null) return;
-                              setActiveId(w.id);
-                            }}
-                            className="min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 py-3 text-left hover:bg-surface-hover"
-                          >
-                            <span className="block text-sm font-medium">{w.title}</span>
-                            <span className="mt-0.5 block truncate text-xs text-muted">
-                              {w.url}
-                            </span>
-                          </button>
+                          {w.type === PAGE_WIDGET_LINK ? (
+                            <a
+                              href={w.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={tileClass}
+                            >
+                              {tileInner}
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (w.broadcastId == null) return;
+                                setActiveId(w.id);
+                              }}
+                              className={tileClass}
+                            >
+                              {tileInner}
+                            </button>
+                          )}
                           {isAdmin && (
                             <button
                               type="button"
@@ -210,13 +238,14 @@ export function PageWidgetsRail() {
                           )}
                         </div>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
 
                 {widgets != null && widgets.length === 0 && isAdmin && (
                   <p className="rounded-xl border border-dashed border-border bg-surface/50 px-3 py-6 text-center text-sm text-muted">
-                    На этой странице пока нет плиток ХаЗа.
+                    На этой странице пока нет плиток.
                   </p>
                 )}
 
@@ -226,8 +255,40 @@ export function PageWidgetsRail() {
                     className="rounded-xl border border-border bg-surface p-3 space-y-2.5"
                   >
                     <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                      Добавить компонент ХаЗа
+                      Добавить плитку
                     </p>
+                    <div className="flex rounded-lg border border-border p-0.5">
+                      <button
+                        type="button"
+                        aria-pressed={addType === PAGE_WIDGET_HAZA}
+                        onClick={() => {
+                          setAddType(PAGE_WIDGET_HAZA);
+                          setUrl("");
+                        }}
+                        className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
+                          addType === PAGE_WIDGET_HAZA
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted hover:text-foreground"
+                        }`}
+                      >
+                        ХаЗа
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={addType === PAGE_WIDGET_LINK}
+                        onClick={() => {
+                          setAddType(PAGE_WIDGET_LINK);
+                          setUrl("");
+                        }}
+                        className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
+                          addType === PAGE_WIDGET_LINK
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted hover:text-foreground"
+                        }`}
+                      >
+                        Ссылка
+                      </button>
+                    </div>
                     <label className="block">
                       <span className="mb-1 block text-xs text-muted">Название плитки</span>
                       <input
@@ -235,17 +296,26 @@ export function PageWidgetsRail() {
                         onChange={(e) => setTitle(e.target.value)}
                         maxLength={80}
                         required
-                        placeholder="Результаты ХаЗа"
+                        placeholder={
+                          addType === PAGE_WIDGET_LINK ? "Название ссылки" : "Результаты ХаЗа"
+                        }
                         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                       />
                     </label>
                     <label className="block">
-                      <span className="mb-1 block text-xs text-muted">Ссылка haza.online</span>
+                      <span className="mb-1 block text-xs text-muted">
+                        {addType === PAGE_WIDGET_LINK ? "Ссылка" : "Ссылка haza.online"}
+                      </span>
                       <input
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
+                        type="url"
                         required
-                        placeholder="https://www.haza.online/broadcast/672"
+                        placeholder={
+                          addType === PAGE_WIDGET_LINK
+                            ? "https://example.com"
+                            : "https://www.haza.online/broadcast/672"
+                        }
                         className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                       />
                     </label>

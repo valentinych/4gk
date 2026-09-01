@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ToastProvider } from "@/components/Toaster";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { PageWidgetTiles } from "@/components/page-widgets/PageWidgetTiles";
 import { PageWidgetsRail } from "@/components/page-widgets/PageWidgetsRail";
 import "./globals.css";
 
@@ -80,6 +81,7 @@ export default function RootLayout({
               <Header />
               <main id="root-main" className="min-h-screen">
                 {children}
+                <PageWidgetTiles />
               </main>
               <Footer />
               <PageWidgetsRail />

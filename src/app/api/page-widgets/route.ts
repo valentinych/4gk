@@ -4,11 +4,13 @@ import { db } from "@/lib/db";
 import {
   DS_HAZA_WIDGET_PATH,
   PAGE_WIDGET_HAZA,
+  PAGE_WIDGET_LINK,
   ensureDsHazaWidget,
   hazaBroadcastUrl,
   isPrismaMissingTable,
   normalizePagePath,
   parseHazaBroadcastId,
+  parseHttpUrl,
   toPageWidgetDto,
 } from "@/lib/page-widgets";
 
@@ -62,19 +64,31 @@ export async function POST(req: Request) {
   }
 
   const type = typeof body.type === "string" && body.type.trim() ? body.type.trim() : PAGE_WIDGET_HAZA;
-  if (type !== PAGE_WIDGET_HAZA) {
-    return NextResponse.json({ error: "Поддерживается только тип haza" }, { status: 400 });
+  if (type !== PAGE_WIDGET_HAZA && type !== PAGE_WIDGET_LINK) {
+    return NextResponse.json({ error: "Неизвестный тип плитки" }, { status: 400 });
   }
 
   const rawUrl = typeof body.url === "string" ? body.url.trim() : "";
-  const broadcastId = parseHazaBroadcastId(rawUrl);
-  if (broadcastId == null) {
-    return NextResponse.json(
-      { error: "Вставьте ссылку вида https://www.haza.online/broadcast/672" },
-      { status: 400 },
-    );
+  let url: string;
+  if (type === PAGE_WIDGET_HAZA) {
+    const broadcastId = parseHazaBroadcastId(rawUrl);
+    if (broadcastId == null) {
+      return NextResponse.json(
+        { error: "Вставьте ссылку вида https://www.haza.online/broadcast/672" },
+        { status: 400 },
+      );
+    }
+    url = hazaBroadcastUrl(broadcastId);
+  } else {
+    const parsed = parseHttpUrl(rawUrl);
+    if (parsed == null) {
+      return NextResponse.json(
+        { error: "Укажите ссылку http:// или https://" },
+        { status: 400 },
+      );
+    }
+    url = parsed;
   }
-  const url = hazaBroadcastUrl(broadcastId);
 
   try {
     const last = await db.pageWidget.findFirst({
@@ -106,7 +120,12 @@ export async function POST(req: Request) {
       (e as { code: string }).code === "P2002"
     ) {
       return NextResponse.json(
-        { error: "Такая трансляция уже добавлена на эту страницу" },
+        {
+          error:
+            type === PAGE_WIDGET_LINK
+              ? "Такая ссылка уже добавлена на эту страницу"
+              : "Такая трансляция уже добавлена на эту страницу",
+        },
         { status: 409 },
       );
     }

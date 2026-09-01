@@ -3,6 +3,8 @@ import { ochpChgkHazaBroadcastAllowlist } from "@/lib/ochp-seasons";
 import { turnirushkiHazaBroadcastAllowlist } from "@/lib/turnirushki-games";
 
 export const PAGE_WIDGET_HAZA = "haza";
+export const PAGE_WIDGET_LINK = "link";
+export const PAGE_WIDGETS_CHANGED_EVENT = "4gk:page-widgets-changed";
 
 export const DS_HAZA_WIDGET_PATH = "/dziki-sopot";
 export const DS_HAZA_WIDGET_URL = "https://www.haza.online/broadcast/672";
@@ -32,6 +34,18 @@ export function normalizePagePath(raw: string | null | undefined): string | null
   if (path.length > 1) path = path.replace(/\/+$/, "");
   if (!/^\/[A-Za-z0-9\-._/~]*$/.test(path)) return null;
   return path;
+}
+
+/** Canonical http(s) URL, or null if not a valid web URL. */
+export function parseHttpUrl(raw: string): string | null {
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    if (!u.hostname) return null;
+    return u.href;
+  } catch {
+    return null;
+  }
 }
 
 export function parseHazaBroadcastId(url: string): number | null {
@@ -77,7 +91,7 @@ export function toPageWidgetDto(row: {
     url: row.url,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt.toISOString(),
-    broadcastId: parseHazaBroadcastId(row.url),
+    broadcastId: row.type === PAGE_WIDGET_HAZA ? parseHazaBroadcastId(row.url) : null,
   };
 }
 

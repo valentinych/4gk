@@ -3,15 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ChevronLeft, Loader2, Plus, Trash2, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import ChgkResults from "@/app/ochp/[slug]/ChgkResults";
 import { useToast } from "@/components/Toaster";
+import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
 import {
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
   PAGE_WIDGETS_CHANGED_EVENT,
   type PageWidgetDto,
+  type PageWidgetType,
 } from "@/lib/page-widgets";
+
+const tabClass =
+  "max-h-24 w-8 shrink-0 overflow-hidden rounded-l-xl border border-r-0 border-border bg-surface px-1.5 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-surface-hover";
 
 export function PageWidgetsRail() {
   const pathname = usePathname();
@@ -22,13 +27,11 @@ export function PageWidgetsRail() {
   const [widgets, setWidgets] = useState<PageWidgetDto[] | null>(null);
   const [open, setOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
-  const [addType, setAddType] = useState<typeof PAGE_WIDGET_HAZA | typeof PAGE_WIDGET_LINK>(
-    PAGE_WIDGET_HAZA,
-  );
+  const [addType, setAddType] = useState<PageWidgetType>(PAGE_WIDGET_HAZA);
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async (path: string) => {
     try {
@@ -45,26 +48,44 @@ export function PageWidgetsRail() {
     setWidgets(null);
     setActiveId(null);
     setOpen(false);
+    setAdding(false);
     void load(pathname);
   }, [load, pathname]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (activeId) setActiveId(null);
-        else setOpen(false);
-      }
+      if (e.key === "Escape") closePanel();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeId, open]);
+  }, [open]);
 
-  if (status === "loading") return null;
-  if (!isAdmin) return null;
+  function closePanel() {
+    setActiveId(null);
+    setAdding(false);
+    setOpen(false);
+  }
 
-  const active = widgets?.find((w) => w.id === activeId) ?? null;
-  const showingResults = open && active?.broadcastId != null;
+  function openHaza(id: string) {
+    if (open && activeId === id && !adding) {
+      closePanel();
+      return;
+    }
+    setAdding(false);
+    setActiveId(id);
+    setOpen(true);
+  }
+
+  function openAdd() {
+    if (open && adding) {
+      closePanel();
+      return;
+    }
+    setActiveId(null);
+    setAdding(true);
+    setOpen(true);
+  }
 
   async function onAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +106,7 @@ export function PageWidgetsRail() {
       toast("Плитка добавлена", "success");
       window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
       await load(pathname);
+      closePanel();
     } catch {
       toast("Не удалось сохранить", "error");
     } finally {
@@ -92,249 +114,142 @@ export function PageWidgetsRail() {
     }
   }
 
-  async function onDelete(id: string) {
-    if (!window.confirm("Удалить эту плитку с страницы?")) return;
-    setDeletingId(id);
-    try {
-      const res = await fetch(`/api/page-widgets/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const json = (await res.json()) as { error?: string };
-        toast(json.error ?? "Не удалось удалить", "error");
-        return;
-      }
-      if (activeId === id) setActiveId(null);
-      toast("Плитка удалена", "success");
-      window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
-      await load(pathname);
-    } catch {
-      toast("Не удалось удалить", "error");
-    } finally {
-      setDeletingId(null);
-    }
-  }
+  if (widgets == null) return null;
+  if (status === "loading" && widgets.length === 0) return null;
+  if (widgets.length === 0 && !isAdmin) return null;
+
+  const visible = [
+    ...widgets.filter((w) => !w.archived),
+    ...widgets.filter((w) => w.archived),
+  ];
+  const active = widgets.find((w) => w.id === activeId) ?? null;
+  const showingResults = open && !adding && active?.broadcastId != null;
+
+  const tabs = (
+    <div
+      className="flex max-h-[min(55vh,calc(100dvh-8rem))] flex-col items-end gap-1 overflow-y-auto"
+      aria-label="Плитки страницы"
+    >
+      {visible.map((w) => {
+        const selected = open && !adding && activeId === w.id;
+        const labelClass = `${tabClass}${selected ? " border-accent/40 bg-surface-hover" : ""}${
+          w.archived ? " opacity-50 grayscale" : ""
+        }`;
+        const label = (
+          <span
+            className="block max-h-20 overflow-hidden text-ellipsis whitespace-nowrap"
+            style={{ writingMode: "vertical-rl" }}
+          >
+            {w.title}
+          </span>
+        );
+        if (w.type === PAGE_WIDGET_LINK) {
+          return (
+            <a
+              key={w.id}
+              href={w.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={labelClass}
+              title={w.title}
+              aria-label={w.title}
+            >
+              {label}
+            </a>
+          );
+        }
+        return (
+          <button
+            key={w.id}
+            type="button"
+            aria-expanded={selected}
+            title={w.title}
+            aria-label={w.title}
+            onClick={() => openHaza(w.id)}
+            className={labelClass}
+          >
+            {label}
+          </button>
+        );
+      })}
+      {isAdmin ? (
+        <button
+          type="button"
+          onClick={openAdd}
+          className={`${tabClass} flex h-8 items-center justify-center ${
+            adding && open ? "border-accent/40 bg-surface-hover" : ""
+          }`}
+          aria-label="Добавить плитку"
+          title="Добавить"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      ) : null}
+    </div>
+  );
 
   return (
     <>
       {open && (
         <button
           type="button"
-          aria-label="Закрыть панель результатов"
+          aria-label="Закрыть панель"
           className="fixed inset-x-0 bottom-0 top-14 z-40 bg-black/40 md:bg-black/20"
-          onClick={() => {
-            setActiveId(null);
-            setOpen(false);
-          }}
+          onClick={closePanel}
         />
       )}
 
-      {!open && (
-        <button
-          id="cmp-page-widgets-tab"
-          type="button"
-          onClick={() => setOpen(true)}
-          className="fixed right-0 top-1/3 z-40 rounded-l-xl border border-r-0 border-border bg-surface px-2 py-3 text-xs font-medium text-foreground shadow-sm hover:bg-surface-hover"
-          aria-expanded={false}
-          aria-controls="cmp-page-widgets-panel"
-        >
-          ХаЗа
-        </button>
-      )}
-
-      {open && (
+      {!open ? (
+        <div id="cmp-page-widgets-tab" className="fixed right-0 top-24 z-40">
+          {tabs}
+        </div>
+      ) : (
         <aside
           id="cmp-page-widgets-panel"
-          className={`fixed bottom-0 right-0 top-14 z-40 flex flex-col border-l border-border bg-background shadow-xl ${
-            showingResults ? "w-full max-w-3xl" : "w-full max-w-md"
+          className={`fixed bottom-0 right-0 top-14 z-40 flex w-full flex-row-reverse ${
+            showingResults ? "max-w-3xl" : "max-w-md"
           }`}
           role="dialog"
           aria-modal="true"
-          aria-label="Результаты ХаЗа"
+          aria-label={adding ? "Добавить плитку" : (active?.title ?? "Плитка")}
         >
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-            {active ? (
+          <div className="flex shrink-0 flex-col justify-center py-2">{tabs}</div>
+          <div className="flex min-w-0 flex-1 flex-col border-l border-border bg-background shadow-xl">
+            <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
+              <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">
+                {adding ? "Добавить плитку" : (active?.title ?? "")}
+              </h2>
               <button
                 type="button"
-                onClick={() => setActiveId(null)}
+                onClick={closePanel}
                 className="rounded-lg p-1.5 text-muted hover:bg-surface hover:text-foreground"
-                aria-label="К списку плиток"
+                aria-label="Закрыть"
               >
-                <ChevronLeft className="h-5 w-5" />
+                <X className="h-5 w-5" />
               </button>
-            ) : null}
-            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">
-              {active ? active.title : "Результаты ХаЗа"}
-            </h2>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveId(null);
-                setOpen(false);
-              }}
-              className="rounded-lg p-1.5 text-muted hover:bg-surface hover:text-foreground"
-              aria-label="Закрыть"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            {active?.broadcastId != null ? (
-              <ChgkResults broadcastId={active.broadcastId} apiPath="/api/haza" />
-            ) : (
-              <div className="space-y-3">
-                {widgets != null && widgets.length === 0 && !isAdmin ? null : (
-                  <ul className="space-y-2">
-                    {(widgets ?? []).map((w) => {
-                      const tileClass =
-                        "min-w-0 flex-1 rounded-xl border border-border bg-surface px-3 py-3 text-left hover:bg-surface-hover";
-                      const tileInner = (
-                        <>
-                          <span className="block text-sm font-medium">{w.title}</span>
-                          <span className="mt-0.5 block truncate text-xs text-muted">
-                            {w.url}
-                          </span>
-                        </>
-                      );
-                      return (
-                      <li key={w.id}>
-                        <div className="flex items-stretch gap-1">
-                          {w.type === PAGE_WIDGET_LINK ? (
-                            <a
-                              href={w.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={tileClass}
-                            >
-                              {tileInner}
-                            </a>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (w.broadcastId == null) return;
-                                setActiveId(w.id);
-                              }}
-                              className={tileClass}
-                            >
-                              {tileInner}
-                            </button>
-                          )}
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => void onDelete(w.id)}
-                              disabled={deletingId === w.id}
-                              className="rounded-xl border border-border px-2.5 text-muted hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                              aria-label={`Удалить ${w.title}`}
-                            >
-                              {deletingId === w.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-4 w-4" />
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </li>
-                      );
-                    })}
-                  </ul>
-                )}
-
-                {widgets != null && widgets.length === 0 && isAdmin && (
-                  <p className="rounded-xl border border-dashed border-border bg-surface/50 px-3 py-6 text-center text-sm text-muted">
-                    На этой странице пока нет плиток.
-                  </p>
-                )}
-
-                {isAdmin && (
-                  <form
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              {adding ? (
+                <div className="rounded-xl border border-border bg-surface p-3">
+                  <PageWidgetForm
+                    title={title}
+                    url={url}
+                    type={addType}
+                    saving={saving}
+                    submitLabel="Сохранить"
+                    onTitle={setTitle}
+                    onUrl={setUrl}
+                    onType={(t) => {
+                      setAddType(t);
+                      setUrl("");
+                    }}
                     onSubmit={(e) => void onAdd(e)}
-                    className="rounded-xl border border-border bg-surface p-3 space-y-2.5"
-                  >
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                      Добавить плитку
-                    </p>
-                    <div className="flex rounded-lg border border-border p-0.5">
-                      <button
-                        type="button"
-                        aria-pressed={addType === PAGE_WIDGET_HAZA}
-                        onClick={() => {
-                          setAddType(PAGE_WIDGET_HAZA);
-                          setUrl("");
-                        }}
-                        className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
-                          addType === PAGE_WIDGET_HAZA
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted hover:text-foreground"
-                        }`}
-                      >
-                        ХаЗа
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={addType === PAGE_WIDGET_LINK}
-                        onClick={() => {
-                          setAddType(PAGE_WIDGET_LINK);
-                          setUrl("");
-                        }}
-                        className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
-                          addType === PAGE_WIDGET_LINK
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted hover:text-foreground"
-                        }`}
-                      >
-                        Ссылка
-                      </button>
-                    </div>
-                    <label className="block">
-                      <span className="mb-1 block text-xs text-muted">Название плитки</span>
-                      <input
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        maxLength={80}
-                        required
-                        placeholder={
-                          addType === PAGE_WIDGET_LINK ? "Название ссылки" : "Результаты ХаЗа"
-                        }
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-xs text-muted">
-                        {addType === PAGE_WIDGET_LINK ? "Ссылка" : "Ссылка haza.online"}
-                      </span>
-                      <input
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        type="url"
-                        required
-                        placeholder={
-                          addType === PAGE_WIDGET_LINK
-                            ? "https://example.com"
-                            : "https://www.haza.online/broadcast/672"
-                        }
-                        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-sm font-medium text-background hover:bg-accent-hover disabled:opacity-50"
-                    >
-                      {saving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4" />
-                      )}
-                      Сохранить
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
+                  />
+                </div>
+              ) : active?.broadcastId != null ? (
+                <ChgkResults broadcastId={active.broadcastId} apiPath="/api/haza" />
+              ) : null}
+            </div>
           </div>
         </aside>
       )}

@@ -10,6 +10,8 @@ export const DS_HAZA_WIDGET_PATH = "/dziki-sopot";
 export const DS_HAZA_WIDGET_URL = "https://www.haza.online/broadcast/672";
 export const DS_HAZA_WIDGET_TITLE = "Результаты ХаЗа";
 
+export type PageWidgetType = typeof PAGE_WIDGET_HAZA | typeof PAGE_WIDGET_LINK;
+
 export interface PageWidgetDto {
   id: string;
   path: string;
@@ -17,6 +19,7 @@ export interface PageWidgetDto {
   title: string;
   url: string;
   sortOrder: number;
+  archived: boolean;
   createdAt: string;
   broadcastId: number | null;
 }
@@ -74,6 +77,54 @@ export function isPrismaMissingTable(e: unknown): boolean {
   );
 }
 
+export function uniqueWidgetConflictMessage(type: string): string {
+  return type === PAGE_WIDGET_LINK
+    ? "Такая ссылка уже добавлена на эту страницу"
+    : "Такая трансляция уже добавлена на эту страницу";
+}
+
+export function isPrismaUniqueConflict(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "code" in e &&
+    (e as { code: string }).code === "P2002"
+  );
+}
+
+/** Validate title/url/type for create and update. */
+export function resolveWidgetFields(input: {
+  title?: unknown;
+  url?: unknown;
+  type?: unknown;
+}): { error: string } | { title: string; url: string; type: PageWidgetType } {
+  const title = typeof input.title === "string" ? input.title.trim() : "";
+  if (!title || title.length > 80) {
+    return { error: "Укажите название плитки (до 80 символов)" };
+  }
+
+  const type =
+    typeof input.type === "string" && input.type.trim() ? input.type.trim() : PAGE_WIDGET_HAZA;
+  if (type !== PAGE_WIDGET_HAZA && type !== PAGE_WIDGET_LINK) {
+    return { error: "Неизвестный тип плитки" };
+  }
+
+  const rawUrl = typeof input.url === "string" ? input.url.trim() : "";
+  if (type === PAGE_WIDGET_HAZA) {
+    const broadcastId = parseHazaBroadcastId(rawUrl);
+    if (broadcastId == null) {
+      return { error: "Вставьте ссылку вида https://www.haza.online/broadcast/672" };
+    }
+    return { title, url: hazaBroadcastUrl(broadcastId), type };
+  }
+
+  const parsed = parseHttpUrl(rawUrl);
+  if (parsed == null) {
+    return { error: "Укажите ссылку http:// или https://" };
+  }
+  return { title, url: parsed, type };
+}
+
 export function toPageWidgetDto(row: {
   id: string;
   path: string;
@@ -81,6 +132,7 @@ export function toPageWidgetDto(row: {
   title: string;
   url: string;
   sortOrder: number;
+  archived: boolean;
   createdAt: Date;
 }): PageWidgetDto {
   return {
@@ -90,6 +142,7 @@ export function toPageWidgetDto(row: {
     title: row.title,
     url: row.url,
     sortOrder: row.sortOrder,
+    archived: row.archived,
     createdAt: row.createdAt.toISOString(),
     broadcastId: row.type === PAGE_WIDGET_HAZA ? parseHazaBroadcastId(row.url) : null,
   };

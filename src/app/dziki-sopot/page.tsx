@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { DzikiSopotPageClient } from "./DzikiSopotPageClient";
+import { ensureDsHazaWidget, isPrismaMissingTable } from "@/lib/page-widgets";
 
 export const metadata: Metadata = {
   title: "Dziki Sopot",
@@ -15,7 +16,13 @@ function Fallback() {
   );
 }
 
-export default function DzikiSopotPage() {
+export default async function DzikiSopotPage() {
+  try {
+    await ensureDsHazaWidget();
+  } catch (e) {
+    if (!isPrismaMissingTable(e)) throw e;
+  }
+
   return (
     <Suspense fallback={<Fallback />}>
       <DzikiSopotPageClient />

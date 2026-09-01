@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CookieConsent } from "@/components/CookieConsent";
 import { ToastProvider } from "@/components/Toaster";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { PageWidgetsRail } from "@/components/page-widgets/PageWidgetsRail";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -81,6 +82,7 @@ export default function RootLayout({
                 {children}
               </main>
               <Footer />
+              <PageWidgetsRail />
               <CookieConsent />
             </ToastProvider>
           </SessionProvider>

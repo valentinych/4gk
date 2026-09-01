@@ -180,3 +180,20 @@ enum Role {
   ORGANIZER
   ADMIN
 }
+
+// PageWidget: Haza (and later) tiles attached to a page path.
+// This repo has no migration history. Production schema is applied with
+// `npx prisma db push --schema=src/prisma/schema.prisma` — deploy.sh does
+// not run it. Run db push once after this model lands, then prisma generate.
+model PageWidget {
+  id        String   @id @default(cuid())
+  path      String
+  type      String
+  title     String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([path, type, url])
+  @@index([path])
+}

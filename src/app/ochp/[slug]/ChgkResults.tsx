@@ -57,8 +57,10 @@ function hazaTourColumnMaxima(
 
 export default function ChgkResults({
   broadcastId = OCHP_CHGK_HAZA_BROADCAST_CURRENT,
+  apiPath = "/api/ochp/haza",
 }: {
   broadcastId?: number;
+  apiPath?: string;
 }) {
   const [data, setData] = useState<HazaData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ export default function ChgkResults({
     try {
       setLoading(true);
       const res = await fetch(
-        `/api/ochp/haza?broadcastId=${encodeURIComponent(String(broadcastId))}`,
+        `${apiPath}?broadcastId=${encodeURIComponent(String(broadcastId))}`,
       );
       if (!res.ok) throw new Error("Failed to fetch");
       const json: HazaData = await res.json();
@@ -83,7 +85,7 @@ export default function ChgkResults({
     } finally {
       setLoading(false);
     }
-  }, [broadcastId]);
+  }, [apiPath, broadcastId]);
 
   const scheduleNextRefresh = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);

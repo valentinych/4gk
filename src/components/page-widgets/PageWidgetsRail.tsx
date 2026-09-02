@@ -1,36 +1,73 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Plus, X } from "lucide-react";
 import ChgkResults from "@/app/ochp/[slug]/ChgkResults";
 import { useToast } from "@/components/Toaster";
 import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
+import { DS_UPCOMING_YEAR } from "@/lib/dziki-sopot-seasons";
+import { OCHP_SEASON_START_MAX } from "@/lib/ochp-seasons";
 import {
+  DS_HAZA_WIDGET_PATH,
+  OCHP_WIDGET_PATH,
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
   PAGE_WIDGETS_CHANGED_EVENT,
+  isHttpWidgetUrl,
+  splitTileTitle,
   type PageWidgetDto,
   type PageWidgetType,
 } from "@/lib/page-widgets";
 
-const tabClass =
-  "max-h-24 w-8 shrink-0 overflow-hidden rounded-l-xl border border-r-0 border-border bg-surface px-1.5 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-surface-hover";
+function isArchiveLanding(pathname: string, searchParams: URLSearchParams): boolean {
+  if (pathname === DS_HAZA_WIDGET_PATH) {
+    const y = searchParams.get("year");
+    return y != null && y !== "" && y !== String(DS_UPCOMING_YEAR);
+  }
+  if (pathname === OCHP_WIDGET_PATH) {
+    const s = searchParams.get("season");
+    return s != null && s !== "" && s !== String(OCHP_SEASON_START_MAX);
+  }
+  return false;
+}
+
+type RailTab = "haza" | "link" | "add";
+
+const tabChip =
+  "shrink-0 rounded-l-lg border border-r-0 border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40";
+
+function tileEmoji(type: string, title: string): string {
+  const { emoji } = splitTileTitle(title);
+  if (emoji) return emoji;
+  if (type === PAGE_WIDGET_LINK) return "🔗";
+  if (type === PAGE_WIDGET_HAZA) return "📊";
+  return "📌";
+}
+
+function tileLabel(title: string): string {
+  const { text } = splitTileTitle(title);
+  return text || title;
+}
 
 export function PageWidgetsRail() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const archiveLanding = isArchiveLanding(pathname, searchParams);
   const { data: session, status } = useSession();
   const { toast } = useToast();
   const isAdmin = session?.user?.role === "ADMIN";
 
   const [widgets, setWidgets] = useState<PageWidgetDto[] | null>(null);
   const [open, setOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  const [tab, setTab] = useState<RailTab | null>(null);
+  const [hazaId, setHazaId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [addType, setAddType] = useState<PageWidgetType>(PAGE_WIDGET_HAZA);
+  const [lockType, setLockType] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async (path: string) => {
@@ -46,10 +83,16 @@ export function PageWidgetsRail() {
 
   useEffect(() => {
     setWidgets(null);
-    setActiveId(null);
+    setHazaId(null);
     setOpen(false);
-    setAdding(false);
+    setTab(null);
     void load(pathname);
+  }, [load, pathname]);
+
+  useEffect(() => {
+    const onChange = () => void load(pathname);
+    window.addEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
   }, [load, pathname]);
 
   useEffect(() => {
@@ -62,28 +105,47 @@ export function PageWidgetsRail() {
   }, [open]);
 
   function closePanel() {
-    setActiveId(null);
-    setAdding(false);
+    setHazaId(null);
+    setTab(null);
     setOpen(false);
+    setLockType(false);
   }
 
-  function openHaza(id: string) {
-    if (open && activeId === id && !adding) {
+  function resetForm(type: PageWidgetType) {
+    setTitle("");
+    setUrl("");
+    setAddType(type);
+  }
+
+  function openType(next: RailTab) {
+    if (open && tab === next) {
       closePanel();
       return;
     }
-    setAdding(false);
-    setActiveId(id);
-    setOpen(true);
-  }
-
-  function openAdd() {
-    if (open && adding) {
-      closePanel();
+    if (next === "add") {
+      setLockType(false);
+      resetForm(PAGE_WIDGET_HAZA);
+      setHazaId(null);
+      setTab("add");
+      setOpen(true);
       return;
     }
-    setActiveId(null);
-    setAdding(true);
+
+    const list = (widgets ?? []).filter((w) => w.type === next && !w.archived);
+    if (next === "haza") {
+      setHazaId(list[0]?.id ?? null);
+    } else {
+      setHazaId(null);
+    }
+    if (list.length === 0 && isAdmin) {
+      setLockType(true);
+      resetForm(next);
+      setTab("add");
+      setOpen(true);
+      return;
+    }
+    setLockType(false);
+    setTab(next);
     setOpen(true);
   }
 
@@ -101,12 +163,17 @@ export function PageWidgetsRail() {
         toast(json.error ?? "Не удалось сохранить", "error");
         return;
       }
-      setTitle("");
-      setUrl("");
       toast("Плитка добавлена", "success");
       window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
       await load(pathname);
-      closePanel();
+      if (addType === PAGE_WIDGET_HAZA) {
+        setHazaId(json.id);
+        setTab("haza");
+      } else {
+        setTab("link");
+      }
+      setLockType(false);
+      resetForm(addType);
     } catch {
       toast("Не удалось сохранить", "error");
     } finally {
@@ -114,70 +181,58 @@ export function PageWidgetsRail() {
     }
   }
 
+  if (archiveLanding) return null;
   if (widgets == null) return null;
   if (status === "loading" && widgets.length === 0) return null;
-  if (widgets.length === 0 && !isAdmin) return null;
 
-  const visible = [
-    ...widgets.filter((w) => !w.archived),
-    ...widgets.filter((w) => w.archived),
-  ];
-  const active = widgets.find((w) => w.id === activeId) ?? null;
-  const showingResults = open && !adding && active?.broadcastId != null;
+  const activeHaza = widgets.filter((w) => w.type === PAGE_WIDGET_HAZA && !w.archived);
+  const activeLinks = widgets.filter((w) => w.type === PAGE_WIDGET_LINK && !w.archived);
+  const showHazaTab = isAdmin || activeHaza.length > 0;
+  const showLinkTab = isAdmin || activeLinks.length > 0;
+
+  if (!isAdmin && !showHazaTab && !showLinkTab) return null;
+
+  const selectedHaza = widgets.find((w) => w.id === hazaId && !w.archived) ?? null;
+  const showingResults = open && tab === "haza" && selectedHaza?.broadcastId != null;
+  const adding = open && tab === "add";
+
+  function tabSelected(id: RailTab): boolean {
+    if (!open) return false;
+    if (id === "add") return tab === "add" && !lockType;
+    if (id === "haza") return tab === "haza" || (tab === "add" && lockType && addType === PAGE_WIDGET_HAZA);
+    return tab === "link" || (tab === "add" && lockType && addType === PAGE_WIDGET_LINK);
+  }
 
   const tabs = (
-    <div
-      className="flex max-h-[min(55vh,calc(100dvh-8rem))] flex-col items-end gap-1 overflow-y-auto"
-      aria-label="Плитки страницы"
-    >
-      {visible.map((w) => {
-        const selected = open && !adding && activeId === w.id;
-        const labelClass = `${tabClass}${selected ? " border-accent/40 bg-surface-hover" : ""}${
-          w.archived ? " opacity-50 grayscale" : ""
-        }`;
-        const label = (
-          <span
-            className="block max-h-20 overflow-hidden text-ellipsis whitespace-nowrap"
-            style={{ writingMode: "vertical-rl" }}
-          >
-            {w.title}
-          </span>
-        );
-        if (w.type === PAGE_WIDGET_LINK) {
-          return (
-            <a
-              key={w.id}
-              href={w.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={labelClass}
-              title={w.title}
-              aria-label={w.title}
-            >
-              {label}
-            </a>
-          );
-        }
-        return (
-          <button
-            key={w.id}
-            type="button"
-            aria-expanded={selected}
-            title={w.title}
-            aria-label={w.title}
-            onClick={() => openHaza(w.id)}
-            className={labelClass}
-          >
-            {label}
-          </button>
-        );
-      })}
+    <div className="flex flex-col items-end gap-1" aria-label="Типы плиток">
+      {showHazaTab ? (
+        <button
+          type="button"
+          aria-expanded={tabSelected("haza")}
+          aria-label="ХаЗа"
+          onClick={() => openType("haza")}
+          className={`${tabChip}${tabSelected("haza") ? " border-accent/40 bg-surface-hover" : ""}`}
+        >
+          ХаЗа
+        </button>
+      ) : null}
+      {showLinkTab ? (
+        <button
+          type="button"
+          aria-expanded={tabSelected("link")}
+          aria-label="Ссылка"
+          onClick={() => openType("link")}
+          className={`${tabChip}${tabSelected("link") ? " border-accent/40 bg-surface-hover" : ""}`}
+        >
+          Ссылка
+        </button>
+      ) : null}
       {isAdmin ? (
         <button
           type="button"
-          onClick={openAdd}
-          className={`${tabClass} flex h-8 items-center justify-center ${
-            adding && open ? "border-accent/40 bg-surface-hover" : ""
+          onClick={() => openType("add")}
+          className={`${tabChip} flex h-8 w-8 items-center justify-center p-0 ${
+            tabSelected("add") ? " border-accent/40 bg-surface-hover" : ""
           }`}
           aria-label="Добавить плитку"
           title="Добавить"
@@ -187,6 +242,19 @@ export function PageWidgetsRail() {
       ) : null}
     </div>
   );
+
+  const heading =
+    adding && lockType && addType === PAGE_WIDGET_HAZA
+      ? "ХаЗа"
+      : adding && lockType && addType === PAGE_WIDGET_LINK
+        ? "Ссылка"
+        : adding
+          ? "Добавить плитку"
+          : tab === "haza"
+            ? "ХаЗа"
+            : tab === "link"
+              ? "Ссылка"
+              : "";
 
   return (
     <>
@@ -211,14 +279,12 @@ export function PageWidgetsRail() {
           }`}
           role="dialog"
           aria-modal="true"
-          aria-label={adding ? "Добавить плитку" : (active?.title ?? "Плитка")}
+          aria-label={heading || "Плитки"}
         >
           <div className="flex shrink-0 flex-col justify-center py-2">{tabs}</div>
           <div className="flex min-w-0 flex-1 flex-col border-l border-border bg-background shadow-xl">
             <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-              <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">
-                {adding ? "Добавить плитку" : (active?.title ?? "")}
-              </h2>
+              <h2 className="min-w-0 flex-1 truncate text-sm font-semibold">{heading}</h2>
               <button
                 type="button"
                 onClick={closePanel}
@@ -237,6 +303,7 @@ export function PageWidgetsRail() {
                     type={addType}
                     saving={saving}
                     submitLabel="Сохранить"
+                    lockType={lockType}
                     onTitle={setTitle}
                     onUrl={setUrl}
                     onType={(t) => {
@@ -246,8 +313,74 @@ export function PageWidgetsRail() {
                     onSubmit={(e) => void onAdd(e)}
                   />
                 </div>
-              ) : active?.broadcastId != null ? (
-                <ChgkResults broadcastId={active.broadcastId} apiPath="/api/haza" />
+              ) : null}
+
+              {open && tab === "haza" ? (
+                <div className="space-y-3">
+                  {activeHaza.length > 1 ? (
+                    <ul className="space-y-1">
+                      {activeHaza.map((w) => (
+                        <li key={w.id}>
+                          <button
+                            type="button"
+                            onClick={() => setHazaId(w.id)}
+                            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface ${
+                              hazaId === w.id ? "bg-surface font-medium" : ""
+                            }`}
+                          >
+                            <span aria-hidden>{tileEmoji(w.type, w.title)}</span>
+                            <span className="min-w-0 truncate">{tileLabel(w.title)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {selectedHaza?.broadcastId != null ? (
+                    <ChgkResults broadcastId={selectedHaza.broadcastId} apiPath="/api/haza" />
+                  ) : activeHaza.length === 0 ? (
+                    <p className="px-1 text-sm text-muted">Нет трансляций ХаЗа на этой странице</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {open && tab === "link" ? (
+                activeLinks.length > 0 ? (
+                  <ul className="space-y-1">
+                    {activeLinks.map((w) => {
+                      const label = (
+                        <>
+                          <span aria-hidden>{tileEmoji(w.type, w.title)}</span>
+                          <span className="min-w-0 truncate">{tileLabel(w.title)}</span>
+                        </>
+                      );
+                      const className =
+                        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface";
+                      if (isHttpWidgetUrl(w.url)) {
+                        return (
+                          <li key={w.id}>
+                            <a
+                              href={w.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={className}
+                            >
+                              {label}
+                            </a>
+                          </li>
+                        );
+                      }
+                      return (
+                        <li key={w.id}>
+                          <Link href={w.url} className={className} onClick={closePanel}>
+                            {label}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="px-1 text-sm text-muted">Нет ссылок на этой странице</p>
+                )
               ) : null}
             </div>
           </div>

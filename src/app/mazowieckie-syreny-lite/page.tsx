@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Brain, CalendarDays, ClipboardList, ExternalLink, LayoutList, MapPin, Sparkles, Trophy, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, ExternalLink, MapPin, Sparkles } from "lucide-react";
+import { PageWidgetTiles } from "@/components/page-widgets/PageWidgetTiles";
+import { SYRENY_WIDGET_PATH, ensureLandingWidgets, isPrismaMissingTable } from "@/lib/page-widgets";
 import { SYRENY_LITE, SYRENY_LITE_SCHEDULE } from "@/lib/syreny-lite";
 
 export const metadata: Metadata = {
@@ -9,7 +11,14 @@ export const metadata: Metadata = {
     "Любительский турнир для начинающих команд: 6–7 июня 2026, Варшава. КСИ, Б-52, Брейн-Ринг, ЭК, Чёрное ЧГК, Островок Бесконечности.",
 };
 
-export default function MazowieckieSyrenyLitePage() {
+export default async function MazowieckieSyrenyLitePage() {
+  if (process.env.DATABASE_URL) {
+    try {
+      await ensureLandingWidgets(SYRENY_WIDGET_PATH);
+    } catch (e) {
+      if (!isPrismaMissingTable(e)) throw e;
+    }
+  }
   return (
     <div id="page-syreny-lite" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
       <Link
@@ -66,52 +75,8 @@ export default function MazowieckieSyrenyLitePage() {
         </div>
       </div>
 
-      <div id="page-syreny-lite-actions" className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Link
-          href="/mazowieckie-syreny-lite/participants"
-          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-        >
-          <Users className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
-          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-            Список команд · Заявка
-          </span>
-        </Link>
-        <Link
-          href={`/account/roster/${SYRENY_LITE.id}`}
-          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-        >
-          <ClipboardList className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
-          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-            Подать состав
-          </span>
-        </Link>
-        <Link
-          href="/mazowieckie-syreny-lite/ksi"
-          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-        >
-          <LayoutList className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
-          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-            КСИ
-          </span>
-        </Link>
-        <Link
-          href="/mazowieckie-syreny-lite/brain-ring"
-          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-        >
-          <Trophy className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
-          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-            Брейн-ринг
-          </span>
-        </Link>
-        <Link
-          href="/mazowieckie-syreny-lite/chgk"
-          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:border-accent/30 hover:shadow-md hover:-translate-y-0.5"
-        >
-          <Brain className="h-6 w-6 shrink-0 text-muted group-hover:text-accent transition-colors" />
-          <span className="text-sm font-semibold leading-snug group-hover:text-accent transition-colors">
-            Что? Где? Когда?
-          </span>
-        </Link>
+      <div id="page-syreny-lite-actions" className="mb-8">
+        <PageWidgetTiles embedded />
       </div>
 
       <section id="page-syreny-lite-schedule">

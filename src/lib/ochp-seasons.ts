@@ -161,6 +161,61 @@ export const OCHP_GLOBAL_TILES: OchpLandingTile[] = [
   { slug: "stats", emoji: "📊", title: "Общая статистика" },
 ];
 
+/** Current-season tiles on /ochp (no ?season=). href omitted → `/ochp/[slug]`. */
+export function buildOchpCurrentSeasonTiles(): OchpLandingTile[] {
+  const y = ochpYearSuffix(OCHP_SEASON_START_MAX);
+  return [
+    { slug: "schedule", emoji: "🗓️", title: `Расписание ОЧП'${y}` },
+    { slug: "rating-page", emoji: "🌐", title: "Страница турнира на сайте рейтинга" },
+    { slug: "participants", emoji: "👥", title: `Список участников ОЧП'${y}` },
+    { slug: "rules", emoji: "📜", title: `Положение ОЧП'${y}` },
+    { slug: "results-chgk", emoji: "❓", title: "Результаты Что? Где? Когда?" },
+    { slug: "results-brain", emoji: "🧠", title: "Результаты Брэйн-Ринга" },
+    { slug: "results-storm", emoji: "⚡", title: "Результаты Мозгового Штурма" },
+    {
+      slug: "appeals",
+      emoji: "⚖️",
+      title: "Апелляции на ЧГК",
+      href: "https://docs.google.com/forms/u/1/d/e/1FAIpQLSeAGwAPKBgtASfzkZGMQ_KocQNnnNahXuv_azY_hZ8cyV3Lbg/viewform?usp=send_form",
+    },
+    {
+      slug: "sync-signup",
+      emoji: "🎯",
+      title: "Заявка на синхрон в пятницу 20.03",
+      href: "https://forms.gle/1M2ACrutmUEeWgMt8",
+    },
+    {
+      slug: "rosters",
+      emoji: "📋",
+      title: `Подача составов на ОЧП'${y}`,
+      href: "https://forms.gle/aqzNpBBmYTYDWcfZ7",
+    },
+    {
+      slug: "legionnaires",
+      emoji: "🔍",
+      title: `Поиск легионеров на ОЧП'${y}`,
+      href: "https://t.me/chgkpolska/85",
+    },
+    { slug: "food", emoji: "🍽️", title: "Где поесть рядом с МПИ" },
+    {
+      slug: "excursions",
+      emoji: "🏛️",
+      title: "Запись на экскурсии по Варшаве",
+      href: "https://t.me/chgkpolska/89",
+    },
+    {
+      slug: "fantasy",
+      emoji: "🔮",
+      title: "Фэнтези ОЧП",
+      href: "https://fantasy.razumau.net/tournaments/pl-2026",
+    },
+  ];
+}
+
+export function ochpLandingTileHref(tile: OchpLandingTile): string {
+  return tile.href ?? `/ochp/${tile.slug}`;
+}
+
 /**
  * Плитки на главной /ochp для архивных сезонов (всё кроме 2025/2026).
  * Ключ — первый год сезона (как в ?season=2024). Добавляйте записи по одной плитке.

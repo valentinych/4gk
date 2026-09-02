@@ -4,8 +4,7 @@ import { requireAdmin } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
-  DS_HAZA_WIDGET_PATH,
-  ensureDsHazaWidget,
+  ensureLandingWidgets,
   isPrismaMissingTable,
   isPrismaUniqueConflict,
   normalizePagePath,
@@ -24,9 +23,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    if (path === DS_HAZA_WIDGET_PATH) {
-      await ensureDsHazaWidget();
-    }
+    await ensureLandingWidgets(path);
 
     const session = await getServerSession(authOptions);
     const isAdmin = session?.user?.role === "ADMIN";

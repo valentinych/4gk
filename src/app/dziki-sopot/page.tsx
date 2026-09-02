@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { DzikiSopotPageClient } from "./DzikiSopotPageClient";
-import { ensureDsHazaWidget, isPrismaMissingTable } from "@/lib/page-widgets";
+import { DS_HAZA_WIDGET_PATH, ensureLandingWidgets, isPrismaMissingTable } from "@/lib/page-widgets";
 
 export const metadata: Metadata = {
   title: "Dziki Sopot",
@@ -20,7 +20,7 @@ export default async function DzikiSopotPage() {
   // Docker build has no DATABASE_URL; skip seeding so the page can prerender.
   if (process.env.DATABASE_URL) {
     try {
-      await ensureDsHazaWidget();
+      await ensureLandingWidgets(DS_HAZA_WIDGET_PATH);
     } catch (e) {
       if (!isPrismaMissingTable(e)) throw e;
     }

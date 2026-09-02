@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar, ChevronDown, MapPin, Navigation, Trophy } from "lucide-react";
 import Link from "next/link";
+import { PageWidgetTiles } from "@/components/page-widgets/PageWidgetTiles";
 import {
   DS_ALL_YEARS,
   DS_ARCHIVE_TILES,
-  DS_CURRENT_TILES,
   DS_UPCOMING_YEAR,
   DS_VENUES_2026,
   isArchiveYear,
@@ -81,9 +81,7 @@ export function DzikiSopotPageClient() {
     };
   }, [year, isUpcoming]);
 
-  const tiles: DsLandingTile[] = isArchiveYear(year)
-    ? DS_ARCHIVE_TILES[year]
-    : DS_CURRENT_TILES;
+  const tiles: DsLandingTile[] = isArchiveYear(year) ? DS_ARCHIVE_TILES[year] : [];
 
   return (
     <div id="page-dziki-sopot" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -192,8 +190,9 @@ export function DzikiSopotPageClient() {
         </div>
       )}
 
-      {/* Tiles */}
-      {tiles.length > 0 && (
+      {isUpcoming ? <PageWidgetTiles embedded /> : null}
+
+      {!isUpcoming && tiles.length > 0 ? (
         <div id="page-dziki-sopot-tiles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((tile) => {
             if (!tile.href) return null;
@@ -234,13 +233,13 @@ export function DzikiSopotPageClient() {
             );
           })}
         </div>
-      )}
+      ) : null}
 
-      {tiles.length === 0 && (
+      {!isUpcoming && tiles.length === 0 ? (
         <div id="page-dziki-sopot-empty" className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
           <p className="text-base font-medium text-muted/60">Материалы этого сезона появятся позже</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

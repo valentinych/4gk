@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Calendar, ChevronDown, Trophy } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { PageWidgetTiles } from "@/components/page-widgets/PageWidgetTiles";
 import {
   formatOchpChampionshipYear,
   ochpSeasonHadNoChampionship,
@@ -16,56 +17,6 @@ import {
   OCHP_GLOBAL_TILES,
   type OchpLandingTile,
 } from "@/lib/ochp-seasons";
-
-function buildCurrentSeasonTiles(): OchpLandingTile[] {
-  const y = ochpYearSuffix(OCHP_SEASON_START_MAX);
-  return [
-    { slug: "schedule", emoji: "🗓️", title: `Расписание ОЧП'${y}` },
-    { slug: "rating-page", emoji: "🌐", title: "Страница турнира на сайте рейтинга" },
-    { slug: "participants", emoji: "👥", title: `Список участников ОЧП'${y}` },
-    { slug: "rules", emoji: "📜", title: `Положение ОЧП'${y}` },
-    { slug: "results-chgk", emoji: "❓", title: "Результаты Что? Где? Когда?" },
-    { slug: "results-brain", emoji: "🧠", title: "Результаты Брэйн-Ринга" },
-    { slug: "results-storm", emoji: "⚡", title: "Результаты Мозгового Штурма" },
-    {
-      slug: "appeals",
-      emoji: "⚖️",
-      title: "Апелляции на ЧГК",
-      href: "https://docs.google.com/forms/u/1/d/e/1FAIpQLSeAGwAPKBgtASfzkZGMQ_KocQNnnNahXuv_azY_hZ8cyV3Lbg/viewform?usp=send_form",
-    },
-    {
-      slug: "sync-signup",
-      emoji: "🎯",
-      title: "Заявка на синхрон в пятницу 20.03",
-      href: "https://forms.gle/1M2ACrutmUEeWgMt8",
-    },
-    {
-      slug: "rosters",
-      emoji: "📋",
-      title: `Подача составов на ОЧП'${y}`,
-      href: "https://forms.gle/aqzNpBBmYTYDWcfZ7",
-    },
-    {
-      slug: "legionnaires",
-      emoji: "🔍",
-      title: `Поиск легионеров на ОЧП'${y}`,
-      href: "https://t.me/chgkpolska/85",
-    },
-    { slug: "food", emoji: "🍽️", title: "Где поесть рядом с МПИ" },
-    {
-      slug: "excursions",
-      emoji: "🏛️",
-      title: "Запись на экскурсии по Варшаве",
-      href: "https://t.me/chgkpolska/89",
-    },
-    {
-      slug: "fantasy",
-      emoji: "🔮",
-      title: "Фэнтези ОЧП",
-      href: "https://fantasy.razumau.net/tournaments/pl-2026",
-    },
-  ];
-}
 
 export function OchpPageClient() {
   const router = useRouter();
@@ -97,13 +48,10 @@ export function OchpPageClient() {
   const ySuffix = ochpYearSuffix(seasonStart);
   const isCurrentSeason = seasonStart === OCHP_SEASON_START_MAX;
   const noChampionship = ochpSeasonHadNoChampionship(seasonStart);
+  const useWidgets = isCurrentSeason && !noChampionship;
   const seasonTiles: OchpLandingTile[] =
-    noChampionship
-      ? []
-      : isCurrentSeason
-        ? buildCurrentSeasonTiles()
-        : (OCHP_ARCHIVE_TILES[seasonStart] ?? []);
-  const tiles = [...seasonTiles, ...OCHP_GLOBAL_TILES];
+    noChampionship || isCurrentSeason ? [] : (OCHP_ARCHIVE_TILES[seasonStart] ?? []);
+  const tiles = useWidgets ? [] : [...seasonTiles, ...OCHP_GLOBAL_TILES];
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -227,6 +175,8 @@ export function OchpPageClient() {
         </p>
       )}
 
+      {useWidgets ? <PageWidgetTiles embedded /> : null}
+
       {tiles.length > 0 && (
         <div id="page-ochp-tiles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {tiles.map((tile) => {
@@ -277,7 +227,7 @@ export function OchpPageClient() {
         </div>
       )}
 
-      <div className={`flex justify-center ${tiles.length > 0 ? "mt-12" : "mt-8"}`}>
+      <div className={`flex justify-center ${useWidgets || tiles.length > 0 ? "mt-12" : "mt-8"}`}>
         <Image
           src="/ochp-sponsors.png"
           alt={`Партнёры ОЧП'${ySuffix}`}

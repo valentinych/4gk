@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import {
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
+  PAGE_WIDGET_TITLE_MAX,
   type PageWidgetType,
 } from "@/lib/page-widgets";
 
@@ -13,6 +14,7 @@ export function PageWidgetForm({
   type,
   saving,
   submitLabel,
+  lockType,
   onTitle,
   onUrl,
   onType,
@@ -24,6 +26,7 @@ export function PageWidgetForm({
   type: PageWidgetType;
   saving: boolean;
   submitLabel: string;
+  lockType?: boolean;
   onTitle: (v: string) => void;
   onUrl: (v: string) => void;
   onType: (v: PageWidgetType) => void;
@@ -32,38 +35,40 @@ export function PageWidgetForm({
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-2.5">
-      <div className="flex rounded-lg border border-border p-0.5">
-        <button
-          type="button"
-          aria-pressed={type === PAGE_WIDGET_HAZA}
-          onClick={() => onType(PAGE_WIDGET_HAZA)}
-          className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
-            type === PAGE_WIDGET_HAZA
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted hover:text-foreground"
-          }`}
-        >
-          ХаЗа
-        </button>
-        <button
-          type="button"
-          aria-pressed={type === PAGE_WIDGET_LINK}
-          onClick={() => onType(PAGE_WIDGET_LINK)}
-          className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
-            type === PAGE_WIDGET_LINK
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted hover:text-foreground"
-          }`}
-        >
-          Ссылка
-        </button>
-      </div>
+      {lockType ? null : (
+        <div className="flex rounded-lg border border-border p-0.5">
+          <button
+            type="button"
+            aria-pressed={type === PAGE_WIDGET_HAZA}
+            onClick={() => onType(PAGE_WIDGET_HAZA)}
+            className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
+              type === PAGE_WIDGET_HAZA
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            ХаЗа
+          </button>
+          <button
+            type="button"
+            aria-pressed={type === PAGE_WIDGET_LINK}
+            onClick={() => onType(PAGE_WIDGET_LINK)}
+            className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
+              type === PAGE_WIDGET_LINK
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            Ссылка
+          </button>
+        </div>
+      )}
       <label className="block">
         <span className="mb-1 block text-xs text-muted">Название плитки</span>
         <input
           value={title}
           onChange={(e) => onTitle(e.target.value)}
-          maxLength={80}
+          maxLength={PAGE_WIDGET_TITLE_MAX}
           required
           placeholder={type === PAGE_WIDGET_LINK ? "Название ссылки" : "Результаты ХаЗа"}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
@@ -71,16 +76,17 @@ export function PageWidgetForm({
       </label>
       <label className="block">
         <span className="mb-1 block text-xs text-muted">
-          {type === PAGE_WIDGET_LINK ? "Ссылка" : "Ссылка haza.online"}
+          {type === PAGE_WIDGET_LINK ? "Ссылка или путь" : "Ссылка haza.online"}
         </span>
         <input
           value={url}
           onChange={(e) => onUrl(e.target.value)}
-          type="url"
+          type={type === PAGE_WIDGET_HAZA ? "url" : "text"}
+          inputMode="url"
           required
           placeholder={
             type === PAGE_WIDGET_LINK
-              ? "https://example.com"
+              ? "/dziki-sopot/schedule или https://…"
               : "https://www.haza.online/broadcast/672"
           }
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"

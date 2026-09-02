@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { GripVertical } from "lucide-react";
@@ -8,17 +9,27 @@ import ChgkResults from "@/app/ochp/[slug]/ChgkResults";
 import { useToast } from "@/components/Toaster";
 import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
 import {
+  PAGE_WIDGET_EMBEDDED_PATHS,
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
   PAGE_WIDGETS_CHANGED_EVENT,
+  isHttpWidgetUrl,
+  splitTileTitle,
   type PageWidgetDto,
   type PageWidgetType,
 } from "@/lib/page-widgets";
 
-function tileEmoji(type: string): string {
+function tileEmoji(type: string, title: string): string {
+  const { emoji } = splitTileTitle(title);
+  if (emoji) return emoji;
   if (type === PAGE_WIDGET_LINK) return "🔗";
   if (type === PAGE_WIDGET_HAZA) return "📊";
   return "📌";
+}
+
+function tileLabel(title: string): string {
+  const { text } = splitTileTitle(title);
+  return text || title;
 }
 
 function asWidgetType(type: string): PageWidgetType {
@@ -35,8 +46,9 @@ function moveId(ids: string[], fromId: string, toId: string): string[] {
   return next;
 }
 
-export function PageWidgetTiles() {
+export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
   const pathname = usePathname();
+  const skipLayout = !embedded && PAGE_WIDGET_EMBEDDED_PATHS.has(pathname);
   const { data: session } = useSession();
   const { toast } = useToast();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -63,17 +75,19 @@ export function PageWidgetTiles() {
   }, []);
 
   useEffect(() => {
+    if (skipLayout) return;
     setWidgets(null);
     setActiveId(null);
     setEditingId(null);
     void load(pathname);
-  }, [load, pathname]);
+  }, [load, pathname, skipLayout]);
 
   useEffect(() => {
+    if (skipLayout) return;
     const onChange = () => void load(pathname);
     window.addEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
-  }, [load, pathname]);
+  }, [load, pathname, skipLayout]);
 
   function notify() {
     window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
@@ -196,6 +210,7 @@ export function PageWidgetTiles() {
     void persistOrder(nextIds);
   }
 
+  if (skipLayout) return null;
   if (!widgets || widgets.length === 0) return null;
 
   const activeTiles = widgets.filter((w) => !w.archived);
@@ -212,11 +227,11 @@ export function PageWidgetTiles() {
     const body = (
       <>
         <span className="mt-0.5 shrink-0 text-2xl leading-none" aria-hidden>
-          {tileEmoji(w.type)}
+          {tileEmoji(w.type, w.title)}
         </span>
         <span className="min-w-0">
           <span className="block text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
-            {w.title}
+            {tileLabel(w.title)}
           </span>
         </span>
       </>
@@ -278,7 +293,7 @@ export function PageWidgetTiles() {
                 <GripVertical className="h-4 w-4" />
               </span>
             ) : null}
-            {w.type === PAGE_WIDGET_LINK ? (
+            {w.type === PAGE_WIDGET_LINK && isHttpWidgetUrl(w.url) ? (
               <a
                 href={w.url}
                 target="_blank"
@@ -289,6 +304,15 @@ export function PageWidgetTiles() {
               >
                 {body}
               </a>
+            ) : w.type === PAGE_WIDGET_LINK ? (
+              <Link
+                href={w.url}
+                className={`${innerClass}${w.archived ? " pointer-events-none" : ""}`}
+                tabIndex={w.archived ? -1 : undefined}
+                aria-disabled={w.archived || undefined}
+              >
+                {body}
+              </Link>
             ) : (
               <button
                 type="button"
@@ -336,7 +360,7 @@ export function PageWidgetTiles() {
   return (
     <section
       id="cmp-page-widget-tiles"
-      className="mx-auto max-w-5xl px-4 pb-12 sm:px-6"
+      className={embedded ? undefined : "mx-auto max-w-5xl px-4 pb-12 sm:px-6"}
       aria-label="Плитки страницы"
     >
       {activeTiles.length > 0 ? (

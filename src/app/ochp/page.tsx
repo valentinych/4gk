@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { OCHP_WIDGET_PATH, ensureLandingWidgets, isPrismaMissingTable } from "@/lib/page-widgets";
 import { OchpPageClient } from "./OchpPageClient";
 
 export const metadata: Metadata = {
@@ -16,7 +17,15 @@ function OchpFallback() {
   );
 }
 
-export default function OchpPage() {
+export default async function OchpPage() {
+  if (process.env.DATABASE_URL) {
+    try {
+      await ensureLandingWidgets(OCHP_WIDGET_PATH);
+    } catch (e) {
+      if (!isPrismaMissingTable(e)) throw e;
+    }
+  }
+
   return (
     <Suspense fallback={<OchpFallback />}>
       <OchpPageClient />

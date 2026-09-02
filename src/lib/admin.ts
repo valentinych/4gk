@@ -27,3 +27,21 @@ export async function requireOrganizer() {
   if (user?.role !== "ADMIN" && user?.role !== "ORGANIZER") return null;
   return user;
 }
+
+/** Admin or moderator — run live widgets (brain-ring), not site-wide tile CRUD. */
+export async function requireModerator() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, role: true },
+  });
+
+  if (user?.role !== "ADMIN" && user?.role !== "MODERATOR") return null;
+  return user;
+}
+
+export function canRunBrainRing(role: string | undefined | null): boolean {
+  return role === "ADMIN" || role === "MODERATOR";
+}

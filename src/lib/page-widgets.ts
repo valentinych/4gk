@@ -11,6 +11,7 @@ import { turnirushkiHazaBroadcastAllowlist } from "@/lib/turnirushki-games";
 
 export const PAGE_WIDGET_HAZA = "haza";
 export const PAGE_WIDGET_LINK = "link";
+export const PAGE_WIDGET_BRAIN = "brain";
 export const PAGE_WIDGETS_CHANGED_EVENT = "4gk:page-widgets-changed";
 export const PAGE_WIDGET_TITLE_MAX = 160;
 
@@ -44,7 +45,20 @@ export interface PageWidgetSeed {
   url: string;
 }
 
-export type PageWidgetType = typeof PAGE_WIDGET_HAZA | typeof PAGE_WIDGET_LINK;
+export type PageWidgetType =
+  | typeof PAGE_WIDGET_HAZA
+  | typeof PAGE_WIDGET_LINK
+  | typeof PAGE_WIDGET_BRAIN;
+
+export function asPageWidgetType(type: string): PageWidgetType {
+  if (type === PAGE_WIDGET_LINK) return PAGE_WIDGET_LINK;
+  if (type === PAGE_WIDGET_BRAIN) return PAGE_WIDGET_BRAIN;
+  return PAGE_WIDGET_HAZA;
+}
+
+export function brainWidgetUrl(): string {
+  return `brain:${crypto.randomUUID()}`;
+}
 
 export interface PageWidgetDto {
   id: string;
@@ -169,9 +183,9 @@ export function isPrismaMissingTable(e: unknown): boolean {
 }
 
 export function uniqueWidgetConflictMessage(type: string): string {
-  return type === PAGE_WIDGET_LINK
-    ? "Такая ссылка уже добавлена на эту страницу"
-    : "Такая трансляция уже добавлена на эту страницу";
+  if (type === PAGE_WIDGET_LINK) return "Такая ссылка уже добавлена на эту страницу";
+  if (type === PAGE_WIDGET_BRAIN) return "Такой брейн-ринг уже добавлен на эту страницу";
+  return "Такая трансляция уже добавлена на эту страницу";
 }
 
 export function isPrismaUniqueConflict(e: unknown): boolean {
@@ -196,7 +210,7 @@ export function resolveWidgetFields(input: {
 
   const type =
     typeof input.type === "string" && input.type.trim() ? input.type.trim() : PAGE_WIDGET_HAZA;
-  if (type !== PAGE_WIDGET_HAZA && type !== PAGE_WIDGET_LINK) {
+  if (type !== PAGE_WIDGET_HAZA && type !== PAGE_WIDGET_LINK && type !== PAGE_WIDGET_BRAIN) {
     return { error: "Неизвестный тип плитки" };
   }
 
@@ -207,6 +221,11 @@ export function resolveWidgetFields(input: {
       return { error: "Вставьте ссылку вида https://www.haza.online/broadcast/672" };
     }
     return { title, url: hazaBroadcastUrl(broadcastId), type };
+  }
+
+  if (type === PAGE_WIDGET_BRAIN) {
+    const url = rawUrl.startsWith("brain:") && rawUrl.length > 6 ? rawUrl : brainWidgetUrl();
+    return { title, url, type };
   }
 
   if (rawUrl.startsWith("/")) {

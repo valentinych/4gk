@@ -181,10 +181,11 @@ enum Role {
   ADMIN
 }
 
-// PageWidget: Haza (and later) tiles attached to a page path.
+// PageWidget: Haza / link / brain tiles attached to a page path.
 // This repo has no migration history. Production schema is applied with
 // `npx prisma db push --schema=src/prisma/schema.prisma` — deploy.sh does
-// not run it. After adding `archived`, run db push on prod, then prisma generate.
+// not run it. After adding BrainRingEvent / BrainRingMatch, run db push on
+// prod, then prisma generate.
 model PageWidget {
   id        String   @id @default(cuid())
   path      String
@@ -195,6 +196,44 @@ model PageWidget {
   archived  Boolean  @default(false)
   createdAt DateTime @default(now())
 
+  brainRing BrainRingEvent?
+
   @@unique([path, type, url])
   @@index([path])
+}
+
+model BrainRingEvent {
+  id             String   @id @default(cuid())
+  widgetId       String   @unique
+  template       String   @default("ochp-16")
+  questionCount  Int      @default(7)
+  scheme         Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  widget  PageWidget       @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  matches BrainRingMatch[]
+}
+
+model BrainRingMatch {
+  id            String   @id @default(cuid())
+  eventId       String
+  slotId        String
+  sectionId     String
+  kind          String
+  round         String   @default("")
+  venue         String   @default("")
+  teamAId       String   @default("")
+  teamBId       String   @default("")
+  playOrder     Int      @default(0)
+  questionCount Int      @default(7)
+  scores        Json
+  active        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  event BrainRingEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, slotId])
+  @@index([eventId])
 }

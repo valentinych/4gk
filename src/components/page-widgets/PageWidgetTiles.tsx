@@ -8,10 +8,12 @@ import { GripVertical } from "lucide-react";
 import { useToast } from "@/components/Toaster";
 import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
 import {
+  PAGE_WIDGET_BRAIN,
   PAGE_WIDGET_EMBEDDED_PATHS,
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
   PAGE_WIDGETS_CHANGED_EVENT,
+  asPageWidgetType,
   isPageWidgetUtilityPath,
   pageWidgetPagePath,
   splitTileTitle,
@@ -24,16 +26,13 @@ function tileEmoji(type: string, title: string): string {
   if (emoji) return emoji;
   if (type === PAGE_WIDGET_LINK) return "🔗";
   if (type === PAGE_WIDGET_HAZA) return "📊";
+  if (type === PAGE_WIDGET_BRAIN) return "🧠";
   return "📌";
 }
 
 function tileLabel(title: string): string {
   const { text } = splitTileTitle(title);
   return text || title;
-}
-
-function asWidgetType(type: string): PageWidgetType {
-  return type === PAGE_WIDGET_LINK ? PAGE_WIDGET_LINK : PAGE_WIDGET_HAZA;
 }
 
 function moveId(ids: string[], fromId: string, toId: string): string[] {
@@ -97,7 +96,7 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
     setEditingId(w.id);
     setEditTitle(w.title);
     setEditUrl(w.url);
-    setEditType(asWidgetType(w.type));
+    setEditType(asPageWidgetType(w.type));
   }
 
   async function onSaveEdit(e: React.FormEvent) {

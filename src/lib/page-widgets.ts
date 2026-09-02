@@ -28,6 +28,16 @@ export const PAGE_WIDGET_EMBEDDED_PATHS = new Set<string>([
   SYRENY_WIDGET_PATH,
 ]);
 
+/** Dedicated page for a widget with on-site content (Haza standings). */
+export function pageWidgetPagePath(id: string): string {
+  return `/w/${id}`;
+}
+
+/** Widget standings pages — no tile grid / rail of their own. */
+export function isPageWidgetUtilityPath(pathname: string): boolean {
+  return pathname === "/w" || pathname.startsWith("/w/");
+}
+
 export interface PageWidgetSeed {
   type: PageWidgetType;
   title: string;

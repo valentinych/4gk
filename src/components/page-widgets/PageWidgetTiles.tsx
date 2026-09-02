@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { GripVertical } from "lucide-react";
-import ChgkResults from "@/app/ochp/[slug]/ChgkResults";
 import { useToast } from "@/components/Toaster";
 import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
 import {
@@ -13,7 +12,8 @@ import {
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
   PAGE_WIDGETS_CHANGED_EVENT,
-  isHttpWidgetUrl,
+  isPageWidgetUtilityPath,
+  pageWidgetPagePath,
   splitTileTitle,
   type PageWidgetDto,
   type PageWidgetType,
@@ -48,13 +48,14 @@ function moveId(ids: string[], fromId: string, toId: string): string[] {
 
 export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
   const pathname = usePathname();
-  const skipLayout = !embedded && PAGE_WIDGET_EMBEDDED_PATHS.has(pathname);
+  const skipLayout =
+    isPageWidgetUtilityPath(pathname) ||
+    (!embedded && PAGE_WIDGET_EMBEDDED_PATHS.has(pathname));
   const { data: session } = useSession();
   const { toast } = useToast();
   const isAdmin = session?.user?.role === "ADMIN";
 
   const [widgets, setWidgets] = useState<PageWidgetDto[] | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editUrl, setEditUrl] = useState("");
@@ -77,7 +78,6 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
   useEffect(() => {
     if (skipLayout) return;
     setWidgets(null);
-    setActiveId(null);
     setEditingId(null);
     void load(pathname);
   }, [load, pathname, skipLayout]);
@@ -138,7 +138,6 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
         toast(json.error ?? "Не удалось удалить", "error");
         return;
       }
-      if (activeId === id) setActiveId(null);
       if (editingId === id) setEditingId(null);
       toast("Плитка удалена", "success");
       notify();
@@ -163,7 +162,6 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
         toast(json.error ?? "Не удалось сохранить", "error");
         return;
       }
-      if (w.archived === false && activeId === w.id) setActiveId(null);
       toast(w.archived ? "Плитка возвращена" : "Плитка в архиве", "success");
       notify();
       await load(pathname);
@@ -215,14 +213,12 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
 
   const activeTiles = widgets.filter((w) => !w.archived);
   const archivedTiles = isAdmin ? widgets.filter((w) => w.archived) : [];
-  const active = widgets.find((w) => w.id === activeId && !w.archived) ?? null;
 
   function renderTile(w: PageWidgetDto, draggable: boolean) {
-    const selected = activeId === w.id;
     const editing = editingId === w.id;
     const cardClass = `group flex flex-col rounded-xl border border-border bg-surface transition-all ${
       w.archived ? "opacity-50 grayscale" : "hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
-    }${selected && !w.archived ? " border-accent/40" : ""}${dragId === w.id ? " opacity-60" : ""}`;
+    }${dragId === w.id ? " opacity-60" : ""}`;
     const innerClass = "flex min-w-0 flex-1 items-start gap-3.5 p-5";
     const body = (
       <>
@@ -293,7 +289,7 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
                 <GripVertical className="h-4 w-4" />
               </span>
             ) : null}
-            {w.type === PAGE_WIDGET_LINK && isHttpWidgetUrl(w.url) ? (
+            {w.type === PAGE_WIDGET_LINK ? (
               <a
                 href={w.url}
                 target="_blank"
@@ -304,25 +300,15 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
               >
                 {body}
               </a>
-            ) : w.type === PAGE_WIDGET_LINK ? (
+            ) : (
               <Link
-                href={w.url}
+                href={pageWidgetPagePath(w.id)}
                 className={`${innerClass}${w.archived ? " pointer-events-none" : ""}`}
                 tabIndex={w.archived ? -1 : undefined}
                 aria-disabled={w.archived || undefined}
               >
                 {body}
               </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setActiveId((id) => (id === w.id ? null : w.id))}
-                className={`${innerClass} text-left${w.archived ? " pointer-events-none" : ""}`}
-                aria-expanded={selected}
-                disabled={w.archived}
-              >
-                {body}
-              </button>
             )}
           </div>
         )}
@@ -375,11 +361,6 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
             {archivedTiles.map((w) => renderTile(w, false))}
           </div>
         </>
-      ) : null}
-      {active?.broadcastId != null ? (
-        <div className="mt-6">
-          <ChgkResults broadcastId={active.broadcastId} apiPath="/api/haza" />
-        </div>
       ) : null}
     </section>
   );

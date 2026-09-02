@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Plus, X } from "lucide-react";
-import ChgkResults from "@/app/ochp/[slug]/ChgkResults";
 import { useToast } from "@/components/Toaster";
 import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
 import { DS_UPCOMING_YEAR } from "@/lib/dziki-sopot-seasons";
@@ -16,7 +15,8 @@ import {
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
   PAGE_WIDGETS_CHANGED_EVENT,
-  isHttpWidgetUrl,
+  isPageWidgetUtilityPath,
+  pageWidgetPagePath,
   splitTileTitle,
   type PageWidgetDto,
   type PageWidgetType,
@@ -54,8 +54,10 @@ function tileLabel(title: string): string {
 
 export function PageWidgetsRail() {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const archiveLanding = isArchiveLanding(pathname, searchParams);
+  const skipRail = archiveLanding || isPageWidgetUtilityPath(pathname);
   const { data: session, status } = useSession();
   const { toast } = useToast();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -63,7 +65,6 @@ export function PageWidgetsRail() {
   const [widgets, setWidgets] = useState<PageWidgetDto[] | null>(null);
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<RailTab | null>(null);
-  const [hazaId, setHazaId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [addType, setAddType] = useState<PageWidgetType>(PAGE_WIDGET_HAZA);
@@ -82,18 +83,19 @@ export function PageWidgetsRail() {
   }, []);
 
   useEffect(() => {
+    if (skipRail) return;
     setWidgets(null);
-    setHazaId(null);
     setOpen(false);
     setTab(null);
     void load(pathname);
-  }, [load, pathname]);
+  }, [load, pathname, skipRail]);
 
   useEffect(() => {
+    if (skipRail) return;
     const onChange = () => void load(pathname);
     window.addEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
-  }, [load, pathname]);
+  }, [load, pathname, skipRail]);
 
   useEffect(() => {
     if (!open) return;
@@ -105,7 +107,6 @@ export function PageWidgetsRail() {
   }, [open]);
 
   function closePanel() {
-    setHazaId(null);
     setTab(null);
     setOpen(false);
     setLockType(false);
@@ -125,17 +126,16 @@ export function PageWidgetsRail() {
     if (next === "add") {
       setLockType(false);
       resetForm(PAGE_WIDGET_HAZA);
-      setHazaId(null);
       setTab("add");
       setOpen(true);
       return;
     }
 
     const list = (widgets ?? []).filter((w) => w.type === next && !w.archived);
-    if (next === "haza") {
-      setHazaId(list[0]?.id ?? null);
-    } else {
-      setHazaId(null);
+    if (next === "haza" && list.length === 1) {
+      closePanel();
+      router.push(pageWidgetPagePath(list[0].id));
+      return;
     }
     if (list.length === 0 && isAdmin) {
       setLockType(true);
@@ -166,14 +166,14 @@ export function PageWidgetsRail() {
       toast("Плитка добавлена", "success");
       window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
       await load(pathname);
-      if (addType === PAGE_WIDGET_HAZA) {
-        setHazaId(json.id);
-        setTab("haza");
+      if (addType === PAGE_WIDGET_HAZA && json.id) {
+        closePanel();
+        router.push(pageWidgetPagePath(json.id));
       } else {
         setTab("link");
+        setLockType(false);
+        resetForm(addType);
       }
-      setLockType(false);
-      resetForm(addType);
     } catch {
       toast("Не удалось сохранить", "error");
     } finally {
@@ -181,7 +181,7 @@ export function PageWidgetsRail() {
     }
   }
 
-  if (archiveLanding) return null;
+  if (skipRail) return null;
   if (widgets == null) return null;
   if (status === "loading" && widgets.length === 0) return null;
 
@@ -192,8 +192,6 @@ export function PageWidgetsRail() {
 
   if (!isAdmin && !showHazaTab && !showLinkTab) return null;
 
-  const selectedHaza = widgets.find((w) => w.id === hazaId && !w.archived) ?? null;
-  const showingResults = open && tab === "haza" && selectedHaza?.broadcastId != null;
   const adding = open && tab === "add";
 
   function tabSelected(id: RailTab): boolean {
@@ -206,15 +204,25 @@ export function PageWidgetsRail() {
   const tabs = (
     <div className="flex flex-col items-end gap-1" aria-label="Типы плиток">
       {showHazaTab ? (
-        <button
-          type="button"
-          aria-expanded={tabSelected("haza")}
-          aria-label="ХаЗа"
-          onClick={() => openType("haza")}
-          className={`${tabChip}${tabSelected("haza") ? " border-accent/40 bg-surface-hover" : ""}`}
-        >
-          ХаЗа
-        </button>
+        activeHaza.length === 1 ? (
+          <Link
+            href={pageWidgetPagePath(activeHaza[0].id)}
+            aria-label="ХаЗа"
+            className={tabChip}
+          >
+            ХаЗа
+          </Link>
+        ) : (
+          <button
+            type="button"
+            aria-expanded={tabSelected("haza")}
+            aria-label="ХаЗа"
+            onClick={() => openType("haza")}
+            className={`${tabChip}${tabSelected("haza") ? " border-accent/40 bg-surface-hover" : ""}`}
+          >
+            ХаЗа
+          </button>
+        )
       ) : null}
       {showLinkTab ? (
         <button
@@ -274,9 +282,7 @@ export function PageWidgetsRail() {
       ) : (
         <aside
           id="cmp-page-widgets-panel"
-          className={`fixed bottom-0 right-0 top-14 z-40 flex w-full flex-row-reverse ${
-            showingResults ? "max-w-3xl" : "max-w-md"
-          }`}
+          className="fixed bottom-0 right-0 top-14 z-40 flex w-full max-w-md flex-row-reverse"
           role="dialog"
           aria-modal="true"
           aria-label={heading || "Плитки"}
@@ -316,67 +322,42 @@ export function PageWidgetsRail() {
               ) : null}
 
               {open && tab === "haza" ? (
-                <div className="space-y-3">
-                  {activeHaza.length > 1 ? (
-                    <ul className="space-y-1">
-                      {activeHaza.map((w) => (
-                        <li key={w.id}>
-                          <button
-                            type="button"
-                            onClick={() => setHazaId(w.id)}
-                            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface ${
-                              hazaId === w.id ? "bg-surface font-medium" : ""
-                            }`}
-                          >
-                            <span aria-hidden>{tileEmoji(w.type, w.title)}</span>
-                            <span className="min-w-0 truncate">{tileLabel(w.title)}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {selectedHaza?.broadcastId != null ? (
-                    <ChgkResults broadcastId={selectedHaza.broadcastId} apiPath="/api/haza" />
-                  ) : activeHaza.length === 0 ? (
-                    <p className="px-1 text-sm text-muted">Нет трансляций ХаЗа на этой странице</p>
-                  ) : null}
-                </div>
+                activeHaza.length > 0 ? (
+                  <ul className="space-y-1">
+                    {activeHaza.map((w) => (
+                      <li key={w.id}>
+                        <Link
+                          href={pageWidgetPagePath(w.id)}
+                          onClick={closePanel}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface"
+                        >
+                          <span aria-hidden>{tileEmoji(w.type, w.title)}</span>
+                          <span className="min-w-0 truncate">{tileLabel(w.title)}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-1 text-sm text-muted">Нет трансляций ХаЗа на этой странице</p>
+                )
               ) : null}
 
               {open && tab === "link" ? (
                 activeLinks.length > 0 ? (
                   <ul className="space-y-1">
-                    {activeLinks.map((w) => {
-                      const label = (
-                        <>
+                    {activeLinks.map((w) => (
+                      <li key={w.id}>
+                        <a
+                          href={w.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface"
+                        >
                           <span aria-hidden>{tileEmoji(w.type, w.title)}</span>
                           <span className="min-w-0 truncate">{tileLabel(w.title)}</span>
-                        </>
-                      );
-                      const className =
-                        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface";
-                      if (isHttpWidgetUrl(w.url)) {
-                        return (
-                          <li key={w.id}>
-                            <a
-                              href={w.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={className}
-                            >
-                              {label}
-                            </a>
-                          </li>
-                        );
-                      }
-                      return (
-                        <li key={w.id}>
-                          <Link href={w.url} className={className} onClick={closePanel}>
-                            {label}
-                          </Link>
-                        </li>
-                      );
-                    })}
+                        </a>
+                      </li>
+                    ))}
                   </ul>
                 ) : (
                   <p className="px-1 text-sm text-muted">Нет ссылок на этой странице</p>

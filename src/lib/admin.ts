@@ -45,3 +45,29 @@ export async function requireModerator() {
 export function canRunBrainRing(role: string | undefined | null): boolean {
   return role === "ADMIN" || role === "MODERATOR";
 }
+
+export function canAssignBrainRingHosts(role: string | undefined | null): boolean {
+  return role === "ADMIN" || role === "ORGANIZER";
+}
+
+export function canScoreBrainRing(
+  role: string | undefined | null,
+  hostIds: string[],
+  userId: string | undefined | null,
+): boolean {
+  if (canRunBrainRing(role)) return true;
+  return Boolean(userId && hostIds.includes(userId));
+}
+
+export function brainRingAccess(
+  role: string | undefined | null,
+  hostIds: string[],
+  userId: string | undefined | null,
+) {
+  return {
+    canEditScheme: canRunBrainRing(role),
+    canScore: canScoreBrainRing(role, hostIds, userId),
+    canAssignHosts: canAssignBrainRingHosts(role),
+    canReset: role === "ADMIN",
+  };
+}

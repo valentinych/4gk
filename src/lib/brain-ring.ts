@@ -56,6 +56,8 @@ export {
 } from "@/lib/brain-ring-presets";
 export {
   playingTeamIds,
+  parseSopotTeamList,
+  snakeSopotNames,
   sopotCombinedStandings,
   sopotFillFinal,
   sopotFillStage2,

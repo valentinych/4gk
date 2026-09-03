@@ -1,7 +1,10 @@
 import { matchPoints, type BrainMatchInput, type BrainStandingsRow } from "@/lib/syreny-lite-brain-standings";
 import {
+  SOPOT_GROUP_COUNT,
+  SOPOT_GROUP_SIZE,
   SOPOT_REMATRIX,
   SOPOT_STAGE1_LETTERS,
+  SOPOT_TEAM_COUNT,
   type BrainSlotSource,
 } from "@/lib/brain-ring-presets";
 
@@ -48,6 +51,34 @@ export function placeCode(src: BrainSlotSource): string {
 export function rematrixSources(letter: string): BrainSlotSource[] {
   const row = SOPOT_REMATRIX.find((r) => r.letter === letter);
   return (row?.slots ?? []).map((s) => ({ kind: "place" as const, group: s.group, place: s.place }));
+}
+
+/** One name per line; also splits on comma, semicolon, or tab. Max 20. */
+export function parseSopotTeamList(text: string): string[] {
+  return text
+    .split(/[\n,;\t]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .slice(0, SOPOT_TEAM_COUNT);
+}
+
+/**
+ * Snake-seed into А Б В Г (5 slots). Seeds 1,8,9,16,17 → А.
+ * Short lists leave trailing empty slots in each group.
+ */
+export function snakeSopotNames(names: string[]): string[] {
+  const groups: string[][] = Array.from({ length: SOPOT_GROUP_COUNT }, () =>
+    Array.from({ length: SOPOT_GROUP_SIZE }, () => ""),
+  );
+  let i = 0;
+  for (let pos = 0; pos < SOPOT_GROUP_SIZE; pos++) {
+    const leftToRight = pos % 2 === 0;
+    for (let g = 0; g < SOPOT_GROUP_COUNT; g++) {
+      const gi = leftToRight ? g : SOPOT_GROUP_COUNT - 1 - g;
+      if (i < names.length) groups[gi]![pos] = names[i++]!;
+    }
+  }
+  return groups.flat();
 }
 
 function asInput(m: SopotMatch): BrainMatchInput {

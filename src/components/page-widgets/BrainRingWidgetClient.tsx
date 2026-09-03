@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader2, RefreshCw, Settings2, Search, X } from "lucide-react";
 import { useToast } from "@/components/Toaster";
 import { BrainRingResults } from "@/components/page-widgets/BrainRingResults";
@@ -12,8 +12,10 @@ import {
   clampQuestionCount,
   emptyScheme,
   isSopotPreset,
+  parseSopotTeamList,
   playoffSlots,
   playingTeamIds,
+  snakeSopotNames,
   scoreLine,
   sopotCombinedStandings,
   sopotGroupStandings,
@@ -240,20 +242,25 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
   const [sources, setSources] = useState<Array<{ id: string; title: string; teamCount: number }>>([]);
   const [sourceId, setSourceId] = useState("");
   const [selectedBySection, setSelectedBySection] = useState<Record<string, string>>({});
+  const [pasteList, setPasteList] = useState("");
+  const schemeTouched = useRef(false);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/brain-ring/${encodeURIComponent(widgetId)}`, { cache: "no-store" });
     if (!res.ok) throw new Error("load failed");
     const json = (await res.json()) as BrainPayload;
     setData(json);
-    if (json.event) setDraft(json.event.scheme);
-    else setDraft(emptyScheme("olympic", { teamCount: 8 }));
+    if (!schemeTouched.current) {
+      if (json.event) setDraft(json.event.scheme);
+      else setDraft(emptyScheme("olympic", { teamCount: 8 }));
+    }
     if (json.canScore && !json.canEditScheme) setTab("live");
     return json;
   }, [widgetId]);
 
   useEffect(() => {
     let cancelled = false;
+    schemeTouched.current = false;
     setLoading(true);
     load()
       .catch(() => {
@@ -295,7 +302,10 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
         return;
       }
       setData(json);
-      if (json.event) setDraft(json.event.scheme);
+      if (json.event) {
+        schemeTouched.current = false;
+        setDraft(json.event.scheme);
+      }
     } catch {
       toast("Не удалось сохранить", "error");
     } finally {
@@ -321,7 +331,10 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
         return;
       }
       setData(json);
-      if (json.event) setDraft(json.event.scheme);
+      if (json.event) {
+        schemeTouched.current = false;
+        setDraft(json.event.scheme);
+      }
       setTab("live");
       toast("Схема сохранена", "success");
     } catch {
@@ -332,6 +345,7 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
   }
 
   function rebuild(patch: Partial<BrainRingScheme> & { preset?: BrainPresetId; names?: string[] }) {
+    schemeTouched.current = true;
     setDraft((prev) =>
       emptyScheme(patch.preset ?? prev.preset, {
         questionCount: patch.questionCount ?? prev.questionCount,
@@ -420,7 +434,14 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
     ? [...new Set(event.matches.map((m) => m.sectionId))]
     : [];
 
+  function applyPastedTeams() {
+    const names = parseSopotTeamList(pasteList);
+    if (names.length === 0) return;
+    rebuild({ names: snakeSopotNames(names) });
+  }
+
   function setTeamName(teamId: string, name: string) {
+    schemeTouched.current = true;
     setDraft((prev) => ({
       ...prev,
       teams: prev.teams.map((t) => (t.id === teamId ? { ...t, name } : t)),
@@ -428,6 +449,7 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
   }
 
   function setStageQuestionCount(stageId: string, n: number) {
+    schemeTouched.current = true;
     setDraft((prev) => ({
       ...prev,
       stages: prev.stages.map((s) => (s.id === stageId ? { ...s, questionCount: clampQuestionCount(n) } : s)),
@@ -435,6 +457,7 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
   }
 
   function setGroupMeta(letter: string, patch: { venue?: string; time?: string }) {
+    schemeTouched.current = true;
     setDraft((prev) => ({
       ...prev,
       stages: prev.stages.map((s) => {
@@ -643,6 +666,29 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
 
               {sopot ? (
                 <div className="space-y-4">
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-amber-900">
+                      Список команд (по одному в строке) — распределить по А Б В Г
+                    </span>
+                    <textarea
+                      value={pasteList}
+                      onChange={(e) => setPasteList(e.target.value)}
+                      onBlur={() => applyPastedTeams()}
+                      rows={8}
+                      placeholder={"Команда 1\nКоманда 2\n…\nКоманда 20"}
+                      className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 font-mono text-sm"
+                    />
+                    <span className="mt-1 block text-[11px] text-amber-800">
+                      Этот виджет — один зачёт из 20. Второй список (21–40) вставляйте в другой виджет. Можно через запятую, точку с запятой или таб.
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => applyPastedTeams()}
+                    className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100"
+                  >
+                    Распределить
+                  </button>
                   <div className="text-xs font-semibold text-amber-900">Группы А–Г · пустое имя = не играет</div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {allGroups(draft)

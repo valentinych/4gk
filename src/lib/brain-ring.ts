@@ -15,6 +15,7 @@ import {
   SOPOT_REMATRIX,
   SOPOT_STAGE1_LETTERS,
   SOPOT_STAGE1_Q,
+  SOPOT_STAGE2_LETTERS,
   SOPOT_STAGE2_Q,
   SOPOT_TEAM_COUNT,
   generateDoubleElim,
@@ -286,6 +287,61 @@ function clampMatchSize(raw: unknown, fallback = 2): number {
 
 export function allGroups(scheme: BrainRingScheme): BrainRingGroupScheme[] {
   return scheme.stages.flatMap((s) => (s.type === "groups" ? s.groups : []));
+}
+
+const SOPOT_SECTION_FALLBACK = [...SOPOT_STAGE1_LETTERS, ...SOPOT_STAGE2_LETTERS, "final"];
+
+function groupsInLetterOrder<T extends { letter: string }>(groups: T[], letters: readonly string[]): T[] {
+  const byLetter = new Map(groups.map((g) => [g.letter, g]));
+  const out: T[] = [];
+  const seen = new Set<string>();
+  for (const letter of letters) {
+    const g = byLetter.get(letter);
+    if (g) {
+      out.push(g);
+      seen.add(g.letter);
+    }
+  }
+  for (const g of groups) {
+    if (!seen.has(g.letter)) out.push(g);
+  }
+  return out;
+}
+
+/** Group / rr / final section ids in scheme stage order (sopot: А Б В Г E F G H final). */
+export function schemeSectionIds(scheme: BrainRingScheme): string[] {
+  const ids: string[] = [];
+  for (const stage of scheme.stages) {
+    if (stage.type === "groups") {
+      const letters =
+        scheme.preset === "sopot" && stage.id === "stage2"
+          ? SOPOT_STAGE2_LETTERS
+          : scheme.preset === "sopot"
+            ? SOPOT_STAGE1_LETTERS
+            : null;
+      const groups = letters ? groupsInLetterOrder(stage.groups, letters) : stage.groups;
+      for (const g of groups) ids.push(g.id);
+    } else {
+      ids.push(stage.id);
+    }
+  }
+  if (scheme.preset === "sopot") {
+    if (ids.length === 0) return [...SOPOT_SECTION_FALLBACK];
+    const have = new Set(ids);
+    const ordered = SOPOT_SECTION_FALLBACK.filter((id) => have.has(id));
+    const rest = ids.filter((id) => !SOPOT_SECTION_FALLBACK.includes(id));
+    return [...ordered, ...rest];
+  }
+  return ids;
+}
+
+/** Sections that have matches, ordered by scheme (not by match playOrder / DB order). */
+export function liveSectionIds(scheme: BrainRingScheme, matches: Array<{ sectionId: string }>): string[] {
+  const present = [...new Set(matches.map((m) => m.sectionId))];
+  const order = schemeSectionIds(scheme);
+  const ordered = order.filter((id) => present.includes(id));
+  const rest = present.filter((id) => !order.includes(id));
+  return [...ordered, ...rest];
 }
 
 export function playoffSlots(scheme: BrainRingScheme): BrainRingPlayoffSlot[] {
@@ -1239,7 +1295,7 @@ function publicSopotGroups(scheme: BrainRingScheme, matches: BrainRingMatchDto[]
   const stage2 = scheme.stages.find((s) => s.id === "stage2" && s.type === "groups");
 
   if (stage1 && stage1.type === "groups") {
-    for (const g of stage1.groups) {
+    for (const g of groupsInLetterOrder(stage1.groups, SOPOT_STAGE1_LETTERS)) {
       const playing = playingTeamIds(scheme.teams, g.teamIds);
       out.push({
         letter: g.letter,
@@ -1255,7 +1311,7 @@ function publicSopotGroups(scheme: BrainRingScheme, matches: BrainRingMatchDto[]
   }
 
   if (stage2 && stage2.type === "groups") {
-    for (const g of stage2.groups) {
+    for (const g of groupsInLetterOrder(stage2.groups, SOPOT_STAGE2_LETTERS)) {
       const playing = playingTeamIds(scheme.teams, g.teamIds);
       const filled = playing.length >= 2;
       out.push({

@@ -12,6 +12,7 @@ import {
   clampQuestionCount,
   emptyScheme,
   isSopotPreset,
+  liveSectionIds,
   parseSopotTeamList,
   playoffSlots,
   playingTeamIds,
@@ -430,9 +431,7 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
   const showOlympic = draft.preset === "olympic";
   const showTeamCount = draft.preset !== "ochp-16" && draft.preset !== "groups" && draft.preset !== "sopot";
   const sopot = isSopotPreset(draft.preset);
-  const liveSections = event
-    ? [...new Set(event.matches.map((m) => m.sectionId))]
-    : [];
+  const liveSections = event ? liveSectionIds(event.scheme, event.matches) : [];
 
   function applyPastedTeams() {
     const names = parseSopotTeamList(pasteList);
@@ -886,7 +885,9 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
                       ? `Группа ${group.letter}`
                       : stage?.name ?? ROUND_LABELS[list[0]?.round ?? ""] ?? list[0]?.round ?? sectionId;
                     const groupTies =
-                      group && event.scheme.preset === "sopot"
+                      group &&
+                      event.scheme.preset === "sopot" &&
+                      sopotStage1Groups(event.scheme).some((g) => g.id === group.id)
                         ? tiedClusters(sopotGroupStandings(group, event.scheme.teams, event.matches))
                         : [];
                     const selectedId = selectedBySection[sectionId] ?? active?.id ?? "";

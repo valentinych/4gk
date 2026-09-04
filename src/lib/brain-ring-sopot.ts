@@ -361,13 +361,52 @@ export function sopotAdvancingIds(teams: SopotTeam[], groups: SopotGroup[], matc
   return ids;
 }
 
-/** Stage-1 matches among the 16, excluding vs the eliminated 5th, plus all stage-2 matches. */
+export function sopotGroupsFinished(teams: SopotTeam[], groups: SopotGroup[], matches: SopotMatch[]): boolean {
+  return groups.every((g) => {
+    const playing = playingTeamIds(teams, g.teamIds);
+    if (playing.length < 2) return true;
+    return groupMatchesComplete(playing.length, matches, g.id);
+  });
+}
+
+/**
+ * Advancers once a group is finished (drop unique 5th); otherwise everyone still playing.
+ * Used for the combined table before stage 1 is fully locked.
+ */
+export function sopotLikelyAdvancingIds(teams: SopotTeam[], groups: SopotGroup[], matches: SopotMatch[]): string[] {
+  const ids: string[] = [];
+  for (const g of groups) {
+    const playing = playingTeamIds(teams, g.teamIds);
+    if (playing.length === 0) continue;
+    const done = playing.length < 2 || groupMatchesComplete(playing.length, matches, g.id);
+    if (done && playing.length >= 5) {
+      const last = uniqueTeamAtPlace(sopotGroupStandings(g, teams, matches), playing.length);
+      for (const id of playing) {
+        if (!last || id !== last) ids.push(id);
+      }
+    } else {
+      ids.push(...playing);
+    }
+  }
+  return ids;
+}
+
+/** Locked 16 after stage 1; likely advancers before that. */
+export function sopotCombinedRosterIds(teams: SopotTeam[], stage1: SopotGroup[], matches: SopotMatch[]): string[] {
+  if (sopotGroupsFinished(teams, stage1, matches)) {
+    return sopotAdvancingIds(teams, stage1, matches);
+  }
+  return sopotLikelyAdvancingIds(teams, stage1, matches);
+}
+
+/** Stage-1 matches among the roster, excluding vs the eliminated 5th, plus all stage-2 matches. */
 export function sopotCombinedMatches(
   teams: SopotTeam[],
   stage1: SopotGroup[],
   matches: SopotMatch[],
+  rosterIds?: string[],
 ): BrainMatchInput[] {
-  const advancing = new Set(sopotAdvancingIds(teams, stage1, matches));
+  const advancing = new Set(rosterIds ?? sopotCombinedRosterIds(teams, stage1, matches));
   return matches
     .filter((m) => {
       if (m.kind !== "group" || m.teamIds.length > 2 || !m.complete) return false;
@@ -384,10 +423,12 @@ export function sopotCombinedStandings(
   matches: SopotMatch[],
   lottery: string[] = [],
 ): BrainStandingsRow[] {
-  const ids = sopotAdvancingIds(teams, stage1, matches);
+  const ids = sopotCombinedRosterIds(teams, stage1, matches);
+  const counted = sopotCombinedMatches(teams, stage1, matches, ids);
+  const played = ids.filter((id) => counted.some((m) => m.teamAId === id || m.teamBId === id));
   const names: Record<string, string> = {};
   for (const t of teams) names[t.id] = t.name.trim() || t.id;
-  return rankSopot(ids, names, sopotCombinedMatches(teams, stage1, matches), "combined", lottery);
+  return rankSopot(played, names, counted, "combined", lottery);
 }
 
 export function groupMatchesComplete(playingCount: number, matches: SopotMatch[], sectionId: string): boolean {

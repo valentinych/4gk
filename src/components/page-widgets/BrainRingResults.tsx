@@ -5,9 +5,11 @@ import { ROUND_LABELS, scoreLine, type BrainRingMatchDto, type BrainRingPublicGr
 export function BrainRingResults({
   groups,
   finals,
+  hideSections = false,
 }: {
   groups: BrainRingPublicGroup[];
   finals: BrainRingMatchDto[];
+  hideSections?: boolean;
 }) {
   let lastSection = "";
   return (
@@ -19,7 +21,7 @@ export function BrainRingResults({
         const key = group.isCombined ? "overall" : `${group.letter}-${group.letterName}`;
         return (
           <div key={key}>
-            {sectionChanged ? (
+            {sectionChanged && !hideSections ? (
               <h3 className={`mb-2 text-sm font-semibold ${group.isCombined ? "text-accent" : "text-foreground"}`}>
                 {group.section}
               </h3>
@@ -41,6 +43,9 @@ export function BrainRingResults({
                 {group.time ? <span className="ml-auto text-xs text-muted">{group.time}</span> : null}
               </div>
               <div className="overflow-x-auto">
+                {group.teams.length === 0 ? (
+                  <p className="px-4 py-6 text-sm text-muted">{group.emptyHint ?? "Нет сыгранных матчей"}</p>
+                ) : (
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-border text-[10px] uppercase tracking-wider text-muted">
@@ -103,6 +108,7 @@ export function BrainRingResults({
                     })}
                   </tbody>
                 </table>
+                )}
               </div>
             </div>
           </div>

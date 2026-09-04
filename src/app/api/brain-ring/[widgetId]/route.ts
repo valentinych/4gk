@@ -13,24 +13,27 @@ import {
   parseTeamIdsFromScores,
   playoffSlots,
   publicGroups,
+  planSopotAutoFill,
   resetFilledSlots,
   resolvePlayoffSource,
   schemeWithHostIds,
   scoresToJson,
   toMatchDto,
   lotteryOrderFromRows,
-  roundRobinMatches,
   sopotCombinedStandings,
   sopotFillFinal,
   sopotFillStage2,
+  sopotFinalFillPatch,
   sopotGroupStandings,
   sopotStage1Groups,
+  sopotStage2FillPatches,
   sopotStage2Groups,
   tiedClusters,
   type BrainCapture,
   type BrainRingMatchDto,
   type BrainRingPlayoffSlot,
   type BrainRingScheme,
+  type SopotFillPatch,
 } from "@/lib/brain-ring";
 import { db } from "@/lib/db";
 import { isPrismaMissingTable, PAGE_WIDGET_BRAIN } from "@/lib/page-widgets";
@@ -146,6 +149,48 @@ async function eventPayload(widgetId: string, session: Session | null) {
       updatedAt: event.updatedAt.toISOString(),
     },
   };
+}
+
+async function persistSopotFill(
+  event: { id: string; matches: Array<{ id: string; slotId: string; questionCount: number }> },
+  hostIds: string[],
+  nextScheme: BrainRingScheme,
+  patches: SopotFillPatch[],
+) {
+  const ops = [
+    db.brainRingEvent.update({
+      where: { id: event.id },
+      data: { scheme: schemeWithHostIds(nextScheme, hostIds) },
+    }),
+    ...patches.flatMap((p) => {
+      const match = event.matches.find((m) => m.slotId === p.slotId);
+      if (!match) return [];
+      return [
+        db.brainRingMatch.update({
+          where: { id: match.id },
+          data: {
+            teamAId: p.teamIds[0] ?? "",
+            teamBId: p.teamIds[1] ?? "",
+            ...(p.resetScores
+              ? { scores: scoresToJson(parseCaptures([], match.questionCount), p.teamIds) }
+              : {}),
+          },
+        }),
+      ];
+    }),
+  ];
+  if (ops.length) await db.$transaction(ops);
+}
+
+async function maybeAutoFillSopot(
+  event: { id: string; matches: Array<{ id: string; slotId: string; questionCount: number }> },
+  scheme: BrainRingScheme,
+  hostIds: string[],
+  dtos: BrainRingMatchDto[],
+) {
+  const planned = planSopotAutoFill(scheme, dtos);
+  if (!planned) return;
+  await persistSopotFill(event, hostIds, planned.nextScheme, planned.patches);
 }
 
 export async function GET(_req: Request, { params }: Params) {
@@ -350,6 +395,7 @@ export async function POST(req: Request, { params }: Params) {
           data: { scores: scoresToJson(captures, teamIds, "started"), active: true },
         }),
       ]);
+      await maybeAutoFillSopot(event, scheme, hostIds, dtos);
     } else if (action === "finish-match") {
       const matchId = typeof body.matchId === "string" ? body.matchId : "";
       const match = event.matches.find((m) => m.id === matchId);
@@ -364,6 +410,12 @@ export async function POST(req: Request, { params }: Params) {
         where: { id: match.id },
         data: { scores: scoresToJson(captures, teamIds, "finished"), active: false },
       });
+      const dtosAfter = dtos.map((d) =>
+        d.id === match.id
+          ? { ...d, complete: true, finished: true, status: "finished" as const, active: false }
+          : d,
+      );
+      await maybeAutoFillSopot(event, scheme, hostIds, dtosAfter);
     } else if (action === "reset-results") {
       const nextScheme = resetFilledSlots(scheme);
       const rows = matchesFromScheme(nextScheme);
@@ -424,6 +476,7 @@ export async function POST(req: Request, { params }: Params) {
         where: { eventId: event.id, id: { not: match.id }, sectionId: match.sectionId },
         data: { active: false },
       });
+      await maybeAutoFillSopot(event, scheme, hostIds, dtos);
     } else if (action === "set-active") {
       const matchId = typeof body.matchId === "string" ? body.matchId : "";
       const match = event.matches.find((m) => m.id === matchId);
@@ -541,54 +594,15 @@ export async function POST(req: Request, { params }: Params) {
         ),
       );
     } else if (action === "fill-stage-2") {
-      const stage1 = sopotStage1Groups(scheme);
-      const plan = sopotFillStage2(scheme.teams, stage1, dtos);
+      const plan = sopotFillStage2(scheme.teams, sopotStage1Groups(scheme), dtos);
       if ("error" in plan) {
         return NextResponse.json({ error: plan.error }, { status: 400 });
       }
-      const nextScheme: BrainRingScheme = {
-        ...scheme,
-        stages: scheme.stages.map((st) => {
-          if (st.id !== "stage2" || st.type !== "groups") return st;
-          return {
-            ...st,
-            groups: st.groups.map((g) => {
-              const found = plan.groups.find((x) => x.letter === g.letter);
-              return found ? { ...g, teamIds: found.teamIds } : g;
-            }),
-          };
-        }),
-      };
-      const matchUpdates: Array<{ id: string; teamIds: string[]; reset: boolean; questionCount: number }> = [];
-      for (const g of plan.groups) {
-        const pairs = roundRobinMatches(g.teamIds, 2);
-        for (let i = 0; i < pairs.length; i++) {
-          const match = event.matches.find((m) => m.slotId === `${g.letter}-${i + 1}`);
-          if (!match) {
-            return NextResponse.json({ error: `Нет матча ${g.letter}-${i + 1}` }, { status: 400 });
-          }
-          const ids = pairs[i]!;
-          const prevIds = parseTeamIdsFromScores(match.scores, match.teamAId, match.teamBId);
-          const reset = prevIds.join() !== ids.join();
-          matchUpdates.push({ id: match.id, teamIds: ids, reset, questionCount: match.questionCount });
-        }
+      const applied = sopotStage2FillPatches(scheme, dtos, plan);
+      if (applied.missingSlotId) {
+        return NextResponse.json({ error: `Нет матча ${applied.missingSlotId}` }, { status: 400 });
       }
-      await db.$transaction([
-        db.brainRingEvent.update({
-          where: { id: event.id },
-          data: { scheme: schemeWithHostIds(nextScheme, hostIds) },
-        }),
-        ...matchUpdates.map((u) =>
-          db.brainRingMatch.update({
-            where: { id: u.id },
-            data: {
-              teamAId: u.teamIds[0] ?? "",
-              teamBId: u.teamIds[1] ?? "",
-              ...(u.reset ? { scores: scoresToJson(parseCaptures([], u.questionCount), u.teamIds) } : {}),
-            },
-          }),
-        ),
-      ]);
+      await persistSopotFill(event, hostIds, applied.nextScheme, applied.patches);
     } else if (action === "fill-final") {
       const plan = sopotFillFinal(
         scheme.teams,
@@ -604,26 +618,9 @@ export async function POST(req: Request, { params }: Params) {
       if (!match) {
         return NextResponse.json({ error: "Нет финального матча" }, { status: 400 });
       }
-      const nextScheme: BrainRingScheme = {
-        ...scheme,
-        stages: scheme.stages.map((st) => (st.id === "final" && st.type === "rr" ? { ...st, teamIds: plan.teamIds } : st)),
-      };
-      const prevIds = parseTeamIdsFromScores(match.scores, match.teamAId, match.teamBId);
-      const reset = prevIds.join() !== plan.teamIds.join();
-      await db.$transaction([
-        db.brainRingEvent.update({
-          where: { id: event.id },
-          data: { scheme: schemeWithHostIds(nextScheme, hostIds) },
-        }),
-        db.brainRingMatch.update({
-          where: { id: match.id },
-          data: {
-            teamAId: plan.teamIds[0] ?? "",
-            teamBId: plan.teamIds[1] ?? "",
-            ...(reset ? { scores: scoresToJson(parseCaptures([], match.questionCount), plan.teamIds) } : {}),
-          },
-        }),
-      ]);
+      const finalDto = dtos.find((m) => m.slotId === "final");
+      const applied = sopotFinalFillPatch(scheme, finalDto, plan);
+      await persistSopotFill(event, hostIds, applied.nextScheme, applied.patches);
     } else if (action === "lottery-group") {
       const letter = typeof body.letter === "string" ? body.letter : "";
       const g = sopotStage1Groups(scheme).find((x) => x.letter === letter)
@@ -648,6 +645,7 @@ export async function POST(req: Request, { params }: Params) {
         where: { id: event.id },
         data: { scheme: schemeWithHostIds(nextScheme, hostIds) },
       });
+      await maybeAutoFillSopot(event, nextScheme, hostIds, dtos);
     } else if (action === "lottery-overall") {
       const rows = sopotCombinedStandings(
         scheme.teams,
@@ -663,6 +661,7 @@ export async function POST(req: Request, { params }: Params) {
         where: { id: event.id },
         data: { scheme: schemeWithHostIds(nextScheme, hostIds) },
       });
+      await maybeAutoFillSopot(event, nextScheme, hostIds, dtos);
     } else {
       return NextResponse.json({ error: "Неизвестное действие" }, { status: 400 });
     }

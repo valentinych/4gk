@@ -8,6 +8,8 @@ import {
   PRESET_LABELS,
   ROUND_LABELS,
   SOPOT_REMATRIX,
+  SOPOT_STAGE1_LETTERS,
+  SOPOT_TABS,
   allGroups,
   clampQuestionCount,
   emptyScheme,
@@ -20,12 +22,14 @@ import {
   scoreLine,
   sopotCombinedStandings,
   sopotGroupStandings,
+  sopotSectionsForTab,
   sopotStage1Groups,
   tiedClusters,
   type BrainPresetId,
   type BrainRingMatchDto,
   type BrainRingPublicGroup,
   type BrainRingScheme,
+  type SopotTabId,
 } from "@/lib/brain-ring";
 import { BRAIN_PRESETS } from "@/lib/brain-ring-presets";
 
@@ -188,6 +192,64 @@ function HostsPanel({
   );
 }
 
+function SopotStageTabs({
+  value,
+  onChange,
+  tone,
+}: {
+  value: SopotTabId;
+  onChange: (tab: SopotTabId) => void;
+  tone: "mod" | "public";
+}) {
+  const wrap =
+    tone === "mod"
+      ? "flex flex-wrap rounded-lg border border-amber-200 bg-white p-0.5"
+      : "flex flex-wrap rounded-lg border border-border bg-surface p-0.5";
+  const activeCls =
+    tone === "mod" ? "bg-amber-100 text-amber-950" : "bg-accent/10 text-foreground";
+  const idleCls =
+    tone === "mod" ? "text-amber-800 hover:bg-amber-50" : "text-muted hover:bg-surface/80";
+  return (
+    <div className={wrap} role="tablist" aria-label="Этапы Сопотской">
+      {SOPOT_TABS.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="tab"
+          aria-selected={value === t.id}
+          onClick={() => onChange(t.id)}
+          className={`rounded-md px-3 py-1.5 text-xs font-medium ${value === t.id ? activeCls : idleCls}`}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function sopotResultsForTab(
+  groups: BrainRingPublicGroup[],
+  finals: BrainRingMatchDto[],
+  tab: SopotTabId,
+): { groups: BrainRingPublicGroup[]; finals: BrainRingMatchDto[] } {
+  if (tab === "stage1") {
+    return {
+      groups: groups.filter((g) => (SOPOT_STAGE1_LETTERS as readonly string[]).includes(g.letter)),
+      finals: [],
+    };
+  }
+  if (tab === "stage2") {
+    return {
+      groups: groups.filter((g) => !(SOPOT_STAGE1_LETTERS as readonly string[]).includes(g.letter) && !g.isCombined),
+      finals: [],
+    };
+  }
+  if (tab === "combined") {
+    return { groups: groups.filter((g) => Boolean(g.isCombined)), finals: [] };
+  }
+  return { groups: [], finals };
+}
+
 function CaptureGrid({
   match,
   busy,
@@ -239,6 +301,7 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<ModTab>("scheme");
+  const [sopotTab, setSopotTab] = useState<SopotTabId>("stage1");
   const [draft, setDraft] = useState<BrainRingScheme>(() => emptyScheme("olympic", { teamCount: 8 }));
   const [sources, setSources] = useState<Array<{ id: string; title: string; teamCount: number }>>([]);
   const [sourceId, setSourceId] = useState("");
@@ -431,7 +494,15 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
   const showOlympic = draft.preset === "olympic";
   const showTeamCount = draft.preset !== "ochp-16" && draft.preset !== "groups" && draft.preset !== "sopot";
   const sopot = isSopotPreset(draft.preset);
-  const liveSections = event ? liveSectionIds(event.scheme, event.matches) : [];
+  const eventSopot = Boolean(event && isSopotPreset(event.scheme.preset));
+  const liveSections = event
+    ? eventSopot
+      ? sopotSectionsForTab(sopotTab, liveSectionIds(event.scheme, event.matches))
+      : liveSectionIds(event.scheme, event.matches)
+    : [];
+  const sopotView = eventSopot
+    ? sopotResultsForTab(event!.groups, event!.finals, sopotTab)
+    : null;
 
   function applyPastedTeams() {
     const names = parseSopotTeamList(pasteList);
@@ -796,54 +867,65 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
           {canScore && (tab === "live" || !canEditScheme) ? (
             event ? (
               <div className="space-y-4">
-                {playoffSlots(event.scheme).length > 0 || event.scheme.preset === "sopot" ? (
-                  <div className="flex flex-wrap gap-2">
-                    {event.scheme.preset === "sopot" ? (
-                      <>
+                {eventSopot ? (
+                  <>
+                    <SopotStageTabs value={sopotTab} onChange={setSopotTab} tone="mod" />
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {sopotTab === "stage2" ? (
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() => {
-                            if (!window.confirm("Заполнить этап 2 из мест групп А–Г? Составы E–H и их матчи будут перезаписаны.")) return;
+                            if (!window.confirm("Заполнить этап 2 из мест групп А–Г? Пустые слоты E–H будут записаны; начатые бои не сбрасываются.")) return;
                             void onAction("fill-stage-2");
                           }}
-                          className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100 disabled:opacity-50"
+                          className="text-xs text-amber-800 underline decoration-amber-300 underline-offset-2 hover:text-amber-950 disabled:opacity-50"
                         >
-                          Заполнить этап 2
+                          Заполнить этап 2 вручную
                         </button>
+                      ) : null}
+                      {sopotTab === "final" ? (
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() => {
-                            if (!window.confirm("Заполнить финал из общей таблицы? Состав финала будет перезаписан.")) return;
+                            if (!window.confirm("Заполнить финал из общей таблицы? Пустой финал будет записан; начатый бой не сбрасывается.")) return;
                             void onAction("fill-final");
+                          }}
+                          className="text-xs text-amber-800 underline decoration-amber-300 underline-offset-2 hover:text-amber-950 disabled:opacity-50"
+                        >
+                          Заполнить финал вручную
+                        </button>
+                      ) : null}
+                      {sopotTab === "combined" &&
+                      tiedClusters(
+                        sopotCombinedStandings(
+                          event.scheme.teams,
+                          sopotStage1Groups(event.scheme),
+                          event.matches,
+                          event.scheme.overallTieBreak ?? [],
+                        ),
+                      ).length > 0 ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            if (!window.confirm("Жребий общей таблицы? Порядок равных команд будет выбран случайно.")) return;
+                            void onAction("lottery-overall");
                           }}
                           className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100 disabled:opacity-50"
                         >
-                          Заполнить финал
+                          Жребий общей таблицы
                         </button>
-                        {tiedClusters(
-                          sopotCombinedStandings(
-                            event.scheme.teams,
-                            sopotStage1Groups(event.scheme),
-                            event.matches,
-                            event.scheme.overallTieBreak ?? [],
-                          ),
-                        ).length > 0 ? (
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => {
-                              if (!window.confirm("Жребий общей таблицы? Порядок равных команд будет выбран случайно.")) return;
-                              void onAction("lottery-overall");
-                            }}
-                            className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100 disabled:opacity-50"
-                          >
-                            Жребий общей таблицы
-                          </button>
-                        ) : null}
-                      </>
-                    ) : event.scheme.preset === "ochp-16" ? (
+                      ) : null}
+                    </div>
+                    {sopotTab === "combined" ? (
+                      <p className="text-xs text-amber-800">Таблица строится только по завершённым боям — см. ниже.</p>
+                    ) : null}
+                  </>
+                ) : playoffSlots(event.scheme).length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {event.scheme.preset === "ochp-16" ? (
                       <>
                         <button
                           type="button"
@@ -1036,7 +1118,12 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             Обновление каждые 5 с
           </div>
-          <BrainRingResults groups={event.groups} finals={event.finals} />
+          {eventSopot ? <SopotStageTabs value={sopotTab} onChange={setSopotTab} tone="public" /> : null}
+          <BrainRingResults
+            groups={sopotView ? sopotView.groups : event.groups}
+            finals={sopotView ? sopotView.finals : event.finals}
+            hideSections={eventSopot}
+          />
         </div>
       )}
     </div>

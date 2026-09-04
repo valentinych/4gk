@@ -35,10 +35,13 @@ import {
   placeCode,
   playingTeamIds,
   rematrixSources,
-  sopotAdvancingIds,
   sopotCombinedStandings,
+  sopotFillFinal,
+  sopotFillStage2,
   sopotGroupStandings,
+  sopotGroupsFinished,
   sopotStage1Groups,
+  sopotStage2Groups,
   uniqueTeamAtPlace,
 } from "@/lib/brain-ring-sopot";
 
@@ -63,6 +66,7 @@ export {
   sopotFillFinal,
   sopotFillStage2,
   sopotGroupStandings,
+  sopotGroupsFinished,
   sopotStage1Groups,
   sopotStage2Groups,
   lotteryOrderFromRows,
@@ -243,6 +247,7 @@ export interface BrainRingPublicGroup {
   outLast?: boolean;
   isCombined?: boolean;
   placeholder?: boolean;
+  emptyHint?: string;
   teams: Array<{
     pos: string;
     name: string;
@@ -290,6 +295,22 @@ export function allGroups(scheme: BrainRingScheme): BrainRingGroupScheme[] {
 }
 
 const SOPOT_SECTION_FALLBACK = [...SOPOT_STAGE1_LETTERS, ...SOPOT_STAGE2_LETTERS, "final"];
+
+export type SopotTabId = "stage1" | "stage2" | "combined" | "final";
+
+export const SOPOT_TABS: ReadonlyArray<{ id: SopotTabId; label: string }> = [
+  { id: "stage1", label: "Первый групповой этап" },
+  { id: "stage2", label: "Второй групповой этап" },
+  { id: "combined", label: "Общая таблица" },
+  { id: "final", label: "Финал" },
+];
+
+export function sopotSectionsForTab(tab: SopotTabId, sectionIds: string[]): string[] {
+  if (tab === "stage1") return sectionIds.filter((id) => (SOPOT_STAGE1_LETTERS as readonly string[]).includes(id));
+  if (tab === "stage2") return sectionIds.filter((id) => (SOPOT_STAGE2_LETTERS as readonly string[]).includes(id));
+  if (tab === "final") return sectionIds.filter((id) => id === "final");
+  return [];
+}
 
 function groupsInLetterOrder<T extends { letter: string }>(groups: T[], letters: readonly string[]): T[] {
   const byLetter = new Map(groups.map((g) => [g.letter, g]));
@@ -918,6 +939,154 @@ export function resetFilledSlots(scheme: BrainRingScheme): BrainRingScheme {
   };
 }
 
+export interface SopotFillPatch {
+  slotId: string;
+  teamIds: string[];
+  resetScores: boolean;
+}
+
+function sameIdSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return [...a].sort().join("\0") === [...b].sort().join("\0");
+}
+
+function playingIds(scheme: BrainRingScheme, ids: string[]): string[] {
+  return playingTeamIds(scheme.teams, ids);
+}
+
+export function sopotStage2FillPatches(
+  scheme: BrainRingScheme,
+  matches: Array<{ slotId: string; teamIds: string[]; status: BrainMatchStatus }>,
+  plan: { groups: Array<{ letter: string; teamIds: string[] }> },
+): { nextScheme: BrainRingScheme; patches: SopotFillPatch[]; missingSlotId?: string } {
+  const patches: SopotFillPatch[] = [];
+  let missingSlotId: string | undefined;
+  const nextScheme: BrainRingScheme = {
+    ...scheme,
+    stages: scheme.stages.map((st) => {
+      if (st.id !== "stage2" || st.type !== "groups") return st;
+      return {
+        ...st,
+        groups: st.groups.map((g) => {
+          const found = plan.groups.find((x) => x.letter === g.letter);
+          if (!found) return g;
+          if (sameIdSet(playingIds(scheme, g.teamIds), found.teamIds)) return g;
+          return { ...g, teamIds: found.teamIds };
+        }),
+      };
+    }),
+  };
+
+  for (const g of plan.groups) {
+    const current = sopotStage2Groups(scheme).find((x) => x.letter === g.letter);
+    const pairs = roundRobinMatches(g.teamIds, 2);
+    const groupAlreadySet = Boolean(current && sameIdSet(playingIds(scheme, current.teamIds), g.teamIds));
+    for (let i = 0; i < pairs.length; i++) {
+      const slotId = `${g.letter}-${i + 1}`;
+      const match = matches.find((m) => m.slotId === slotId);
+      if (!match) {
+        missingSlotId = slotId;
+        continue;
+      }
+      if (match.status === "started" || match.status === "finished") continue;
+      const ids = pairs[i]!;
+      if (groupAlreadySet && match.teamIds.length >= 2) continue;
+      const sameOrder = match.teamIds.join() === ids.join();
+      if (sameOrder && match.teamIds.length >= 2) continue;
+      patches.push({ slotId, teamIds: ids, resetScores: !sameOrder || match.teamIds.length < 2 });
+    }
+  }
+  return { nextScheme, patches, missingSlotId };
+}
+
+export function sopotFinalFillPatch(
+  scheme: BrainRingScheme,
+  match: { slotId: string; teamIds: string[]; status: BrainMatchStatus } | undefined,
+  plan: { teamIds: string[] },
+): { nextScheme: BrainRingScheme; patches: SopotFillPatch[] } {
+  const nextScheme: BrainRingScheme = {
+    ...scheme,
+    stages: scheme.stages.map((st) => {
+      if (st.id !== "final" || st.type !== "rr") return st;
+      if (sameIdSet(playingIds(scheme, st.teamIds), plan.teamIds)) return st;
+      return { ...st, teamIds: plan.teamIds };
+    }),
+  };
+  if (!match || match.status === "started" || match.status === "finished") {
+    return { nextScheme, patches: [] };
+  }
+  if (sameIdSet(match.teamIds, plan.teamIds) && match.teamIds.length >= 2) {
+    return { nextScheme, patches: [] };
+  }
+  return {
+    nextScheme,
+    patches: [{ slotId: "final", teamIds: plan.teamIds, resetScores: match.teamIds.join() !== plan.teamIds.join() || match.teamIds.length < 2 }],
+  };
+}
+
+function sopotFillSchemeChanged(a: BrainRingScheme, b: BrainRingScheme): boolean {
+  const a2 = sopotStage2Groups(a);
+  const b2 = sopotStage2Groups(b);
+  if (a2.length !== b2.length) return true;
+  for (const g of a2) {
+    const o = b2.find((x) => x.letter === g.letter);
+    if (!o || g.teamIds.join() !== o.teamIds.join()) return true;
+  }
+  const af = a.stages.find((s) => s.id === "final");
+  const bf = b.stages.find((s) => s.id === "final");
+  const aIds = af && af.type === "rr" ? af.teamIds.join() : "";
+  const bIds = bf && bf.type === "rr" ? bf.teamIds.join() : "";
+  return aIds !== bIds;
+}
+
+/** Fill E–H / final when standings are unique. Skips started/finished matches. No-op if already filled. */
+export function planSopotAutoFill(
+  scheme: BrainRingScheme,
+  matches: Array<{
+    slotId: string;
+    teamIds: string[];
+    status: BrainMatchStatus;
+    kind: string;
+    sectionId: string;
+    complete: boolean;
+    teamAId: string;
+    teamBId: string;
+    scoreA: number;
+    scoreB: number;
+  }>,
+): { nextScheme: BrainRingScheme; patches: SopotFillPatch[] } | null {
+  if (scheme.preset !== "sopot") return null;
+  let nextScheme = scheme;
+  const patches: SopotFillPatch[] = [];
+
+  const plan2 = sopotFillStage2(scheme.teams, sopotStage1Groups(scheme), matches);
+  if (!("error" in plan2)) {
+    const applied = sopotStage2FillPatches(nextScheme, matches, plan2);
+    nextScheme = applied.nextScheme;
+    patches.push(...applied.patches);
+  }
+
+  const planF = sopotFillFinal(
+    nextScheme.teams,
+    sopotStage1Groups(nextScheme),
+    sopotStage2Groups(nextScheme),
+    matches,
+    nextScheme.overallTieBreak ?? [],
+  );
+  if (!("error" in planF)) {
+    const applied = sopotFinalFillPatch(
+      nextScheme,
+      matches.find((m) => m.slotId === "final"),
+      planF,
+    );
+    nextScheme = applied.nextScheme;
+    patches.push(...applied.patches);
+  }
+
+  if (!sopotFillSchemeChanged(scheme, nextScheme) && patches.length === 0) return null;
+  return { nextScheme, patches };
+}
+
 function parseSopotStages(rec: Record<string, unknown>, generated: BrainRingScheme): BrainRingStage[] {
   const stagesIn = Array.isArray(rec.stages) ? rec.stages : [];
   const byId = new Map<string, Record<string, unknown>>();
@@ -1340,19 +1509,25 @@ function publicSopotGroups(scheme: BrainRingScheme, matches: BrainRingMatchDto[]
     }
   }
 
-  const advancing = sopotAdvancingIds(scheme.teams, sopotStage1Groups(scheme), matches);
-  if (advancing.length > 0 && advancing.length <= 16) {
-    out.push({
-      letter: "",
-      letterName: "Общая таблица",
-      venue: "",
-      time: "",
-      section: "Общая таблица · 16 команд",
-      highlightTop: 4,
-      isCombined: true,
-      teams: rowsToPublic(sopotCombinedStandings(scheme.teams, sopotStage1Groups(scheme), matches, scheme.overallTieBreak ?? [])),
-    });
-  }
+  const stage1Groups = sopotStage1Groups(scheme);
+  const stage1Done = sopotGroupsFinished(scheme.teams, stage1Groups, matches);
+  const combinedRows = sopotCombinedStandings(
+    scheme.teams,
+    stage1Groups,
+    matches,
+    scheme.overallTieBreak ?? [],
+  );
+  out.push({
+    letter: "",
+    letterName: "Общая таблица",
+    venue: "",
+    time: "",
+    section: stage1Done ? `Общая таблица · ${combinedRows.length || 16} команд` : "Общая таблица",
+    highlightTop: 4,
+    isCombined: true,
+    emptyHint: "Появится после завершения первого этапа",
+    teams: rowsToPublic(combinedRows),
+  });
 
   return out;
 }

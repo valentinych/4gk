@@ -1051,10 +1051,20 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
                           </div>
                         ) : null}
                         {selected && selected.status === "finished" ? (
-                          <p className="text-xs text-amber-800">
-                            {selected.teamNames.join(" vs ")} · <strong>{scoreLine(selected)}</strong> · бой завершён,
-                            результат в таблице
-                          </p>
+                          <div>
+                            <p className="text-xs text-amber-800">
+                              {selected.teamNames.join(" vs ")} · <strong>{scoreLine(selected)}</strong> · бой завершён,
+                              результат в таблице
+                            </p>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void onAction("edit-match", { matchId: selected.id })}
+                              className="mt-3 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-amber-100 disabled:opacity-50"
+                            >
+                              Редактировать
+                            </button>
+                          </div>
                         ) : null}
                       </div>
                     );

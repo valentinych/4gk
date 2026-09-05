@@ -396,6 +396,29 @@ export async function POST(req: Request, { params }: Params) {
         }),
       ]);
       await maybeAutoFillSopot(event, scheme, hostIds, dtos);
+    } else if (action === "edit-match") {
+      const matchId = typeof body.matchId === "string" ? body.matchId : "";
+      const match = event.matches.find((m) => m.id === matchId);
+      if (!match) return NextResponse.json({ error: "Некорректный матч" }, { status: 400 });
+      const teamIds = parseTeamIdsFromScores(match.scores, match.teamAId, match.teamBId);
+      if (teamIds.length < 2) {
+        return NextResponse.json({ error: "Сначала назначьте команды" }, { status: 400 });
+      }
+      const status = parseMatchStatus(match.scores, match.active, match.questionCount);
+      if (status !== "finished") {
+        return NextResponse.json({ error: "Редактировать можно только завершённый бой" }, { status: 400 });
+      }
+      const captures = parseCaptures((match.scores as { captures?: unknown })?.captures, match.questionCount);
+      await db.$transaction([
+        db.brainRingMatch.updateMany({
+          where: { eventId: event.id, sectionId: match.sectionId },
+          data: { active: false },
+        }),
+        db.brainRingMatch.update({
+          where: { id: match.id },
+          data: { scores: scoresToJson(captures, teamIds, "started"), active: true },
+        }),
+      ]);
     } else if (action === "finish-match") {
       const matchId = typeof body.matchId === "string" ? body.matchId : "";
       const match = event.matches.find((m) => m.id === matchId);

@@ -6,10 +6,36 @@ import type { SheetTableData } from "@/lib/google-sheets";
 
 const REFRESH_INTERVAL = 60;
 
-const NUMERIC = /^-?\d+([.,]\d+)?$/;
+type SortDir = "desc" | "asc";
+
+function isSummaHeader(label: string): boolean {
+  return label.trim().toLowerCase() === "сумма";
+}
+
+/** `1 234`, `12,5`, `12.5`. Empty / non-numeric → null. */
+function parseNumericCell(value: string): number | null {
+  const compact = value.trim().replace(/[\s\u00A0\u202F]/g, "").replace(",", ".");
+  if (!compact) return null;
+  if (!/^-?\d+(\.\d+)?$/.test(compact)) return null;
+  const n = Number(compact);
+  return Number.isFinite(n) ? n : null;
+}
 
 function isNumericCell(value: string): boolean {
-  return NUMERIC.test(value.trim());
+  return parseNumericCell(value) !== null;
+}
+
+function sortRowsByCol(rows: string[][], col: number, dir: SortDir): string[][] {
+  return rows
+    .map((row, i) => ({ row, i, n: parseNumericCell(row[col] ?? "") }))
+    .sort((a, b) => {
+      if (a.n == null && b.n == null) return a.i - b.i;
+      if (a.n == null) return 1;
+      if (b.n == null) return -1;
+      const cmp = dir === "asc" ? a.n - b.n : b.n - a.n;
+      return cmp !== 0 ? cmp : a.i - b.i;
+    })
+    .map((x) => x.row);
 }
 
 export function TableWidgetClient({ widgetId }: { widgetId: string }) {
@@ -18,6 +44,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -83,6 +110,15 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
     ...(data?.rows.map((r) => r.length) ?? [0]),
   );
   const empty = data != null && colCount === 0;
+  const summaCol = data?.headers.findIndex(isSummaHeader) ?? -1;
+  const rows =
+    data && sortDir && summaCol >= 0
+      ? sortRowsByCol(data.rows, summaCol, sortDir)
+      : (data?.rows ?? []);
+
+  const cycleSummaSort = () => {
+    setSortDir((d) => (d === null ? "desc" : d === "desc" ? "asc" : null));
+  };
 
   return (
     <div className="space-y-4">
@@ -129,22 +165,47 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
-                {Array.from({ length: colCount }, (_, i) => (
-                  <th
-                    key={i}
-                    className={`px-2 py-2.5 font-medium ${
-                      i === 0
-                        ? "text-left sticky left-0 bg-surface z-10"
-                        : "text-center"
-                    }`}
-                  >
-                    {data.headers[i] ?? ""}
-                  </th>
-                ))}
+                {Array.from({ length: colCount }, (_, i) => {
+                  const sortable = i === summaCol;
+                  return (
+                    <th
+                      key={i}
+                      aria-sort={
+                        sortable && sortDir
+                          ? sortDir === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : undefined
+                      }
+                      className={`px-2 py-2.5 font-medium ${
+                        i === 0
+                          ? "text-left sticky left-0 bg-surface z-10"
+                          : "text-center"
+                      }`}
+                    >
+                      {sortable ? (
+                        <button
+                          type="button"
+                          onClick={cycleSummaSort}
+                          className="inline-flex items-center gap-0.5 cursor-pointer hover:text-foreground"
+                        >
+                          {data.headers[i] ?? ""}
+                          {sortDir && (
+                            <span className="text-[10px] normal-case leading-none">
+                              {sortDir === "asc" ? "▲" : "▼"}
+                            </span>
+                          )}
+                        </button>
+                      ) : (
+                        (data.headers[i] ?? "")
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {data.rows.map((row, ri) => (
+              {rows.map((row, ri) => (
                 <tr key={ri} className="hover:bg-surface/50">
                   {Array.from({ length: colCount }, (_, ci) => {
                     const value = row[ci] ?? "";

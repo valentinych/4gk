@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { DS_CURRENT_TILES } from "@/lib/dziki-sopot-seasons";
+import { parseGoogleSheetsUrl } from "@/lib/google-sheets";
 import {
   buildOchpCurrentSeasonTiles,
   ochpChgkHazaBroadcastAllowlist,
@@ -12,6 +13,7 @@ import { turnirushkiHazaBroadcastAllowlist } from "@/lib/turnirushki-games";
 export const PAGE_WIDGET_HAZA = "haza";
 export const PAGE_WIDGET_LINK = "link";
 export const PAGE_WIDGET_BRAIN = "brain";
+export const PAGE_WIDGET_TABLE = "table";
 export const PAGE_WIDGETS_CHANGED_EVENT = "4gk:page-widgets-changed";
 export const PAGE_WIDGET_TITLE_MAX = 160;
 
@@ -29,7 +31,7 @@ export const PAGE_WIDGET_EMBEDDED_PATHS = new Set<string>([
   SYRENY_WIDGET_PATH,
 ]);
 
-/** Dedicated page for a widget with on-site content (Haza standings). */
+/** Dedicated page for a widget with on-site content (Haza / brain / table). */
 export function pageWidgetPagePath(id: string): string {
   return `/w/${id}`;
 }
@@ -48,11 +50,13 @@ export interface PageWidgetSeed {
 export type PageWidgetType =
   | typeof PAGE_WIDGET_HAZA
   | typeof PAGE_WIDGET_LINK
-  | typeof PAGE_WIDGET_BRAIN;
+  | typeof PAGE_WIDGET_BRAIN
+  | typeof PAGE_WIDGET_TABLE;
 
 export function asPageWidgetType(type: string): PageWidgetType {
   if (type === PAGE_WIDGET_LINK) return PAGE_WIDGET_LINK;
   if (type === PAGE_WIDGET_BRAIN) return PAGE_WIDGET_BRAIN;
+  if (type === PAGE_WIDGET_TABLE) return PAGE_WIDGET_TABLE;
   return PAGE_WIDGET_HAZA;
 }
 
@@ -185,6 +189,7 @@ export function isPrismaMissingTable(e: unknown): boolean {
 export function uniqueWidgetConflictMessage(type: string): string {
   if (type === PAGE_WIDGET_LINK) return "Такая ссылка уже добавлена на эту страницу";
   if (type === PAGE_WIDGET_BRAIN) return "Такой брейн-ринг уже добавлен на эту страницу";
+  if (type === PAGE_WIDGET_TABLE) return "Такая таблица уже добавлена на эту страницу";
   return "Такая трансляция уже добавлена на эту страницу";
 }
 
@@ -210,7 +215,12 @@ export function resolveWidgetFields(input: {
 
   const type =
     typeof input.type === "string" && input.type.trim() ? input.type.trim() : PAGE_WIDGET_HAZA;
-  if (type !== PAGE_WIDGET_HAZA && type !== PAGE_WIDGET_LINK && type !== PAGE_WIDGET_BRAIN) {
+  if (
+    type !== PAGE_WIDGET_HAZA &&
+    type !== PAGE_WIDGET_LINK &&
+    type !== PAGE_WIDGET_BRAIN &&
+    type !== PAGE_WIDGET_TABLE
+  ) {
     return { error: "Неизвестный тип плитки" };
   }
 
@@ -226,6 +236,17 @@ export function resolveWidgetFields(input: {
   if (type === PAGE_WIDGET_BRAIN) {
     const url = rawUrl.startsWith("brain:") && rawUrl.length > 6 ? rawUrl : brainWidgetUrl();
     return { title, url, type };
+  }
+
+  if (type === PAGE_WIDGET_TABLE) {
+    if (!rawUrl) {
+      return { error: "Укажите ссылку на Google Таблицу" };
+    }
+    const parsed = parseGoogleSheetsUrl(rawUrl);
+    if (parsed == null) {
+      return { error: "Вставьте ссылку на Google Таблицу (нужен доступ по ссылке)" };
+    }
+    return { title, url: parsed.viewUrl, type };
   }
 
   if (rawUrl.startsWith("/")) {

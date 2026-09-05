@@ -181,7 +181,9 @@ enum Role {
   ADMIN
 }
 
-// PageWidget: Haza / link / brain tiles attached to a page path.
+// PageWidget: Haza / link / brain / table tiles attached to a page path.
+// `type` is a String (haza | link | brain | table), not a Prisma enum —
+// adding `table` does not require db push.
 // This repo has no migration history. Production schema is applied with
 // `npx prisma db push --schema=src/prisma/schema.prisma` — deploy.sh does
 // not run it. After adding BrainRingEvent / BrainRingMatch, run db push on

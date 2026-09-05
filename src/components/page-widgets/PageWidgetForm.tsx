@@ -5,6 +5,7 @@ import {
   PAGE_WIDGET_BRAIN,
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
+  PAGE_WIDGET_TABLE,
   PAGE_WIDGET_TITLE_MAX,
   type PageWidgetType,
 } from "@/lib/page-widgets";
@@ -13,6 +14,7 @@ const TYPE_CHIPS: { type: PageWidgetType; label: string }[] = [
   { type: PAGE_WIDGET_HAZA, label: "ХаЗа" },
   { type: PAGE_WIDGET_BRAIN, label: "Брейн-ринг" },
   { type: PAGE_WIDGET_LINK, label: "Ссылка" },
+  { type: PAGE_WIDGET_TABLE, label: "Таблица" },
 ];
 
 export function PageWidgetForm({
@@ -43,27 +45,31 @@ export function PageWidgetForm({
   const urlLabel =
     type === PAGE_WIDGET_LINK
       ? "Ссылка или путь"
-      : type === PAGE_WIDGET_BRAIN
-        ? ""
-        : "Ссылка haza.online";
+      : type === PAGE_WIDGET_TABLE
+        ? "Ссылка на Google Таблицу"
+        : type === PAGE_WIDGET_BRAIN
+          ? ""
+          : "Ссылка haza.online";
   const titlePlaceholder =
     type === PAGE_WIDGET_LINK
       ? "Название ссылки"
-      : type === PAGE_WIDGET_BRAIN
-        ? "Брейн-ринг"
-        : "Результаты ХаЗа";
+      : type === PAGE_WIDGET_TABLE
+        ? "Результаты"
+        : type === PAGE_WIDGET_BRAIN
+          ? "Брейн-ринг"
+          : "Результаты ХаЗа";
 
   return (
     <form onSubmit={onSubmit} className="space-y-2.5">
       {lockType ? null : (
-        <div className="flex rounded-lg border border-border p-0.5">
+        <div className="flex flex-wrap rounded-lg border border-border p-0.5">
           {TYPE_CHIPS.map((chip) => (
             <button
               key={chip.type}
               type="button"
               aria-pressed={type === chip.type}
               onClick={() => onType(chip.type)}
-              className={`flex-1 rounded-md px-2 py-1.5 text-sm font-medium ${
+              className={`min-w-[25%] flex-1 rounded-md px-1.5 py-1.5 text-xs font-medium sm:text-sm ${
                 type === chip.type
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted hover:text-foreground"
@@ -91,13 +97,15 @@ export function PageWidgetForm({
           <input
             value={url}
             onChange={(e) => onUrl(e.target.value)}
-            type={type === PAGE_WIDGET_HAZA ? "url" : "text"}
+            type={type === PAGE_WIDGET_LINK ? "text" : "url"}
             inputMode="url"
             required
             placeholder={
               type === PAGE_WIDGET_LINK
                 ? "/dziki-sopot/schedule или https://…"
-                : "https://www.haza.online/broadcast/672"
+                : type === PAGE_WIDGET_TABLE
+                  ? "https://docs.google.com/spreadsheets/d/…"
+                  : "https://www.haza.online/broadcast/672"
             }
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
           />

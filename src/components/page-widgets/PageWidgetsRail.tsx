@@ -15,6 +15,7 @@ import {
   PAGE_WIDGET_BRAIN,
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
+  PAGE_WIDGET_TABLE,
   PAGE_WIDGETS_CHANGED_EVENT,
   isPageWidgetUtilityPath,
   pageWidgetPagePath,
@@ -35,7 +36,7 @@ function isArchiveLanding(pathname: string, searchParams: URLSearchParams): bool
   return false;
 }
 
-type RailTab = "haza" | "brain" | "link" | "add";
+type RailTab = "haza" | "brain" | "link" | "table" | "add";
 
 const tabChip =
   "shrink-0 rounded-l-lg border border-r-0 border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40";
@@ -46,6 +47,7 @@ function tileEmoji(type: string, title: string): string {
   if (type === PAGE_WIDGET_LINK) return "🔗";
   if (type === PAGE_WIDGET_HAZA) return "📊";
   if (type === PAGE_WIDGET_BRAIN) return "🧠";
+  if (type === PAGE_WIDGET_TABLE) return "📑";
   return "📌";
 }
 
@@ -134,7 +136,7 @@ export function PageWidgetsRail() {
     }
 
     const list = (widgets ?? []).filter((w) => w.type === next && !w.archived);
-    if ((next === "haza" || next === "brain") && list.length === 1) {
+    if ((next === "haza" || next === "brain" || next === "table") && list.length === 1) {
       closePanel();
       router.push(pageWidgetPagePath(list[0].id));
       return;
@@ -168,7 +170,12 @@ export function PageWidgetsRail() {
       toast("Плитка добавлена", "success");
       window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
       await load(pathname);
-      if ((addType === PAGE_WIDGET_HAZA || addType === PAGE_WIDGET_BRAIN) && json.id) {
+      if (
+        (addType === PAGE_WIDGET_HAZA ||
+          addType === PAGE_WIDGET_BRAIN ||
+          addType === PAGE_WIDGET_TABLE) &&
+        json.id
+      ) {
         closePanel();
         router.push(pageWidgetPagePath(json.id));
       } else {
@@ -190,11 +197,13 @@ export function PageWidgetsRail() {
   const activeHaza = widgets.filter((w) => w.type === PAGE_WIDGET_HAZA && !w.archived);
   const activeBrain = widgets.filter((w) => w.type === PAGE_WIDGET_BRAIN && !w.archived);
   const activeLinks = widgets.filter((w) => w.type === PAGE_WIDGET_LINK && !w.archived);
+  const activeTables = widgets.filter((w) => w.type === PAGE_WIDGET_TABLE && !w.archived);
   const showHazaTab = isAdmin || activeHaza.length > 0;
   const showBrainTab = isAdmin || activeBrain.length > 0;
   const showLinkTab = isAdmin || activeLinks.length > 0;
+  const showTableTab = isAdmin || activeTables.length > 0;
 
-  if (!isAdmin && !showHazaTab && !showBrainTab && !showLinkTab) return null;
+  if (!isAdmin && !showHazaTab && !showBrainTab && !showLinkTab && !showTableTab) return null;
 
   const adding = open && tab === "add";
 
@@ -203,6 +212,7 @@ export function PageWidgetsRail() {
     if (id === "add") return tab === "add" && !lockType;
     if (id === "haza") return tab === "haza" || (tab === "add" && lockType && addType === PAGE_WIDGET_HAZA);
     if (id === "brain") return tab === "brain" || (tab === "add" && lockType && addType === PAGE_WIDGET_BRAIN);
+    if (id === "table") return tab === "table" || (tab === "add" && lockType && addType === PAGE_WIDGET_TABLE);
     return tab === "link" || (tab === "add" && lockType && addType === PAGE_WIDGET_LINK);
   }
 
@@ -250,6 +260,27 @@ export function PageWidgetsRail() {
           </button>
         )
       ) : null}
+      {showTableTab ? (
+        activeTables.length === 1 ? (
+          <Link
+            href={pageWidgetPagePath(activeTables[0].id)}
+            aria-label="Таблица"
+            className={tabChip}
+          >
+            Таблица
+          </Link>
+        ) : (
+          <button
+            type="button"
+            aria-expanded={tabSelected("table")}
+            aria-label="Таблица"
+            onClick={() => openType("table")}
+            className={`${tabChip}${tabSelected("table") ? " border-accent/40 bg-surface-hover" : ""}`}
+          >
+            Таблица
+          </button>
+        )
+      ) : null}
       {showLinkTab ? (
         <button
           type="button"
@@ -282,17 +313,21 @@ export function PageWidgetsRail() {
       ? "ХаЗа"
       : adding && lockType && addType === PAGE_WIDGET_BRAIN
         ? "Брейн-ринг"
-        : adding && lockType && addType === PAGE_WIDGET_LINK
-          ? "Ссылка"
-          : adding
-            ? "Добавить плитку"
-            : tab === "haza"
-              ? "ХаЗа"
-              : tab === "brain"
-                ? "Брейн-ринг"
-                : tab === "link"
-                  ? "Ссылка"
-                  : "";
+        : adding && lockType && addType === PAGE_WIDGET_TABLE
+          ? "Таблица"
+          : adding && lockType && addType === PAGE_WIDGET_LINK
+            ? "Ссылка"
+            : adding
+              ? "Добавить плитку"
+              : tab === "haza"
+                ? "ХаЗа"
+                : tab === "brain"
+                  ? "Брейн-ринг"
+                  : tab === "table"
+                    ? "Таблица"
+                    : tab === "link"
+                      ? "Ссылка"
+                      : "";
 
   return (
     <>
@@ -390,6 +425,27 @@ export function PageWidgetsRail() {
                   </ul>
                 ) : (
                   <p className="px-1 text-sm text-muted">Нет брейн-ринга на этой странице</p>
+                )
+              ) : null}
+
+              {open && tab === "table" ? (
+                activeTables.length > 0 ? (
+                  <ul className="space-y-1">
+                    {activeTables.map((w) => (
+                      <li key={w.id}>
+                        <Link
+                          href={pageWidgetPagePath(w.id)}
+                          onClick={closePanel}
+                          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-surface"
+                        >
+                          <span aria-hidden>{tileEmoji(w.type, w.title)}</span>
+                          <span className="min-w-0 truncate">{tileLabel(w.title)}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-1 text-sm text-muted">Нет таблиц на этой странице</p>
                 )
               ) : null}
 

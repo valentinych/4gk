@@ -12,6 +12,7 @@ import {
   PAGE_WIDGET_EMBEDDED_PATHS,
   PAGE_WIDGET_HAZA,
   PAGE_WIDGET_LINK,
+  PAGE_WIDGET_TABLE,
   PAGE_WIDGETS_CHANGED_EVENT,
   asPageWidgetType,
   isPageWidgetUtilityPath,
@@ -27,6 +28,7 @@ function tileEmoji(type: string, title: string): string {
   if (type === PAGE_WIDGET_LINK) return "🔗";
   if (type === PAGE_WIDGET_HAZA) return "📊";
   if (type === PAGE_WIDGET_BRAIN) return "🧠";
+  if (type === PAGE_WIDGET_TABLE) return "📑";
   return "📌";
 }
 

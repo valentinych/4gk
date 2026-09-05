@@ -24,6 +24,7 @@ import {
   sopotCombinedStandings,
   sopotGroupStandings,
   sopotSectionsForTab,
+  sopotStage1FourTeamSlotIds,
   sopotStage1Groups,
   sortMatchesByFourTeamTours,
   tiedClusters,
@@ -963,10 +964,20 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
                   {liveSections.map((sectionId) => {
                     const rawList = matchesBySection.get(sectionId) ?? [];
                     const group = allGroups(event.scheme).find((g) => g.id === sectionId);
+                    const stage1Four = group
+                      ? sopotStage1FourTeamSlotIds(
+                          group.letter,
+                          group.teamIds,
+                          event.scheme.teams,
+                          rawList.length,
+                        )
+                      : null;
                     const list =
                       group && (SOPOT_STAGE2_LETTERS as readonly string[]).includes(group.letter)
                         ? sortMatchesByFourTeamTours(group.teamIds, rawList)
-                        : rawList;
+                        : stage1Four
+                          ? sortMatchesByFourTeamTours(stage1Four, rawList)
+                          : rawList;
                     const active = list.find((m) => m.active) ?? null;
                     const stage = event.scheme.stages.find((s) => s.id === sectionId);
                     const title = group

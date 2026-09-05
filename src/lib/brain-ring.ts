@@ -333,6 +333,22 @@ function matchPairIds(m: { teamIds: string[]; teamAId?: string; teamBId?: string
   return [a, b];
 }
 
+/**
+ * Stage-1 А–Г with 4 named teams (refusal / empty 5th slot) and 6 RR matches.
+ * Returns those 4 ids in current group slot order (teams 1–4). Null → keep playOrder.
+ */
+export function sopotStage1FourTeamSlotIds(
+  letter: string,
+  teamIds: string[],
+  teams: Array<{ id: string; name: string }>,
+  matchCount: number,
+): string[] | null {
+  if (!(SOPOT_STAGE1_LETTERS as readonly string[]).includes(letter)) return null;
+  const playing = playingTeamIds(teams, teamIds);
+  if (playing.length !== 4 || matchCount !== 6) return null;
+  return playing;
+}
+
 /** Sort existing matches into 4-team tour order. Does not mutate rows or playOrder. */
 export function sortMatchesByFourTeamTours<
   T extends { teamIds: string[]; teamAId?: string; teamBId?: string; playOrder: number },

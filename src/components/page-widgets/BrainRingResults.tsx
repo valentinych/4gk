@@ -84,12 +84,11 @@ export function BrainRingResults({
                       return (
                         <tr
                           key={`${key}-${t.name}-${ti}`}
-                          className={`hover:bg-surface/50 ${isIn ? "bg-emerald-50/30" : ""} ${isOut ? "bg-red-50/40 text-muted" : ""}`}
+                          className={`hover:bg-surface/50 ${isIn ? "bg-emerald-50/30" : ""}`}
                         >
                           <td className="px-2 py-1.5 text-right font-mono text-muted">{t.pos}</td>
                           <td className="whitespace-nowrap px-2 py-1.5 font-medium">
                             {t.name}
-                            {isOut ? <span className="ml-1 text-[10px] font-normal text-red-700">вылет</span> : null}
                           </td>
                           <td className="px-2 py-1.5 text-center font-mono tabular-nums">{t.played}</td>
                           <td className="px-2 py-1.5 text-center font-mono tabular-nums">{t.win}</td>

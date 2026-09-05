@@ -312,6 +312,52 @@ export function sopotSectionsForTab(tab: SopotTabId, sectionIds: string[]): stri
   return [];
 }
 
+/** Slot pairs for a 4-team RR: 1-2, 3-4, 1-3, 2-4, 1-4, 2-3. Display only. */
+const FOUR_TEAM_TOUR_PAIRS: ReadonlyArray<readonly [number, number]> = [
+  [0, 1],
+  [2, 3],
+  [0, 2],
+  [1, 3],
+  [0, 3],
+  [1, 2],
+];
+
+function pairKey(a: string, b: string): string {
+  return a < b ? `${a}\0${b}` : `${b}\0${a}`;
+}
+
+function matchPairIds(m: { teamIds: string[]; teamAId?: string; teamBId?: string }): [string, string] | null {
+  const a = m.teamIds[0] || m.teamAId || "";
+  const b = m.teamIds[1] || m.teamBId || "";
+  if (!a || !b) return null;
+  return [a, b];
+}
+
+/** Sort existing matches into 4-team tour order. Does not mutate rows or playOrder. */
+export function sortMatchesByFourTeamTours<
+  T extends { teamIds: string[]; teamAId?: string; teamBId?: string; playOrder: number },
+>(teamIds: string[], matches: T[]): T[] {
+  const ids = teamIds.filter(Boolean);
+  if (ids.length < 2) return matches.slice().sort((a, b) => a.playOrder - b.playOrder);
+
+  const rank = new Map<string, number>();
+  FOUR_TEAM_TOUR_PAIRS.forEach(([i, j], order) => {
+    const a = ids[i];
+    const b = ids[j];
+    if (!a || !b) return;
+    rank.set(pairKey(a, b), order);
+  });
+
+  return matches.slice().sort((a, b) => {
+    const pa = matchPairIds(a);
+    const pb = matchPairIds(b);
+    const ra = pa ? (rank.get(pairKey(pa[0], pa[1])) ?? 1000 + a.playOrder) : 1000 + a.playOrder;
+    const rb = pb ? (rank.get(pairKey(pb[0], pb[1])) ?? 1000 + b.playOrder) : 1000 + b.playOrder;
+    if (ra !== rb) return ra - rb;
+    return a.playOrder - b.playOrder;
+  });
+}
+
 function groupsInLetterOrder<T extends { letter: string }>(groups: T[], letters: readonly string[]): T[] {
   const byLetter = new Map(groups.map((g) => [g.letter, g]));
   const out: T[] = [];

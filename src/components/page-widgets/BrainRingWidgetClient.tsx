@@ -9,6 +9,7 @@ import {
   ROUND_LABELS,
   SOPOT_REMATRIX,
   SOPOT_STAGE1_LETTERS,
+  SOPOT_STAGE2_LETTERS,
   SOPOT_TABS,
   allGroups,
   clampQuestionCount,
@@ -24,6 +25,7 @@ import {
   sopotGroupStandings,
   sopotSectionsForTab,
   sopotStage1Groups,
+  sortMatchesByFourTeamTours,
   tiedClusters,
   type BrainPresetId,
   type BrainRingMatchDto,
@@ -63,7 +65,7 @@ interface BrainPayload {
 
 type ModTab = "scheme" | "live";
 
-function matchLabel(m: BrainRingMatchDto): string {
+function matchLabel(m: BrainRingMatchDto, displayOrder = m.playOrder): string {
   const names = m.teamNames.length ? m.teamNames.join(" — ") : `${m.teamAName} — ${m.teamBName}`;
   const score = scoreLine(m);
   const round = ROUND_LABELS[m.round] ?? m.round;
@@ -71,7 +73,7 @@ function matchLabel(m: BrainRingMatchDto): string {
   if (m.kind === "finals" || m.kind === "bracket") {
     return `${round}: ${names} (${score}) · ${st}`;
   }
-  return `${m.playOrder}. ${names} (${score}) · ${st}`;
+  return `${displayOrder}. ${names} (${score}) · ${st}`;
 }
 
 function hostLabel(u: { name: string | null; email: string | null }): string {
@@ -959,9 +961,13 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
 
                 <div className="grid gap-3 lg:grid-cols-2">
                   {liveSections.map((sectionId) => {
-                    const list = matchesBySection.get(sectionId) ?? [];
-                    const active = list.find((m) => m.active) ?? null;
+                    const rawList = matchesBySection.get(sectionId) ?? [];
                     const group = allGroups(event.scheme).find((g) => g.id === sectionId);
+                    const list =
+                      group && (SOPOT_STAGE2_LETTERS as readonly string[]).includes(group.letter)
+                        ? sortMatchesByFourTeamTours(group.teamIds, rawList)
+                        : rawList;
+                    const active = list.find((m) => m.active) ?? null;
                     const stage = event.scheme.stages.find((s) => s.id === sectionId);
                     const title = group
                       ? `Группа ${group.letter}`
@@ -1008,9 +1014,9 @@ export function BrainRingWidgetClient({ widgetId }: { widgetId: string }) {
                           }}
                         >
                           <option value="">— выберите матч —</option>
-                          {list.map((m) => (
+                          {list.map((m, i) => (
                             <option key={m.id} value={m.id}>
-                              {matchLabel(m)}
+                              {matchLabel(m, i + 1)}
                             </option>
                           ))}
                         </select>

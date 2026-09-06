@@ -3,6 +3,12 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { OCHP_CHGK_HAZA_BROADCAST_CURRENT } from "@/lib/ochp-seasons";
+import {
+  TRUEDL_COEFF_BASELINE,
+  formatTrueDlHundredths,
+  meanTrueDl,
+  teamTrueDl,
+} from "@/lib/truedl";
 
 interface HazaTour {
   n: number;
@@ -16,6 +22,8 @@ interface HazaTeam {
   answers: string;
   score: number;
   group: number;
+  /** MAK place band C; omitted → 1.0 */
+  coeff?: number;
 }
 
 interface HazaData {
@@ -83,20 +91,48 @@ function hazaColumnStats(
   teams: HazaTeam[],
   tours: HazaTour[],
   lastQuestion: number,
-): { sum: { median: number | null; mean: number | null }; tours: Array<{ median: number | null; mean: number | null }> } {
+): {
+  sum: { median: number | null; mean: number | null; trueDl: number | null };
+  tours: Array<{ median: number | null; mean: number | null; trueDl: number | null }>;
+} {
   const started = tours.map((_, ti) => tourHasStarted(tours, ti, lastQuestion));
   const tourValues: number[][] = tours.map(() => []);
+  const tourTrueDls: number[][] = tours.map(() => []);
   const sums: number[] = [];
+  const sumTrueDls: number[] = [];
+  let startedN = 0;
+  for (let ti = 0; ti < tours.length; ti++) {
+    if (started[ti]) startedN += tours[ti]!.q;
+  }
   for (const team of teams) {
     sums.push(team.score);
     const sc = tourScoresFromAnswers(team.answers, tours);
+    const coeff = team.coeff ?? TRUEDL_COEFF_BASELINE;
+    let startedScore = 0;
     for (let ti = 0; ti < tours.length; ti++) {
-      if (started[ti]) tourValues[ti]!.push(sc[ti] ?? 0);
+      if (!started[ti]) continue;
+      const q = sc[ti] ?? 0;
+      tourValues[ti]!.push(q);
+      startedScore += q;
+      const dl = teamTrueDl(q, tours[ti]!.q, coeff);
+      if (dl != null) tourTrueDls[ti]!.push(dl);
+    }
+    if (startedN > 0) {
+      const dl = teamTrueDl(startedScore, startedN, coeff);
+      if (dl != null) sumTrueDls.push(dl);
     }
   }
   return {
-    sum: { median: medianOf(sums), mean: meanOf(sums) },
-    tours: tourValues.map((vals) => ({ median: medianOf(vals), mean: meanOf(vals) })),
+    sum: {
+      median: medianOf(sums),
+      mean: meanOf(sums),
+      trueDl: meanTrueDl(sumTrueDls),
+    },
+    tours: tourValues.map((vals, ti) => ({
+      median: medianOf(vals),
+      mean: meanOf(vals),
+      trueDl: started[ti] ? meanTrueDl(tourTrueDls[ti]!) : null,
+    })),
   };
 }
 
@@ -350,6 +386,25 @@ export default function ChgkResults({
                       className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums"
                     >
                       {formatTenth(t.mean)}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-t border-border bg-surface/50 text-muted">
+                  <td className="px-1.5 sm:px-2 py-1.5 text-right font-mono text-xs sticky left-0 bg-surface z-10">
+                    —
+                  </td>
+                  <td className="px-1.5 sm:px-2 py-1.5 font-medium text-xs sticky left-7 sm:left-8 bg-surface z-10">
+                    trueDL
+                  </td>
+                  <td className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums bg-surface/50">
+                    {formatTrueDlHundredths(columnStats.sum.trueDl)}
+                  </td>
+                  {columnStats.tours.map((t, ti) => (
+                    <td
+                      key={ti}
+                      className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums"
+                    >
+                      {formatTrueDlHundredths(t.trueDl)}
                     </td>
                   ))}
                 </tr>

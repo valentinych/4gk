@@ -40,7 +40,8 @@ type RosterRow = {
   teamName: string;
 };
 
-function normTeamName(s: string): string {
+/** Same name key as EventTeam overlay on /dziki-sopot/participants. */
+export function normTeamName(s: string): string {
   return s.trim().toLowerCase();
 }
 

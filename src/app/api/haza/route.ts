@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  applyHazaTrueDlCoeffs,
+  isDsHazaBroadcast,
+  loadDsHazaTrueDlCoeffs,
+} from "@/lib/haza-truedl-coeffs";
 import { fetchHazaBroadcastData } from "@/lib/ochp-haza";
 import { isAllowedHazaBroadcastId, isPrismaMissingTable } from "@/lib/page-widgets";
 
@@ -26,7 +31,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    const data = await fetchHazaBroadcastData(broadcastId);
+    const dataPromise = fetchHazaBroadcastData(broadcastId);
+    const coeffPromise = isDsHazaBroadcast(broadcastId)
+      .then((ds) => (ds ? loadDsHazaTrueDlCoeffs() : null))
+      .catch((e) => {
+        console.error("haza trueDL coeffs failed", e);
+        return null;
+      });
+    const [data, byNormName] = await Promise.all([dataPromise, coeffPromise]);
+    if (byNormName) {
+      return NextResponse.json({
+        ...data,
+        teams: applyHazaTrueDlCoeffs(data.teams, byNormName),
+      });
+    }
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json(

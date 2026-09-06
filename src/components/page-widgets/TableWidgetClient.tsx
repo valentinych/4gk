@@ -8,6 +8,10 @@ const REFRESH_INTERVAL = 60;
 
 type SortDir = "desc" | "asc";
 
+/** Sticky name column: wrap on small viewports (~half of nowrap width). */
+const NAME_COL_CLASS =
+  "sticky left-0 bg-surface z-10 max-md:w-44 max-md:max-w-44 max-md:min-w-0 max-md:whitespace-normal max-md:break-words max-md:[overflow-wrap:anywhere]";
+
 function isSummaHeader(label: string): boolean {
   return label.trim().toLowerCase() === "сумма";
 }
@@ -44,7 +48,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir | null>("desc");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -58,6 +62,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
       setData(json);
       setError(null);
       setUpdatedAt(new Date());
+      setSortDir("desc");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка загрузки");
     } finally {
@@ -178,9 +183,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
                           : undefined
                       }
                       className={`px-2 py-2.5 font-medium ${
-                        i === 0
-                          ? "text-left sticky left-0 bg-surface z-10"
-                          : "text-center"
+                        i === 0 ? `text-left ${NAME_COL_CLASS}` : "text-center"
                       }`}
                     >
                       {sortable ? (
@@ -215,7 +218,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
                         key={ci}
                         className={`px-2 py-1.5 ${
                           ci === 0
-                            ? "sticky left-0 bg-surface z-10 font-medium whitespace-nowrap"
+                            ? `font-medium md:whitespace-nowrap ${NAME_COL_CLASS}`
                             : numeric
                               ? "text-center font-mono text-xs tabular-nums"
                               : ""

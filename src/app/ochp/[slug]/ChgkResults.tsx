@@ -55,6 +55,51 @@ function hazaTourColumnMaxima(
   return maxes.map((m) => (Number.isFinite(m) ? m : null));
 }
 
+function medianOf(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[mid]!;
+  return (sorted[mid - 1]! + sorted[mid]!) / 2;
+}
+
+function meanOf(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
+/** 1 decimal, period — same as other score tables on the site. */
+function formatTenth(n: number | null): string {
+  return n == null ? "—" : n.toFixed(1);
+}
+
+function tourHasStarted(tours: HazaTour[], tourIndex: number, lastQuestion: number): boolean {
+  let offset = 0;
+  for (let i = 0; i < tourIndex; i++) offset += tours[i]!.q;
+  return lastQuestion > offset;
+}
+
+function hazaColumnStats(
+  teams: HazaTeam[],
+  tours: HazaTour[],
+  lastQuestion: number,
+): { sum: { median: number | null; mean: number | null }; tours: Array<{ median: number | null; mean: number | null }> } {
+  const started = tours.map((_, ti) => tourHasStarted(tours, ti, lastQuestion));
+  const tourValues: number[][] = tours.map(() => []);
+  const sums: number[] = [];
+  for (const team of teams) {
+    sums.push(team.score);
+    const sc = tourScoresFromAnswers(team.answers, tours);
+    for (let ti = 0; ti < tours.length; ti++) {
+      if (started[ti]) tourValues[ti]!.push(sc[ti] ?? 0);
+    }
+  }
+  return {
+    sum: { median: medianOf(sums), mean: meanOf(sums) },
+    tours: tourValues.map((vals) => ({ median: medianOf(vals), mean: meanOf(vals) })),
+  };
+}
+
 export default function ChgkResults({
   broadcastId = OCHP_CHGK_HAZA_BROADCAST_CURRENT,
   apiPath = "/api/ochp/haza",
@@ -121,6 +166,11 @@ export default function ChgkResults({
 
   const tourMaxes = useMemo(
     () => (data ? hazaTourColumnMaxima(data.teams, data.tours) : null),
+    [data],
+  );
+
+  const columnStats = useMemo(
+    () => (data ? hazaColumnStats(data.teams, data.tours, data.lastQuestion) : null),
     [data],
   );
 
@@ -263,6 +313,48 @@ export default function ChgkResults({
                 );
               })}
             </tbody>
+            {columnStats ? (
+              <tfoot>
+                <tr className="border-t border-border bg-surface/50 text-muted">
+                  <td className="px-1.5 sm:px-2 py-1.5 text-right font-mono text-xs sticky left-0 bg-surface z-10">
+                    —
+                  </td>
+                  <td className="px-1.5 sm:px-2 py-1.5 font-medium text-xs sticky left-7 sm:left-8 bg-surface z-10">
+                    Медиана
+                  </td>
+                  <td className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums bg-surface/50">
+                    {formatTenth(columnStats.sum.median)}
+                  </td>
+                  {columnStats.tours.map((t, ti) => (
+                    <td
+                      key={ti}
+                      className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums"
+                    >
+                      {formatTenth(t.median)}
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-t border-border bg-surface/50 text-muted">
+                  <td className="px-1.5 sm:px-2 py-1.5 text-right font-mono text-xs sticky left-0 bg-surface z-10">
+                    —
+                  </td>
+                  <td className="px-1.5 sm:px-2 py-1.5 font-medium text-xs sticky left-7 sm:left-8 bg-surface z-10">
+                    Среднее
+                  </td>
+                  <td className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums bg-surface/50">
+                    {formatTenth(columnStats.sum.mean)}
+                  </td>
+                  {columnStats.tours.map((t, ti) => (
+                    <td
+                      key={ti}
+                      className="px-1.5 sm:px-2 py-1.5 text-center font-mono text-xs tabular-nums"
+                    >
+                      {formatTenth(t.mean)}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            ) : null}
           </table>
         </div>
       )}

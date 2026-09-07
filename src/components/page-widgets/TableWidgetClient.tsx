@@ -16,6 +16,11 @@ function isSummaHeader(label: string): boolean {
   return label.trim().toLowerCase() === "сумма";
 }
 
+function isRankHeader(label: string): boolean {
+  const t = label.trim().toLowerCase();
+  return t === "№" || t === "#" || t === "место" || t === "place" || t === "rank";
+}
+
 /** `1 234`, `12,5`, `12.5`. Empty / non-numeric → null. */
 function parseNumericCell(value: string): number | null {
   const compact = value.trim().replace(/[\s\u00A0\u202F]/g, "").replace(",", ".");
@@ -40,6 +45,27 @@ function sortRowsByCol(rows: string[][], col: number, dir: SortDir): string[][] 
       return cmp !== 0 ? cmp : a.i - b.i;
     })
     .map((x) => x.row);
+}
+
+/** Same score → same place; next distinct score skips (1, 1, 3). Unscored → no place. */
+function competitionPlaces(rows: string[][], summaCol: number): Map<string[], number | null> {
+  const scored = rows
+    .map((row, i) => ({ row, i, n: parseNumericCell(row[summaCol] ?? "") }))
+    .filter((x): x is { row: string[]; i: number; n: number } => x.n != null)
+    .sort((a, b) => b.n - a.n || a.i - b.i);
+
+  const places = new Map<string[], number | null>();
+  for (const row of rows) places.set(row, null);
+
+  let lastN: number | null = null;
+  let lastPlace = 0;
+  scored.forEach((x, idx) => {
+    const place = lastN != null && x.n === lastN ? lastPlace : idx + 1;
+    places.set(x.row, place);
+    lastN = x.n;
+    lastPlace = place;
+  });
+  return places;
 }
 
 export function TableWidgetClient({ widgetId }: { widgetId: string }) {
@@ -116,10 +142,18 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
   );
   const empty = data != null && colCount === 0;
   const summaCol = data?.headers.findIndex(isSummaHeader) ?? -1;
+  const sheetRankCol = data?.headers.findIndex(isRankHeader) ?? -1;
+  const injectRank = summaCol >= 0 && sheetRankCol < 0;
+  const displayColCount = injectRank ? colCount + 1 : colCount;
+  const rankDisplayCol = injectRank ? 0 : sheetRankCol;
+  const nameCol = rankDisplayCol === 0 ? 1 : 0;
+  const summaDisplayCol = injectRank && summaCol >= 0 ? summaCol + 1 : summaCol;
   const rows =
     data && sortDir && summaCol >= 0
       ? sortRowsByCol(data.rows, summaCol, sortDir)
       : (data?.rows ?? []);
+  const placeByRow =
+    data && summaCol >= 0 ? competitionPlaces(data.rows, summaCol) : null;
 
   const cycleSummaSort = () => {
     setSortDir((d) => (d === null ? "desc" : d === "desc" ? "asc" : null));
@@ -170,8 +204,13 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted uppercase tracking-wider">
-                {Array.from({ length: colCount }, (_, i) => {
-                  const sortable = i === summaCol;
+                {Array.from({ length: displayColCount }, (_, i) => {
+                  const dataCi = injectRank ? i - 1 : i;
+                  const sortable = i === summaDisplayCol;
+                  const header =
+                    injectRank && i === rankDisplayCol
+                      ? "№"
+                      : (data.headers[dataCi] ?? "");
                   return (
                     <th
                       key={i}
@@ -183,7 +222,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
                           : undefined
                       }
                       className={`px-2 py-2.5 font-medium ${
-                        i === 0 ? `text-left ${NAME_COL_CLASS}` : "text-center"
+                        i === nameCol ? `text-left ${NAME_COL_CLASS}` : "text-center"
                       }`}
                     >
                       {sortable ? (
@@ -192,7 +231,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
                           onClick={cycleSummaSort}
                           className="inline-flex items-center gap-0.5 cursor-pointer hover:text-foreground"
                         >
-                          {data.headers[i] ?? ""}
+                          {header}
                           {sortDir && (
                             <span className="text-[10px] normal-case leading-none">
                               {sortDir === "asc" ? "▲" : "▼"}
@@ -200,7 +239,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
                           )}
                         </button>
                       ) : (
-                        (data.headers[i] ?? "")
+                        header
                       )}
                     </th>
                   );
@@ -210,21 +249,28 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
             <tbody className="divide-y divide-border">
               {rows.map((row, ri) => (
                 <tr key={ri} className="hover:bg-surface/50">
-                  {Array.from({ length: colCount }, (_, ci) => {
-                    const value = row[ci] ?? "";
-                    const numeric = isNumericCell(value);
+                  {Array.from({ length: displayColCount }, (_, ci) => {
+                    const dataCi = injectRank ? ci - 1 : ci;
+                    const isRank = placeByRow != null && ci === rankDisplayCol;
+                    const place = isRank ? (placeByRow.get(row) ?? null) : null;
+                    const value = isRank
+                      ? place == null
+                        ? ""
+                        : String(place)
+                      : (row[dataCi] ?? "");
+                    const numeric = isRank ? place != null : isNumericCell(value);
                     return (
                       <td
                         key={ci}
                         className={`px-2 py-1.5 ${
-                          ci === 0
+                          ci === nameCol
                             ? `font-medium md:whitespace-nowrap ${NAME_COL_CLASS}`
-                            : numeric
+                            : numeric || isRank
                               ? "text-center font-mono text-xs tabular-nums"
                               : ""
                         }`}
                       >
-                        {value || (ci === 0 ? "" : <span className="text-muted/30">—</span>)}
+                        {value || (ci === nameCol ? "" : <span className="text-muted/30">—</span>)}
                       </td>
                     );
                   })}

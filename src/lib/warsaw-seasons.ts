@@ -82,6 +82,35 @@ export type IsiTourTable = {
 };
 
 /**
+ * Fight-level micromatch tabs for live POC (same workbook as 2025/26 archive).
+ * Rating Table2/Table3 are standings, not bouts — POC cannot use those grids.
+ * Tour 5 is appended from live Pack1–12 once a fight has a non-zero score.
+ */
+export const WARSAW_ISI_POC_ARCHIVE: IsiTourSlot[] = [
+  {
+    id: "tour2",
+    title: "Тур 2",
+    seasonLabel: "2025/2026",
+    url: `https://docs.google.com/spreadsheets/d/${MATCHES_SHEET}/edit?gid=135011823`,
+    headerless: true,
+  },
+  {
+    id: "tour3",
+    title: "Тур 3",
+    seasonLabel: "2025/2026",
+    url: `https://docs.google.com/spreadsheets/d/${MATCHES_SHEET}/edit?gid=1862706208`,
+    headerless: true,
+  },
+  {
+    id: "tour4",
+    title: "Тур 4",
+    seasonLabel: "2025/2026",
+    url: `https://docs.google.com/spreadsheets/d/${MATCHES_SHEET}/edit?gid=97351171`,
+    headerless: true,
+  },
+];
+
+/**
  * ИСИ «последние 4 тура» on the current season:
  * last 3 completed 2025/26 tours + live тур 5 of 2026/27.
  *

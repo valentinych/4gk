@@ -31,10 +31,17 @@ export type IsiPack = {
   fights: IsiFight[];
 };
 
+export type IsiPocTour = {
+  name: string;
+  tables: [string, number][][];
+};
+
 export type IsiLiveData = {
   leagues: IsiLeagueTable[];
   packs: IsiPack[];
   poc: PocRow[];
+  /** True once at least one Tour 5 fight has a non-zero score. */
+  pocIncludesTour5: boolean;
 };
 
 export function sheetGrid(data: SheetTableData): string[][] {
@@ -347,7 +354,32 @@ export function parsePackTab(
   };
 }
 
-export function startedPocTables(packs: IsiPack[]): { name: string; tables: [string, number][][] }[] {
+/** Same grouping as 2025/26 archive / poc-calculator parseTabCsv (blank line = new fight). */
+export function parseMatchTourGroups(csv: string): [string, number][][] {
+  const groups: [string, number][][] = [];
+  let current: [string, number][] = [];
+
+  for (const line of csv.replace(/^\uFEFF/, "").split(/\r?\n/)) {
+    const cells = line.split(",");
+    const name = (cells[0] ?? "").trim().replace(/^"|"$/g, "");
+    const scoreRaw = (cells[1] ?? "").trim().replace(/^"|"$/g, "");
+
+    if (!name) {
+      if (current.length) {
+        groups.push(current);
+        current = [];
+      }
+      continue;
+    }
+    const score = parseInt(scoreRaw, 10);
+    if (isNaN(score)) continue;
+    current.push([name, score]);
+  }
+  if (current.length) groups.push(current);
+  return groups;
+}
+
+export function startedPocTables(packs: IsiPack[]): IsiPocTour[] {
   return packs
     .map((pack) => ({
       name: pack.boutLabel || pack.title,
@@ -356,4 +388,9 @@ export function startedPocTables(packs: IsiPack[]): { name: string; tables: [str
         .map((f) => f.players.map((p) => [p.name, p.score] as [string, number])),
     }))
     .filter((t) => t.tables.length > 0);
+}
+
+/** T2–T4 always; Tour 5 packs only after a fight has started (non-zero score). */
+export function combinePocTours(archive: IsiPocTour[], packs: IsiPack[]): IsiPocTour[] {
+  return [...archive.filter((t) => t.tables.length > 0), ...startedPocTables(packs)];
 }

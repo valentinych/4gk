@@ -140,7 +140,8 @@ function looksLikeHtml(text: string, contentType: string | null): boolean {
   );
 }
 
-export async function fetchSheetTable(parsed: ParsedGoogleSheet): Promise<SheetTableData> {
+/** Raw CSV text. Preserves blank lines (needed for micromatch fight groups). */
+export async function fetchSheetCsv(parsed: ParsedGoogleSheet): Promise<string> {
   const res = await fetch(parsed.csvUrl, { cache: "no-store", redirect: "follow" });
   const text = await res.text();
 
@@ -148,6 +149,11 @@ export async function fetchSheetTable(parsed: ParsedGoogleSheet): Promise<SheetT
     throw new Error(SHEET_ACCESS_ERROR);
   }
 
+  return text;
+}
+
+export async function fetchSheetTable(parsed: ParsedGoogleSheet): Promise<SheetTableData> {
+  const text = await fetchSheetCsv(parsed);
   const grid = parseCsv(text);
   const headers = grid[0] ?? [];
   const rows = grid.slice(1);

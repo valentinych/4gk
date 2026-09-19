@@ -34,6 +34,7 @@ export function IsiLiveResults() {
         leagues: json.leagues ?? [],
         packs: json.packs ?? [],
         poc: json.poc ?? [],
+        pocIncludesTour5: json.pocIncludesTour5 ?? false,
       });
       setError(null);
       setUpdatedAt(new Date());
@@ -117,7 +118,7 @@ export function IsiLiveResults() {
           {data.leagues.map((league) => (
             <LeagueTable key={league.id} league={league} />
           ))}
-          <PocSection rows={data.poc} />
+          <PocSection rows={data.poc} includesTour5={data.pocIncludesTour5} />
           <PacksSection packs={data.packs} />
         </>
       )}
@@ -204,16 +205,20 @@ function LeagueTable({ league }: { league: IsiLeagueTable }) {
   );
 }
 
-function PocSection({ rows }: { rows: PocRow[] }) {
+function PocSection({ rows, includesTour5 }: { rows: PocRow[]; includesTour5: boolean }) {
   return (
     <div>
-      <h3 className="mb-3 text-sm font-bold">Рейтинг POC</h3>
+      <h3 className="mb-1 text-sm font-bold">Рейтинг POC</h3>
+      {rows.length > 0 ? (
+        <p className="mb-3 text-xs text-muted">
+          {includesTour5
+            ? "Туры 2–4 (2025/26) и начавшиеся бои тура 5"
+            : "Туры 2–4 сезона 2025/26. Тур 5 добавится после первого ненулевого счёта."}
+        </p>
+      ) : null}
       {rows.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
           <p className="text-sm font-medium text-muted">Скоро</p>
-          <p className="mt-1 text-xs text-muted">
-            Появится, когда в бою будет хотя бы один ненулевой счёт.
-          </p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border bg-surface">

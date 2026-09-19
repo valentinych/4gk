@@ -1,37 +1,80 @@
 import { NextResponse } from "next/server";
 import {
+  fetchSheetCsv,
   fetchSheetTable,
   parseGoogleSheetsUrl,
   SHEET_ACCESS_ERROR,
 } from "@/lib/google-sheets";
 import { computeFromTours } from "@/lib/parsers/poc-calculator";
 import {
+  combinePocTours,
   parseLeagueTable,
+  parseMatchTourGroups,
   parsePackTab,
   startedPocTables,
   type IsiLeagueTable,
   type IsiPack,
+  type IsiPocTour,
 } from "@/lib/warsaw-isi-live";
 import {
   WARSAW_ISI_LEAGUES,
   WARSAW_ISI_PACKS,
+  WARSAW_ISI_POC_ARCHIVE,
   warsawIsiTabUrl,
   type IsiSheetTab,
+  type IsiTourSlot,
 } from "@/lib/warsaw-seasons";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+const ARCHIVE_TTL_MS = 30 * 60 * 1000;
+let archivePocCache: { at: number; tours: IsiPocTour[] } | null = null;
+
 export async function GET() {
-  const [leagues, packs] = await Promise.all([
+  const [leagues, packs, archive] = await Promise.all([
     Promise.all(WARSAW_ISI_LEAGUES.map(loadLeague)),
     Promise.all(WARSAW_ISI_PACKS.map(loadPack)),
+    loadArchivePocTours(),
   ]);
 
-  const pocTours = startedPocTables(packs);
+  const liveTours = startedPocTables(packs);
+  const pocTours = combinePocTours(archive, packs);
   const poc = pocTours.length ? computeFromTours(pocTours).poc : [];
 
-  return NextResponse.json({ leagues, packs, poc });
+  return NextResponse.json({
+    leagues,
+    packs,
+    poc,
+    pocIncludesTour5: liveTours.length > 0,
+  });
+}
+
+async function loadArchivePocTours(): Promise<IsiPocTour[]> {
+  const now = Date.now();
+  if (archivePocCache && now - archivePocCache.at < ARCHIVE_TTL_MS) {
+    return archivePocCache.tours;
+  }
+
+  const tours = (await Promise.all(WARSAW_ISI_POC_ARCHIVE.map(loadArchiveTour))).filter(
+    (t): t is IsiPocTour => t != null,
+  );
+  if (tours.length) archivePocCache = { at: now, tours };
+  else if (archivePocCache) return archivePocCache.tours;
+  return tours;
+}
+
+async function loadArchiveTour(slot: IsiTourSlot): Promise<IsiPocTour | null> {
+  try {
+    const parsed = parseGoogleSheetsUrl(slot.url);
+    if (parsed == null) return null;
+    const csv = await fetchSheetCsv(parsed);
+    const tables = parseMatchTourGroups(csv);
+    if (!tables.length) return null;
+    return { name: slot.title, tables };
+  } catch {
+    return null;
+  }
 }
 
 async function loadLeague(tab: IsiSheetTab): Promise<IsiLeagueTable> {

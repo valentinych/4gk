@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
-import type { IsiTourTable } from "@/lib/warsaw-seasons";
+import { WARSAW_ISI_REFRESH_SECONDS, type IsiTourTable } from "@/lib/warsaw-seasons";
 
-const REFRESH_INTERVAL = 60;
+const REFRESH_INTERVAL = WARSAW_ISI_REFRESH_SECONDS;
 
 function isNumericCell(value: string): boolean {
   const compact = value.trim().replace(/[\s\u00A0\u202F]/g, "").replace(",", ".");

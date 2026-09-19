@@ -20,6 +20,7 @@ import {
   parseWarsawSeasonStart,
   type WarsawSeasonStart,
 } from "@/lib/warsaw-seasons";
+import { IsiLiveResults } from "./IsiLiveResults";
 import { IsiTourStrip } from "./IsiTourStrip";
 
 type Tab = "chgk" | "ksi" | "isi";
@@ -84,15 +85,8 @@ interface Tour {
 export default function WarsawPage() {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
-  const [tab, setTab] = useState<Tab>(() => {
-    if (typeof window === "undefined") return "chgk";
-    const h = window.location.hash.replace("#", "") as Tab;
-    return (["chgk", "ksi", "isi"] as Tab[]).includes(h) ? h : "chgk";
-  });
-  const [season, setSeason] = useState<WarsawSeasonStart>(() => {
-    if (typeof window === "undefined") return WARSAW_CURRENT_SEASON_START;
-    return parseWarsawSeasonStart(new URLSearchParams(window.location.search).get("season"));
-  });
+  const [tab, setTab] = useState<Tab>("chgk");
+  const [season, setSeason] = useState<WarsawSeasonStart>(WARSAW_CURRENT_SEASON_START);
   const currentSeason = isWarsawCurrentSeason(season);
   const seasonLabel = formatWarsawSeason(season);
 
@@ -106,6 +100,8 @@ export default function WarsawPage() {
       setSeason(parseWarsawSeasonStart(new URLSearchParams(window.location.search).get("season")));
       onHash();
     }
+    setSeason(parseWarsawSeasonStart(new URLSearchParams(window.location.search).get("season")));
+    onHash();
     window.addEventListener("hashchange", onHash);
     window.addEventListener("popstate", onPop);
     return () => {
@@ -269,7 +265,10 @@ export default function WarsawPage() {
           <KsiTab groupA={ksiA} groupB={ksiB} />
         )
       ) : currentSeason ? (
-        <IsiTourStrip />
+        <div className="space-y-10">
+          <IsiLiveResults />
+          <IsiTourStrip />
+        </div>
       ) : (
         <IsiTab data={isiData} />
       )}

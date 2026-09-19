@@ -21,7 +21,6 @@ import {
   type WarsawSeasonStart,
 } from "@/lib/warsaw-seasons";
 import { IsiLiveResults } from "./IsiLiveResults";
-import { IsiTourStrip } from "./IsiTourStrip";
 
 type Tab = "chgk" | "ksi" | "isi";
 
@@ -265,10 +264,7 @@ export default function WarsawPage() {
           <KsiTab groupA={ksiA} groupB={ksiB} />
         )
       ) : currentSeason ? (
-        <div className="space-y-10">
-          <IsiLiveResults />
-          <IsiTourStrip />
-        </div>
+        <IsiLiveResults />
       ) : (
         <IsiTab data={isiData} />
       )}

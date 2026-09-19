@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Calendar, MapPin, Users, Trophy, ExternalLink, RefreshCw, Loader2, Check, X as XIcon } from "lucide-react";
+import { Calendar, ChevronDown, MapPin, Users, Trophy, ExternalLink, RefreshCw, Loader2, Check, X as XIcon } from "lucide-react";
 import {
   chgkLeagueA as fallbackA,
   chgkLeagueB as fallbackB,
@@ -12,6 +12,15 @@ import {
   type CrossTableTeam,
   type KsiTeam,
 } from "@/data/warsaw";
+import {
+  WARSAW_CURRENT_SEASON_START,
+  WARSAW_SEASON_STARTS,
+  formatWarsawSeason,
+  isWarsawCurrentSeason,
+  parseWarsawSeasonStart,
+  type WarsawSeasonStart,
+} from "@/lib/warsaw-seasons";
+import { IsiTourStrip } from "./IsiTourStrip";
 
 type Tab = "chgk" | "ksi" | "isi";
 
@@ -80,16 +89,38 @@ export default function WarsawPage() {
     const h = window.location.hash.replace("#", "") as Tab;
     return (["chgk", "ksi", "isi"] as Tab[]).includes(h) ? h : "chgk";
   });
+  const [season, setSeason] = useState<WarsawSeasonStart>(() => {
+    if (typeof window === "undefined") return WARSAW_CURRENT_SEASON_START;
+    return parseWarsawSeasonStart(new URLSearchParams(window.location.search).get("season"));
+  });
+  const currentSeason = isWarsawCurrentSeason(season);
+  const seasonLabel = formatWarsawSeason(season);
 
-  // Sync hash → tab on back/forward navigation
+  // Sync hash → tab and ?season= on back/forward
   useEffect(() => {
     function onHash() {
       const h = window.location.hash.replace("#", "") as Tab;
       if ((["chgk", "ksi", "isi"] as Tab[]).includes(h)) setTab(h);
     }
+    function onPop() {
+      setSeason(parseWarsawSeasonStart(new URLSearchParams(window.location.search).get("season")));
+      onHash();
+    }
     window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("popstate", onPop);
+    };
   }, []);
+
+  function switchSeason(next: WarsawSeasonStart) {
+    const url = new URL(window.location.href);
+    if (next === WARSAW_CURRENT_SEASON_START) url.searchParams.delete("season");
+    else url.searchParams.set("season", String(next));
+    window.history.pushState({}, "", url);
+    setSeason(next);
+  }
 
   function switchTab(t: Tab) {
     window.location.hash = t;
@@ -175,7 +206,7 @@ export default function WarsawPage() {
       <div id="page-warsaw-header" className="mb-8">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
           <Trophy className="h-3.5 w-3.5" />
-          Сезон 2025/2026
+          Сезон {seasonLabel}
         </div>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -207,11 +238,15 @@ export default function WarsawPage() {
 
       <div id="page-warsaw-info-cards" className="mb-6 grid gap-4 sm:grid-cols-3">
         <InfoCard icon={<MapPin className="h-4 w-4 text-muted" />} label="Город" value="Варшава" />
-        <InfoCard icon={<Calendar className="h-4 w-4 text-muted" />} label="Сезон" value="2025/2026" />
+        <SeasonCard season={season} onChange={switchSeason} />
         <InfoCard
           icon={<Users className="h-4 w-4 text-muted" />}
           label="Обновлено"
-          value={updatedAt ? new Date(updatedAt).toLocaleString("ru-RU", { timeZone: "Europe/Warsaw", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"}
+          value={
+            !currentSeason && updatedAt
+              ? new Date(updatedAt).toLocaleString("ru-RU", { timeZone: "Europe/Warsaw", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+              : "—"
+          }
         />
       </div>
 
@@ -222,9 +257,19 @@ export default function WarsawPage() {
       </div>
 
       {tab === "chgk" ? (
-        <ChgkTab leagueA={leagueA} leagueB={leagueB} tours={tours} matchDetails={matchDetails} leagueAOrder={leagueAOrder} leagueBOrder={leagueBOrder} />
+        currentSeason ? (
+          <ChgkSoon />
+        ) : (
+          <ChgkTab leagueA={leagueA} leagueB={leagueB} tours={tours} matchDetails={matchDetails} leagueAOrder={leagueAOrder} leagueBOrder={leagueBOrder} />
+        )
       ) : tab === "ksi" ? (
-        <KsiTab groupA={ksiA} groupB={ksiB} />
+        currentSeason ? (
+          <KsiSoon />
+        ) : (
+          <KsiTab groupA={ksiA} groupB={ksiB} />
+        )
+      ) : currentSeason ? (
+        <IsiTourStrip />
       ) : (
         <IsiTab data={isiData} />
       )}
@@ -242,6 +287,109 @@ function InfoCard({ icon, label, value }: { icon: React.ReactNode; label: string
           <p className="text-sm font-bold">{value}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SeasonCard({
+  season,
+  onChange,
+}: {
+  season: WarsawSeasonStart;
+  onChange: (next: WarsawSeasonStart) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  return (
+    <div className="relative rounded-xl border border-border bg-surface p-5" ref={menuRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((o) => !o);
+        }}
+        className="-m-1 flex w-full items-center gap-3 rounded-lg p-1 text-left transition-colors hover:bg-surface/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface">
+          <Calendar className="h-4 w-4 text-muted" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted">Сезон</p>
+          <p className="text-sm font-bold">{formatWarsawSeason(season)}</p>
+        </div>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-auto rounded-lg border border-border bg-surface py-1 shadow-lg">
+          {WARSAW_SEASON_STARTS.map((y) => (
+            <button
+              key={y}
+              type="button"
+              onClick={() => {
+                onChange(y);
+                setOpen(false);
+              }}
+              className={`flex w-full items-center px-4 py-2.5 text-left text-sm transition-colors hover:bg-surface ${
+                y === season ? "bg-accent/5 font-bold text-accent" : ""
+              }`}
+            >
+              {formatWarsawSeason(y)}
+              {y === WARSAW_CURRENT_SEASON_START && (
+                <span className="ml-2 rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                  текущий
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SoonSection({ title }: { title: string }) {
+  return (
+    <div>
+      <h3 className="mb-3 text-sm font-bold">{title}</h3>
+      <div className="rounded-xl border border-border bg-surface px-4 py-14 text-center">
+        <p className="text-sm font-medium text-muted">Скоро</p>
+      </div>
+    </div>
+  );
+}
+
+function ChgkSoon() {
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">Микроматчи ЧГК</h2>
+      </div>
+      <SoonSection title="Лига А" />
+      <SoonSection title="Лига Б" />
+      <SoonSection title="Туры" />
+    </div>
+  );
+}
+
+function KsiSoon() {
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-bold">КСИ</h2>
+      </div>
+      <SoonSection title="Лига А" />
+      <SoonSection title="Лига Б" />
     </div>
   );
 }

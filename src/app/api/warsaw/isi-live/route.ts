@@ -40,13 +40,18 @@ export async function GET() {
 
   const liveTours = startedPocTables(packs);
   const pocTours = combinePocTours(archive, packs);
-  const poc = pocTours.length ? computeFromTours(pocTours).poc : [];
+  const computed = pocTours.length
+    ? computeFromTours(pocTours)
+    : { poc: [], crossPlayers: [], crossTable: {} };
 
   return NextResponse.json({
     leagues,
     packs,
-    poc,
+    poc: computed.poc,
     pocIncludesTour5: liveTours.length > 0,
+    crossPlayers: computed.crossPlayers,
+    crossTable: computed.crossTable,
+    currentSeasonTourNames: liveTours.map((t) => t.name),
   });
 }
 

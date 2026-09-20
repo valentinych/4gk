@@ -1,5 +1,5 @@
 import type { SheetTableData } from "@/lib/google-sheets";
-import type { PocRow } from "@/lib/parsers/poc-calculator";
+import type { PocCrossCell, PocRow } from "@/lib/parsers/poc-calculator";
 
 export type IsiLeagueTable = {
   id: string;
@@ -42,6 +42,10 @@ export type IsiLiveData = {
   poc: PocRow[];
   /** True once at least one Tour 5 fight has a non-zero score. */
   pocIncludesTour5: boolean;
+  crossPlayers: string[];
+  crossTable: Record<string, PocCrossCell>;
+  /** Tour names of started Tour 5 packs; empty until a non-zero T5 fight. */
+  currentSeasonTourNames: string[];
 };
 
 export function sheetGrid(data: SheetTableData): string[][] {
@@ -113,10 +117,10 @@ function resolveMergedValueCol(col: number, rows: string[][], cols: number): num
 
 function pickSortCol(headers: string[], rows: string[][]): { col: number; kind: "sum" | "points" | "place" | "none" } {
   const cols = colCountOf(headers, rows);
-  const sum = headers.findIndex(isSumHeader);
-  if (sum >= 0) return { col: resolveMergedValueCol(sum, rows, cols), kind: "sum" };
   const pts = headers.findIndex(isPointsHeader);
   if (pts >= 0) return { col: resolveMergedValueCol(pts, rows, cols), kind: "points" };
+  const sum = headers.findIndex(isSumHeader);
+  if (sum >= 0) return { col: resolveMergedValueCol(sum, rows, cols), kind: "sum" };
   const place = headers.findIndex(isPlaceHeader);
   if (place >= 0) return { col: place, kind: "place" };
   return { col: -1, kind: "none" };
@@ -257,8 +261,14 @@ export function parseLeagueTable(
   if (sortAfter.kind === "sum" || sortAfter.kind === "points") {
     rows = sortRowsByCol(rows, sortAfter.col, "desc");
     const places = competitionPlaces(rows, sortAfter.col);
-    const hasPlace = headers.some(isPlaceHeader);
-    if (!hasPlace) {
+    const placeCol = headers.findIndex(isPlaceHeader);
+    if (placeCol >= 0) {
+      rows = rows.map((row, i) => {
+        const next = [...row];
+        next[placeCol] = places[i] == null ? "" : String(places[i]);
+        return next;
+      });
+    } else {
       headers = ["№", ...headers];
       rows = rows.map((row, i) => [
         places[i] == null ? "" : String(places[i]),

@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ExternalLink, RefreshCw } from "lucide-react";
-import type { PocRow } from "@/lib/parsers/poc-calculator";
+import { ExternalLink, RefreshCw, X as XIcon } from "lucide-react";
+import type { PocCrossCell, PocRow } from "@/lib/parsers/poc-calculator";
 import type { IsiFight, IsiLeagueTable, IsiLiveData, IsiPack } from "@/lib/warsaw-isi-live";
 import { WARSAW_ISI_REFRESH_SECONDS } from "@/lib/warsaw-seasons";
 
@@ -35,6 +35,9 @@ export function IsiLiveResults() {
         packs: json.packs ?? [],
         poc: json.poc ?? [],
         pocIncludesTour5: json.pocIncludesTour5 ?? false,
+        crossPlayers: json.crossPlayers ?? [],
+        crossTable: json.crossTable ?? {},
+        currentSeasonTourNames: json.currentSeasonTourNames ?? [],
       });
       setError(null);
       setUpdatedAt(new Date());
@@ -119,6 +122,14 @@ export function IsiLiveResults() {
             <LeagueTable key={league.id} league={league} />
           ))}
           <PocSection rows={data.poc} includesTour5={data.pocIncludesTour5} />
+          {data.crossPlayers.length > 0 ? (
+            <CrossTableSection
+              players={data.crossPlayers}
+              crossTable={data.crossTable}
+              currentSeasonTourNames={data.currentSeasonTourNames}
+              includesTour5={data.pocIncludesTour5}
+            />
+          ) : null}
           <PacksSection packs={data.packs} />
         </>
       )}
@@ -252,6 +263,208 @@ function PocSection({ rows, includesTour5 }: { rows: PocRow[]; includesTour5: bo
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function cellFromRowView(
+  pA: string,
+  pB: string,
+  crossTable: Record<string, PocCrossCell>,
+): PocCrossCell | null {
+  const direct = crossTable[`${pA}|||${pB}`];
+  if (direct) return direct;
+  const rev = crossTable[`${pB}|||${pA}`];
+  if (!rev) return null;
+  return {
+    ...rev,
+    winsA: rev.winsB,
+    winsB: rev.winsA,
+    bouts: rev.bouts.map((b) => ({ ...b, scoreA: b.scoreB, scoreB: b.scoreA })),
+  };
+}
+
+function CrossTableSection({
+  players,
+  crossTable,
+  currentSeasonTourNames,
+  includesTour5,
+}: {
+  players: string[];
+  crossTable: Record<string, PocCrossCell>;
+  currentSeasonTourNames: string[];
+  includesTour5: boolean;
+}) {
+  const [popup, setPopup] = useState<{
+    pA: string;
+    pB: string;
+    cell: PocCrossCell;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const currentNames = new Set(currentSeasonTourNames);
+
+  function isCurrentSeason(cell: PocCrossCell): boolean {
+    return cell.bouts.some((b) => currentNames.has(b.tourName));
+  }
+
+  function handleCellClick(e: React.MouseEvent, pA: string, pB: string) {
+    const cell = cellFromRowView(pA, pB, crossTable);
+    if (!cell || !cell.total) return;
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.top;
+    if (x + 150 > window.innerWidth) x = window.innerWidth - 160;
+    if (x < 150) x = 160;
+    if (y < 250) y = rect.bottom + 8;
+
+    setPopup({ pA, pB, cell, x, y });
+  }
+
+  return (
+    <div>
+      <h3 className="mb-1 text-sm font-bold">Кросс-таблица личных встреч</h3>
+      <p className="mb-3 text-xs text-muted">
+        {includesTour5
+          ? "Подсветка — дуэли текущего сезона (тур 5). Остальные ячейки — туры 2–4 сезона 2025/26."
+          : "Туры 2–4 сезона 2025/26. Подсветка дуэлей тура 5 появится после первого ненулевого счёта."}
+      </p>
+      <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+        <table className="text-xs whitespace-nowrap border-collapse">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="px-1.5 py-2 text-left font-medium text-muted sticky left-0 bg-surface z-10 min-w-[28px]">
+                №
+              </th>
+              <th className="px-2 py-2 text-left font-medium text-muted sticky left-7 bg-surface z-10 min-w-[120px]">
+                Игрок
+              </th>
+              {players.map((_, i) => (
+                <th
+                  key={i}
+                  className="px-1 py-2 text-center font-medium text-muted w-10"
+                  title={players[i]}
+                >
+                  {i + 1}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((pA, i) => (
+              <tr key={pA} className="border-b border-border/50 hover:bg-surface/30">
+                <td className="px-1.5 py-1.5 font-bold text-muted sticky left-0 bg-surface z-[5]">
+                  {i + 1}
+                </td>
+                <td className="px-2 py-1.5 font-medium sticky left-7 bg-surface z-[5]" title={pA}>
+                  {pA}
+                </td>
+                {players.map((pB, j) => {
+                  if (i === j) return <td key={j} className="bg-gray-200" />;
+                  const cell = cellFromRowView(pA, pB, crossTable);
+                  if (!cell || !cell.total) {
+                    return (
+                      <td key={j} className="px-1 py-1.5 text-center text-gray-300">
+                        —
+                      </td>
+                    );
+                  }
+                  const current = includesTour5 && isCurrentSeason(cell);
+                  const muted = includesTour5 && !current;
+                  const cls =
+                    cell.winsA > cell.winsB
+                      ? "text-green-600"
+                      : cell.winsA < cell.winsB
+                        ? "text-red-500"
+                        : "text-amber-600";
+                  return (
+                    <td
+                      key={j}
+                      className={`px-1 py-1.5 text-center font-semibold cursor-pointer hover:bg-accent/10 ${cls}${
+                        current ? " bg-accent/10" : muted ? " opacity-40" : ""
+                      }`}
+                      onClick={(e) => handleCellClick(e, pA, pB)}
+                    >
+                      {cell.winsA}:{cell.winsB}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {popup ? (
+        <div className="fixed inset-0 z-50" onClick={() => setPopup(null)}>
+          <div
+            className="absolute bg-surface rounded-xl shadow-2xl border border-border p-4 min-w-[280px] max-h-[70vh] overflow-y-auto"
+            style={{
+              left: popup.x,
+              top: popup.y,
+              transform: "translate(-50%, -100%)",
+              marginTop: "-8px",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-sm">
+                {popup.pA} — {popup.pB}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPopup(null)}
+                className="text-muted hover:text-foreground ml-3"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="text-center text-xl font-bold text-foreground mb-3">
+              {popup.cell.winsA} : {popup.cell.winsB}
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-muted border-b border-border">
+                  <th className="py-1 text-left font-medium">Тур</th>
+                  <th className="py-1 text-center font-medium">Результат</th>
+                  <th className="py-1 text-right font-medium">Счёт</th>
+                </tr>
+              </thead>
+              <tbody>
+                {popup.cell.bouts.map((bout, idx) => {
+                  const isWin = bout.scoreA > bout.scoreB;
+                  const isLoss = bout.scoreA < bout.scoreB;
+                  const current = currentNames.has(bout.tourName);
+                  return (
+                    <tr
+                      key={idx}
+                      className={`border-b border-border/50 last:border-0${
+                        current ? " bg-accent/10" : includesTour5 ? " opacity-60" : ""
+                      }`}
+                    >
+                      <td className="py-1.5 text-muted text-xs">
+                        {bout.tourName}, бой {bout.boutIdx}
+                      </td>
+                      <td
+                        className={`py-1.5 text-center font-medium ${
+                          isWin ? "text-green-600" : isLoss ? "text-red-500" : "text-amber-600"
+                        }`}
+                      >
+                        {isWin ? "победа" : isLoss ? "поражение" : "ничья"}
+                      </td>
+                      <td className="py-1.5 text-right font-mono">
+                        {bout.scoreA} : {bout.scoreB}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ExternalLink, RefreshCw, X as XIcon } from "lucide-react";
-import type { PocCrossCell, PocRow } from "@/lib/parsers/poc-calculator";
+import type { PocBout, PocCrossCell, PocRow } from "@/lib/parsers/poc-calculator";
 import type { IsiFight, IsiLeagueTable, IsiLiveData, IsiPack } from "@/lib/warsaw-isi-live";
 import { WARSAW_ISI_REFRESH_SECONDS } from "@/lib/warsaw-seasons";
 
@@ -38,6 +38,7 @@ export function IsiLiveResults() {
         crossPlayers: json.crossPlayers ?? [],
         crossTable: json.crossTable ?? {},
         currentSeasonTourNames: json.currentSeasonTourNames ?? [],
+        countedTourNames: json.countedTourNames ?? [],
       });
       setError(null);
       setUpdatedAt(new Date());
@@ -127,6 +128,7 @@ export function IsiLiveResults() {
               players={data.crossPlayers}
               crossTable={data.crossTable}
               currentSeasonTourNames={data.currentSeasonTourNames}
+              countedTourNames={data.countedTourNames}
               includesTour5={data.pocIncludesTour5}
             />
           ) : null}
@@ -267,6 +269,20 @@ function PocSection({ rows, includesTour5 }: { rows: PocRow[]; includesTour5: bo
   );
 }
 
+function countedBouts(cell: PocCrossCell, countedNames: Set<string>): PocBout[] {
+  return cell.bouts.filter((b) => countedNames.has(b.tourName));
+}
+
+function countedPairScore(cell: PocCrossCell, countedNames: Set<string>): { winsA: number; winsB: number } {
+  let winsA = 0;
+  let winsB = 0;
+  for (const bout of countedBouts(cell, countedNames)) {
+    if (bout.scoreA > bout.scoreB) winsA++;
+    else if (bout.scoreA < bout.scoreB) winsB++;
+  }
+  return { winsA, winsB };
+}
+
 function cellFromRowView(
   pA: string,
   pB: string,
@@ -288,11 +304,13 @@ function CrossTableSection({
   players,
   crossTable,
   currentSeasonTourNames,
+  countedTourNames,
   includesTour5,
 }: {
   players: string[];
   crossTable: Record<string, PocCrossCell>;
   currentSeasonTourNames: string[];
+  countedTourNames: string[];
   includesTour5: boolean;
 }) {
   const [popup, setPopup] = useState<{
@@ -303,7 +321,8 @@ function CrossTableSection({
     y: number;
   } | null>(null);
 
-  const currentNames = new Set(currentSeasonTourNames);
+  const currentNames = new Set(currentSeasonTourNames ?? []);
+  const countedNames = new Set(countedTourNames ?? []);
 
   function isCurrentSeason(cell: PocCrossCell): boolean {
     return cell.bouts.some((b) => currentNames.has(b.tourName));
@@ -311,7 +330,7 @@ function CrossTableSection({
 
   function handleCellClick(e: React.MouseEvent, pA: string, pB: string) {
     const cell = cellFromRowView(pA, pB, crossTable);
-    if (!cell || !cell.total) return;
+    if (!cell || !cell.bouts.length) return;
 
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     let x = rect.left + rect.width / 2;
@@ -322,6 +341,8 @@ function CrossTableSection({
 
     setPopup({ pA, pB, cell, x, y });
   }
+
+  const popupScore = popup ? countedPairScore(popup.cell, countedNames) : null;
 
   return (
     <div>
@@ -364,19 +385,22 @@ function CrossTableSection({
                 {players.map((pB, j) => {
                   if (i === j) return <td key={j} className="bg-gray-200" />;
                   const cell = cellFromRowView(pA, pB, crossTable);
-                  if (!cell || !cell.total) {
+                  if (!cell || !cell.bouts.length) {
                     return (
                       <td key={j} className="px-1 py-1.5 text-center text-gray-300">
                         —
                       </td>
                     );
                   }
+                  const score = countedPairScore(cell, countedNames);
+                  const hasCounted = countedBouts(cell, countedNames).length > 0;
                   const current = includesTour5 && isCurrentSeason(cell);
                   const muted = includesTour5 && !current;
-                  const cls =
-                    cell.winsA > cell.winsB
+                  const cls = !hasCounted
+                    ? "text-gray-300"
+                    : score.winsA > score.winsB
                       ? "text-green-600"
-                      : cell.winsA < cell.winsB
+                      : score.winsA < score.winsB
                         ? "text-red-500"
                         : "text-amber-600";
                   return (
@@ -387,7 +411,7 @@ function CrossTableSection({
                       }`}
                       onClick={(e) => handleCellClick(e, pA, pB)}
                     >
-                      {cell.winsA}:{cell.winsB}
+                      {hasCounted ? `${score.winsA}:${score.winsB}` : "—"}
                     </td>
                   );
                 })}
@@ -422,7 +446,7 @@ function CrossTableSection({
               </button>
             </div>
             <div className="text-center text-xl font-bold text-foreground mb-3">
-              {popup.cell.winsA} : {popup.cell.winsB}
+              {popupScore ? `${popupScore.winsA} : ${popupScore.winsB}` : null}
             </div>
             <table className="w-full text-sm">
               <thead>
@@ -436,12 +460,19 @@ function CrossTableSection({
                 {popup.cell.bouts.map((bout, idx) => {
                   const isWin = bout.scoreA > bout.scoreB;
                   const isLoss = bout.scoreA < bout.scoreB;
+                  const counted = countedNames.has(bout.tourName);
                   const current = currentNames.has(bout.tourName);
                   return (
                     <tr
                       key={idx}
                       className={`border-b border-border/50 last:border-0${
-                        current ? " bg-accent/10" : includesTour5 ? " opacity-60" : ""
+                        !counted
+                          ? " bg-muted/50"
+                          : current
+                            ? " bg-accent/10"
+                            : includesTour5
+                              ? " opacity-60"
+                              : ""
                       }`}
                     >
                       <td className="py-1.5 text-muted text-xs">

@@ -82,11 +82,18 @@ export type IsiTourTable = {
 };
 
 /**
- * Fight-level micromatch tabs for live POC (same workbook as 2025/26 archive).
- * Rating Table2/Table3 are standings, not bouts — POC cannot use those grids.
- * Tour 5 is appended from live Pack1–12 once a fight has a non-zero score.
+ * All completed micromatch tours, oldest first (same workbook as 2025/26 archive).
+ * POC / cell score use the rolling last 4 (plus live tour once a fight has started);
+ * older tabs still load for the H2H popup. Rating Table1–3 are standings, not fights.
  */
-export const WARSAW_ISI_POC_ARCHIVE: IsiTourSlot[] = [
+export const WARSAW_ISI_MATCH_ARCHIVE: IsiTourSlot[] = [
+  {
+    id: "tour1",
+    title: "Тур 1",
+    seasonLabel: "2025/2026",
+    url: `https://docs.google.com/spreadsheets/d/${MATCHES_SHEET}/edit?gid=0`,
+    headerless: true,
+  },
   {
     id: "tour2",
     title: "Тур 2",

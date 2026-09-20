@@ -7,10 +7,12 @@ import {
 } from "@/lib/google-sheets";
 import { computeFromTours } from "@/lib/parsers/poc-calculator";
 import {
-  combinePocTours,
   parseLeagueTable,
   parseMatchTourGroups,
   parsePackTab,
+  pairwiseBoutsFromTour,
+  prependCrossBouts,
+  splitLastFourTours,
   startedPocTables,
   type IsiLeagueTable,
   type IsiPack,
@@ -18,8 +20,8 @@ import {
 } from "@/lib/warsaw-isi-live";
 import {
   WARSAW_ISI_LEAGUES,
+  WARSAW_ISI_MATCH_ARCHIVE,
   WARSAW_ISI_PACKS,
-  WARSAW_ISI_POC_ARCHIVE,
   warsawIsiTabUrl,
   type IsiSheetTab,
   type IsiTourSlot,
@@ -35,14 +37,19 @@ export async function GET() {
   const [leagues, packs, archive] = await Promise.all([
     Promise.all(WARSAW_ISI_LEAGUES.map(loadLeague)),
     Promise.all(WARSAW_ISI_PACKS.map(loadPack)),
-    loadArchivePocTours(),
+    loadMatchArchive(),
   ]);
 
   const liveTours = startedPocTables(packs);
-  const pocTours = combinePocTours(archive, packs);
-  const computed = pocTours.length
-    ? computeFromTours(pocTours)
+  const { counted, older } = splitLastFourTours(archive, packs);
+  const computed = counted.length
+    ? computeFromTours(counted)
     : { poc: [], crossPlayers: [], crossTable: {} };
+
+  const olderBouts = older.flatMap(pairwiseBoutsFromTour);
+  const crossTable = olderBouts.length
+    ? prependCrossBouts(computed.crossTable, olderBouts)
+    : computed.crossTable;
 
   return NextResponse.json({
     leagues,
@@ -50,18 +57,19 @@ export async function GET() {
     poc: computed.poc,
     pocIncludesTour5: liveTours.length > 0,
     crossPlayers: computed.crossPlayers,
-    crossTable: computed.crossTable,
+    crossTable,
     currentSeasonTourNames: liveTours.map((t) => t.name),
+    countedTourNames: counted.map((t) => t.name),
   });
 }
 
-async function loadArchivePocTours(): Promise<IsiPocTour[]> {
+async function loadMatchArchive(): Promise<IsiPocTour[]> {
   const now = Date.now();
   if (archivePocCache && now - archivePocCache.at < ARCHIVE_TTL_MS) {
     return archivePocCache.tours;
   }
 
-  const tours = (await Promise.all(WARSAW_ISI_POC_ARCHIVE.map(loadArchiveTour))).filter(
+  const tours = (await Promise.all(WARSAW_ISI_MATCH_ARCHIVE.map(loadArchiveTour))).filter(
     (t): t is IsiPocTour => t != null,
   );
   if (tours.length) archivePocCache = { at: now, tours };

@@ -1,5 +1,9 @@
 import type { SheetTableData } from "@/lib/google-sheets";
-import type { PocCrossCell, PocRow } from "@/lib/parsers/poc-calculator";
+import type { PocBout, PocCrossCell, PocRow } from "@/lib/parsers/poc-calculator";
+
+export const ISI_LAST_TOUR_COUNT = 4;
+export const ISI_LIVE_TOUR_NUMBER = 5;
+export const ISI_TOUR5_NAME = `Тур ${ISI_LIVE_TOUR_NUMBER}`;
 
 export type IsiLeagueTable = {
   id: string;
@@ -44,8 +48,10 @@ export type IsiLiveData = {
   pocIncludesTour5: boolean;
   crossPlayers: string[];
   crossTable: Record<string, PocCrossCell>;
-  /** Tour names of started Tour 5 packs; empty until a non-zero T5 fight. */
+  /** Tour names of started Tour 5; typically `["Тур 5"]` once a fight has a non-zero score. */
   currentSeasonTourNames: string[];
+  /** Rolling last 4 tours that count in POC and the H2H aggregate. */
+  countedTourNames: string[];
 };
 
 export function sheetGrid(data: SheetTableData): string[][] {
@@ -389,18 +395,124 @@ export function parseMatchTourGroups(csv: string): [string, number][][] {
   return groups;
 }
 
-export function startedPocTables(packs: IsiPack[]): IsiPocTour[] {
-  return packs
-    .map((pack) => ({
-      name: pack.boutLabel || pack.title,
-      tables: pack.fights
-        .filter((f) => f.started)
-        .map((f) => f.players.map((p) => [p.name, p.score] as [string, number])),
-    }))
-    .filter((t) => t.tables.length > 0);
+/** 1А, 2А, … then 1Б, 2Б, … — pack labels are Tour 5 slots, not tour names. */
+function packFightOrderKey(pack: IsiPack): [number, number] {
+  const m = /^(\d+)\s*([A-Za-zА-Яа-яЁё])/.exec((pack.boutLabel || pack.title).trim());
+  if (!m) return [9, 999];
+  const ch = m[2].toUpperCase();
+  const league = ch === "А" || ch === "A" ? 0 : ch === "Б" || ch === "B" ? 1 : 2;
+  return [league, Number(m[1])];
 }
 
-/** T2–T4 always; Tour 5 packs only after a fight has started (non-zero score). */
-export function combinePocTours(archive: IsiPocTour[], packs: IsiPack[]): IsiPocTour[] {
-  return [...archive.filter((t) => t.tables.length > 0), ...startedPocTables(packs)];
+/**
+ * One Tour 5 list: 1А→6А then 1Б→6Б, rooms in sheet order. Index 1…n
+ * (empty slots keep numbering). Unstarted fights are not games.
+ */
+export function startedPocTables(packs: IsiPack[]): IsiPocTour[] {
+  const ordered = [...packs].sort((a, b) => {
+    const [la, na] = packFightOrderKey(a);
+    const [lb, nb] = packFightOrderKey(b);
+    return la - lb || na - nb;
+  });
+  const tables: [string, number][][] = [];
+  let anyStarted = false;
+  for (const pack of ordered) {
+    for (const fight of pack.fights) {
+      if (fight.started) {
+        anyStarted = true;
+        tables.push(fight.players.map((p) => [p.name, p.score] as [string, number]));
+      } else {
+        tables.push([]);
+      }
+    }
+  }
+  if (!anyStarted) return [];
+  return [{ name: ISI_TOUR5_NAME, tables }];
+}
+
+export function tourNumber(name: string): number | null {
+  const m = /^Тур\s+(\d+)$/i.exec(name.trim());
+  return m ? Number(m[1]) : null;
+}
+
+/** Last 4: live-3 … live; live tour omitted until a fight has a non-zero score. */
+export function isInLastFourTours(name: string, liveStarted: boolean): boolean {
+  const n = tourNumber(name);
+  if (n == null) return false;
+  const oldest = ISI_LIVE_TOUR_NUMBER - (ISI_LAST_TOUR_COUNT - 1);
+  if (n < oldest || n > ISI_LIVE_TOUR_NUMBER) return false;
+  if (n === ISI_LIVE_TOUR_NUMBER && !liveStarted) return false;
+  return true;
+}
+
+export function splitLastFourTours(
+  archive: IsiPocTour[],
+  packs: IsiPack[],
+): { counted: IsiPocTour[]; older: IsiPocTour[] } {
+  const live = startedPocTables(packs);
+  const liveStarted = live.length > 0;
+  const older: IsiPocTour[] = [];
+  const counted: IsiPocTour[] = [];
+  for (const tour of archive) {
+    if (!tour.tables.length) continue;
+    if (isInLastFourTours(tour.name, liveStarted)) counted.push(tour);
+    else older.push(tour);
+  }
+  counted.push(...live);
+  return { counted, older };
+}
+
+function pairKey(a: string, b: string): string {
+  return a < b ? `${a}|||${b}` : `${b}|||${a}`;
+}
+
+export function pairwiseBoutsFromTour(tour: IsiPocTour): { key: string; bout: PocBout }[] {
+  const out: { key: string; bout: PocBout }[] = [];
+  for (let gi = 0; gi < tour.tables.length; gi++) {
+    const table = tour.tables[gi];
+    for (let i = 0; i < table.length; i++) {
+      for (let j = i + 1; j < table.length; j++) {
+        const a = table[i][0];
+        const b = table[j][0];
+        const sA = table[i][1];
+        const sB = table[j][1];
+        const key = pairKey(a, b);
+        const aFirst = key.startsWith(`${a}|||`);
+        out.push({
+          key,
+          bout: {
+            tourName: tour.name,
+            boutIdx: gi + 1,
+            scoreA: aFirst ? sA : sB,
+            scoreB: aFirst ? sB : sA,
+          },
+        });
+      }
+    }
+  }
+  return out;
+}
+
+/** Prepend older-tour bouts without changing counted wins / total. */
+export function prependCrossBouts(
+  crossTable: Record<string, PocCrossCell>,
+  extra: { key: string; bout: PocBout }[],
+): Record<string, PocCrossCell> {
+  if (!extra.length) return crossTable;
+  const next: Record<string, PocCrossCell> = { ...crossTable };
+  const grouped = new Map<string, PocBout[]>();
+  for (const { key, bout } of extra) {
+    const list = grouped.get(key);
+    if (list) list.push(bout);
+    else grouped.set(key, [bout]);
+  }
+  for (const [key, bouts] of grouped) {
+    const cell = next[key];
+    if (cell) {
+      next[key] = { ...cell, bouts: [...bouts, ...cell.bouts] };
+    } else {
+      next[key] = { winsA: 0, winsB: 0, draws: 0, total: 0, bouts };
+    }
+  }
+  return next;
 }

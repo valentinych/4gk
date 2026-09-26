@@ -53,6 +53,9 @@ function eventUrl(
   if (event.id === "mazowieckie-syreny-lite") {
     return action ? "/mazowieckie-syreny-lite/participants" : "/mazowieckie-syreny-lite";
   }
+  if (event.id === "ochch-2026") {
+    return action ? "/ochch/roster" : "/ochch";
+  }
   if (isDzikiSopotEvent(event)) {
     return action ? "/dziki-sopot/participants" : "/dziki-sopot";
   }

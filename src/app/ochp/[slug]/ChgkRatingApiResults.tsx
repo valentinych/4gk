@@ -72,6 +72,7 @@ function tourColumnMaxima(teams: TeamRow[], tourCount: number): (number | null)[
 export default function ChgkRatingApiResults({
   tournamentId,
   amateurTeamNames,
+  showChst = true,
 }: {
   tournamentId: number;
   /**
@@ -79,6 +80,8 @@ export default function ChgkRatingApiResults({
    * берётся не из API-флагов, а по совпадению нормализованного имени команды.
    */
   amateurTeamNames?: string[];
+  /** Колонка национального зачёта (ЧСт). Для ОЧЧ не нужна. */
+  showChst?: boolean;
 }) {
   const [data, setData] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +93,7 @@ export default function ChgkRatingApiResults({
   } | null>(null);
 
   const amateurMode = !!amateurTeamNames && amateurTeamNames.length > 0;
+  const showFlagCol = amateurMode || showChst;
   const amateurSet = useMemo(
     () => new Set((amateurTeamNames ?? []).map(normalizeTeamName)),
     [amateurTeamNames],
@@ -223,6 +227,11 @@ export default function ChgkRatingApiResults({
         </button>
       </div>
 
+      {!data.teams.length ? (
+        <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
+          <p className="text-base font-medium text-muted/60">Содержимое появится скоро</p>
+        </div>
+      ) : (
       <div className="overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="text-sm border-collapse min-w-max">
           <thead>
@@ -236,12 +245,14 @@ export default function ChgkRatingApiResults({
               <th className="px-1.5 sm:px-2 py-2.5 text-left font-medium min-w-[140px]">
                 Команда
               </th>
-              <th
-                className="px-1 w-9 text-center text-[10px] font-medium normal-case"
-                title={amateurMode ? "Любители" : "Зачёт ЧСт"}
-              >
-                {amateurMode ? "Л" : "ЧСт"}
-              </th>
+              {showFlagCol ? (
+                <th
+                  className="px-1 w-9 text-center text-[10px] font-medium normal-case"
+                  title={amateurMode ? "Любители" : "Зачёт ЧСт"}
+                >
+                  {amateurMode ? "Л" : "ЧСт"}
+                </th>
+              ) : null}
               <th className="px-1.5 sm:px-2 py-2.5 text-left font-medium min-w-[100px]">
                 Город
               </th>
@@ -283,6 +294,7 @@ export default function ChgkRatingApiResults({
                     {teamNameDisplay(team.name)}
                   </a>
                 </td>
+                {showFlagCol ? (
                 <td className="px-0.5 py-1.5 text-center">
                   {amateurMode ? (
                     amateurSet.has(normalizeTeamName(team.name)) ? (
@@ -304,6 +316,7 @@ export default function ChgkRatingApiResults({
                     </span>
                   ) : null}
                 </td>
+                ) : null}
                 <td className="px-1.5 sm:px-2 py-1.5 text-xs text-muted whitespace-nowrap">
                   {team.city}
                 </td>
@@ -369,6 +382,7 @@ export default function ChgkRatingApiResults({
           </tbody>
         </table>
       </div>
+      )}
 
       {popup && (
         <div

@@ -1,5 +1,6 @@
 import type { CalendarEvent } from "@/data/calendar";
 import { isDsFridaySync } from "@/lib/ds-friday-syncs";
+import { isOchchEvent } from "@/lib/ochch";
 
 export const MONTHS_RU = [
   "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -38,6 +39,9 @@ export function eventUrl(
 ): string {
   if (event.id === "mazowieckie-syreny-lite") {
     return action ? "/mazowieckie-syreny-lite/participants" : "/mazowieckie-syreny-lite";
+  }
+  if (isOchchEvent(event.id)) {
+    return action ? "/ochch/roster" : "/ochch";
   }
   if (isDzikiSopotEvent(event)) {
     return action ? "/dziki-sopot/participants" : "/dziki-sopot";

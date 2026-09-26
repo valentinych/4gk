@@ -40,6 +40,13 @@ export default function GamesPage() {
             badge: "Сопот",
             badgeColor: "bg-amber-50 text-amber-700 border-amber-100",
           },
+          {
+            href: "/others",
+            title: "Другие турниры",
+            description: "ОЧЧ-2026 — открытый чемпионат Чехии, 3–4 октября 2026, Прага",
+            badge: "Прага",
+            badgeColor: "bg-sky-50 text-sky-800 border-sky-100",
+          },
         ].map((item) => (
           <Link
             key={item.href}

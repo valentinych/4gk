@@ -45,6 +45,14 @@ const leagues = [
     badgeColor: "bg-lime-50 text-lime-700 border-lime-100",
     emoji: "🌿",
   },
+  {
+    href: "/others",
+    title: "Другие турниры",
+    description: "ОЧЧ-2026 и фестивали вне польских лиг",
+    cities: ["Прага"],
+    badgeColor: "bg-sky-50 text-sky-800 border-sky-100",
+    emoji: "🇨🇿",
+  },
 ];
 
 export default function HomePage() {

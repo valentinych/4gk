@@ -7,6 +7,7 @@ import {
   ochpLandingTileHref,
   OCHP_GLOBAL_TILES,
 } from "@/lib/ochp-seasons";
+import { OCHCH_CURRENT_TILES, OCHCH_PATH } from "@/lib/ochch";
 import { SYRENY_LITE } from "@/lib/syreny-lite";
 import { turnirushkiHazaBroadcastAllowlist } from "@/lib/turnirushki-games";
 
@@ -23,12 +24,14 @@ export const DS_HAZA_WIDGET_TITLE = "Результаты ХаЗа";
 
 export const OCHP_WIDGET_PATH = "/ochp";
 export const SYRENY_WIDGET_PATH = "/mazowieckie-syreny-lite";
+export const OCHCH_WIDGET_PATH = OCHCH_PATH;
 
 /** Landings that render PageWidgetTiles in their own tile slot (not the root layout). */
 export const PAGE_WIDGET_EMBEDDED_PATHS = new Set<string>([
   DS_HAZA_WIDGET_PATH,
   OCHP_WIDGET_PATH,
   SYRENY_WIDGET_PATH,
+  OCHCH_WIDGET_PATH,
 ]);
 
 /** Dedicated page for a widget with on-site content (Haza / brain / table). */
@@ -158,6 +161,10 @@ export function syrenyWidgetSeeds(): PageWidgetSeed[] {
     seedLink("🔔", "Брейн-ринг", "/mazowieckie-syreny-lite/brain-ring"),
     seedLink("❓", "Что? Где? Когда?", "/mazowieckie-syreny-lite/chgk"),
   ];
+}
+
+export function ochchCurrentWidgetSeeds(): PageWidgetSeed[] {
+  return OCHCH_CURRENT_TILES.map((t) => seedLink(t.emoji, t.title, t.href));
 }
 
 export function parseHazaBroadcastId(url: string): number | null {
@@ -381,6 +388,10 @@ export async function ensureLandingWidgets(path: string): Promise<void> {
   }
   if (path === SYRENY_WIDGET_PATH) {
     await ensurePageWidgets(path, syrenyWidgetSeeds());
+    return;
+  }
+  if (path === OCHCH_WIDGET_PATH) {
+    await ensurePageWidgets(path, ochchCurrentWidgetSeeds());
   }
 }
 

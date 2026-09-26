@@ -22,6 +22,7 @@ export function Footer() {
               <li><Link href="/warsaw" className="text-sm text-muted hover:text-foreground transition-colors">Чемпионат Варшавы</Link></li>
               <li><Link href="/ochp" className="text-sm text-muted hover:text-foreground transition-colors">ОЧП</Link></li>
               <li><Link href="/dziki-sopot" className="text-sm text-muted hover:text-foreground transition-colors">Dziki Sopot</Link></li>
+              <li><Link href="/others" className="text-sm text-muted hover:text-foreground transition-colors">Другие турниры</Link></li>
               <li><Link href="/games" className="text-sm text-muted hover:text-foreground transition-colors">Другие игры</Link></li>
             </ul>
           </div>

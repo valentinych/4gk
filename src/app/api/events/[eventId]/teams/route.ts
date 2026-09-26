@@ -7,8 +7,22 @@ import { fetchPlayerCurrentTeam } from "@/lib/chgk";
 import { allocateManualTeamChgkId } from "@/lib/event-teams";
 import { withBaseFlags } from "@/lib/roster-flags";
 import { ensureDsFridaySyncEvents, allowsDsGuestJoin, isDsFridaySync } from "@/lib/ds-friday-syncs";
+import { ensureOchchEvent, isOchchEvent } from "@/lib/ochch";
 
 type Params = { params: Promise<{ eventId: string }> };
+
+function allowsGuestJoin(eventId: string): boolean {
+  return allowsDsGuestJoin(eventId) || isOchchEvent(eventId);
+}
+
+async function ensureGuestJoinEvent(eventId: string) {
+  if (isDsFridaySync(eventId) || allowsDsGuestJoin(eventId)) {
+    await ensureDsFridaySyncEvents();
+  }
+  if (isOchchEvent(eventId)) {
+    await ensureOchchEvent();
+  }
+}
 
 interface RosterPlayerInput {
   chgkId?: number | null;
@@ -93,9 +107,7 @@ async function saveOptionalRoster(opts: {
 export async function GET(_req: Request, { params }: Params) {
   const { eventId } = await params;
 
-  if (isDsFridaySync(eventId) || allowsDsGuestJoin(eventId)) {
-    await ensureDsFridaySyncEvents();
-  }
+  await ensureGuestJoinEvent(eventId);
 
   const session = await getServerSession(authOptions);
   const isOrganizer =
@@ -154,7 +166,7 @@ export async function GET(_req: Request, { params }: Params) {
       registrationClosesAt: event.registrationClosesAt?.toISOString() ?? null,
       participantLimit: event.participantLimit,
       closeOnLimit: event.closeOnLimit,
-      allowGuestJoin: allowsDsGuestJoin(event.id),
+      allowGuestJoin: allowsGuestJoin(event.id),
     },
     teams: teams.map((t) => ({
       id: t.id,
@@ -185,14 +197,12 @@ export async function POST(req: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
   const { eventId } = await params;
 
-  if (isDsFridaySync(eventId) || allowsDsGuestJoin(eventId)) {
-    await ensureDsFridaySyncEvents();
-  }
+  await ensureGuestJoinEvent(eventId);
 
   const event = await db.calendarEvent.findUnique({ where: { id: eventId } });
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
-  const guestJoin = allowsDsGuestJoin(eventId);
+  const guestJoin = allowsGuestJoin(eventId);
   if (!session?.user?.id && !guestJoin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

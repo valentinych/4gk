@@ -11,6 +11,7 @@ const navItems = [
   { href: "/ochp", label: "ОЧП" },
   { href: "/dziki-sopot", label: "Dziki Sopot" },
   { href: "/warsaw", label: "Чемпионат Варшавы" },
+  { href: "/others", label: "Другие турниры" },
   { href: "/calendar", label: "Календарь" },
   { href: "/online-games", label: "Онлайн-игры" },
 ];

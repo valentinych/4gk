@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireOrganizer } from "@/lib/admin";
 import { ensureDsFridaySyncEvents } from "@/lib/ds-friday-syncs";
+import { ensureOchchEvent } from "@/lib/ochch";
 
 export async function GET() {
   try {
     await ensureDsFridaySyncEvents();
+    await ensureOchchEvent();
     const events = await db.calendarEvent.findMany({
       orderBy: { startDate: "asc" },
     });

@@ -7,18 +7,17 @@ import {
   type OchchImportedTeam,
 } from "@/lib/ochch";
 
-function sortByNameRu(rows: OchchImportedTeam[]): OchchImportedTeam[] {
-  const key = (s: string) => s.toLocaleLowerCase("ru");
-  return [...rows].sort((a, b) => key(a.name).localeCompare(key(b.name), "ru"));
+function sortByNumber(rows: OchchImportedTeam[]): OchchImportedTeam[] {
+  return [...rows].sort((a, b) => a.number - b.number || a.name.localeCompare(b.name, "ru"));
 }
 
 export async function OchchParticipantsPage() {
   let teams: OchchImportedTeam[] = [];
   try {
     const fromDb = await listOchchParticipants();
-    teams = sortByNameRu(fromDb.length > 0 ? fromDb : [...OCHCH_TEAMS]);
+    teams = sortByNumber(fromDb.length > 0 ? fromDb : [...OCHCH_TEAMS]);
   } catch {
-    teams = sortByNameRu([...OCHCH_TEAMS]);
+    teams = sortByNumber([...OCHCH_TEAMS]);
   }
 
   return (

@@ -1,28 +1,22 @@
 import { getServerSession } from "next-auth";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   fetchPlayerCurrentTeam,
   fetchTeamRosterInfo,
-  type ChgkPlayer,
 } from "@/lib/chgk";
-import RosterForm from "./RosterForm";
+import { isOchchEvent } from "@/lib/ochch";
+import RosterForm, { type SuggestedTeamData } from "./RosterForm";
 
 type Props = { params: Promise<{ eventId: string }> };
 
-export interface SuggestedTeamData {
-  teamId: number;
-  teamName: string;
-  city: string | null;
-  basePlayers: ChgkPlayer[];
-  recentPlayers: ChgkPlayer[];
-  currentSeasonFilled: boolean;
-}
-
 export default async function RosterPage({ params }: Props) {
   const { eventId } = await params;
+
+  if (isOchchEvent(eventId)) redirect("/ochch/roster");
 
   // Explicitly read cookies before getServerSession — required in Next.js 15+
   // where cookies() is async and getServerSession may otherwise see an empty jar.

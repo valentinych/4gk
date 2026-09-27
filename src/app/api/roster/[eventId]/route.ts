@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isOchchEvent } from "@/lib/ochch";
 import { withBaseFlags } from "@/lib/roster-flags";
 
 type Params = { params: Promise<{ eventId: string }> };
@@ -38,6 +39,7 @@ export async function POST(req: Request, { params }: Params) {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const userId = session.user.id;
 
   const { eventId } = await params;
 
@@ -67,6 +69,32 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const teamChgkId = body.teamChgkId ?? null;
+
+  if (isOchchEvent(eventId)) {
+    if (!session.user.chgkId) {
+      return NextResponse.json(
+        { error: "Привяжите ID игрока rating.chgk.info в профиле" },
+        { status: 403 },
+      );
+    }
+    if (!teamChgkId || teamChgkId <= 0) {
+      return NextResponse.json(
+        { error: "Выберите команду из списка ОЧЧ" },
+        { status: 400 },
+      );
+    }
+    const ochchTeam = await db.eventTeam.findFirst({
+      where: { eventId, teamChgkId, withdrawnAt: null },
+      select: { id: true },
+    });
+    if (!ochchTeam) {
+      return NextResponse.json(
+        { error: "Выберите команду из списка ОЧЧ" },
+        { status: 400 },
+      );
+    }
+  }
+
   const flagged = await withBaseFlags(teamChgkId, body.players);
   const playerRows = flagged.map((p, i) => ({
     chgkId: p.chgkId ?? null,
@@ -78,24 +106,33 @@ export async function POST(req: Request, { params }: Params) {
     sortOrder: p.sortOrder ?? i,
   }));
 
-  const roster = await db.teamRoster.upsert({
-    where: { eventId_userId: { eventId, userId: session.user.id } },
-    create: {
-      eventId,
-      userId: session.user.id,
-      teamName: body.teamName.trim(),
-      teamChgkId,
-      city: body.city?.trim() || null,
-      players: { create: playerRows },
-    },
-    update: {
-      teamName: body.teamName.trim(),
-      teamChgkId,
-      city: body.city?.trim() || null,
-      updatedAt: new Date(),
-      players: { deleteMany: {}, create: playerRows },
-    },
-    include: { players: { orderBy: { sortOrder: "asc" } } },
+  const roster = await db.$transaction(async (tx) => {
+    // OCHCH: one roster per team — last write replaces another user's row (same as
+    // DS attaching players to an existing EventTeam: no confirm, no merge).
+    if (isOchchEvent(eventId) && teamChgkId) {
+      await tx.teamRoster.deleteMany({
+        where: { eventId, teamChgkId, userId: { not: userId } },
+      });
+    }
+    return tx.teamRoster.upsert({
+      where: { eventId_userId: { eventId, userId } },
+      create: {
+        eventId,
+        userId,
+        teamName: body.teamName.trim(),
+        teamChgkId,
+        city: body.city?.trim() || null,
+        players: { create: playerRows },
+      },
+      update: {
+        teamName: body.teamName.trim(),
+        teamChgkId,
+        city: body.city?.trim() || null,
+        updatedAt: new Date(),
+        players: { deleteMany: {}, create: playerRows },
+      },
+      include: { players: { orderBy: { sortOrder: "asc" } } },
+    });
   });
 
   return NextResponse.json(roster);

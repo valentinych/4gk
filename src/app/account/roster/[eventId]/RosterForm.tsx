@@ -15,13 +15,20 @@ import {
   Users,
   UserPlus,
 } from "lucide-react";
-import type { SuggestedTeamData } from "./page";
-
 interface ChgkPlayer {
   id: number;
   surname: string;
   name: string;
   patronymic: string;
+}
+
+export interface SuggestedTeamData {
+  teamId: number;
+  teamName: string;
+  city: string | null;
+  basePlayers: ChgkPlayer[];
+  recentPlayers: ChgkPlayer[];
+  currentSeasonFilled: boolean;
 }
 
 interface RosterPlayer {
@@ -47,6 +54,13 @@ interface InitialRoster {
   teamChgkId: number | null;
   city: string | null;
   players: RosterPlayer[];
+}
+
+export interface PresetRosterTeam {
+  teamChgkId: number;
+  teamName: string;
+  city: string;
+  number?: number;
 }
 
 function useDebounce<T>(value: T, delay: number) {
@@ -75,11 +89,15 @@ export default function RosterForm({
   event,
   initialRoster,
   suggestedTeamData,
+  presetTeams,
+  embedded = false,
 }: {
   eventId: string;
   event: RosterEvent | null;
   initialRoster: InitialRoster | null;
   suggestedTeamData: SuggestedTeamData | null;
+  presetTeams?: PresetRosterTeam[];
+  embedded?: boolean;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -290,6 +308,7 @@ export default function RosterForm({
 
   const handleSave = async () => {
     setError(null);
+    if (presetTeams && !teamChgkId) { setError("Выберите команду"); return; }
     if (!teamName.trim()) { setError("Укажите название команды"); return; }
     if (!players.length) { setError("Добавьте хотя бы одного игрока"); return; }
     const hasEmpty = players.some((p) => !p.lastName.trim() || !p.firstName.trim());
@@ -337,26 +356,30 @@ export default function RosterForm({
   const pendingSuggestions = recentSuggestions.filter((p) => !addedChgkIds.has(p.id));
 
   return (
-    <div id="page-roster" className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <Link
-        href="/calendar"
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Назад в календарь
-      </Link>
+    <div id="page-roster" className={embedded ? "space-y-0" : "mx-auto max-w-2xl px-4 py-10 sm:px-6"}>
+      {!embedded && (
+        <Link
+          href="/calendar"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Назад в календарь
+        </Link>
+      )}
 
-      <div className="flex items-start gap-3">
-        <Users className="mt-0.5 h-6 w-6 shrink-0 text-accent" />
-        <div>
-          <h1 className="text-2xl font-bold">Подача состава</h1>
-          <p className="mt-0.5 text-sm text-muted">{event.title}</p>
-          <p className="text-xs text-muted">
-            {new Date(event.startDate).toLocaleDateString("ru-RU", {
-              day: "numeric", month: "long", year: "numeric",
-            })}, {event.city}
-          </p>
+      {!embedded && (
+        <div className="flex items-start gap-3">
+          <Users className="mt-0.5 h-6 w-6 shrink-0 text-accent" />
+          <div>
+            <h1 className="text-2xl font-bold">Подача состава</h1>
+            <p className="mt-0.5 text-sm text-muted">{event.title}</p>
+            <p className="text-xs text-muted">
+              {new Date(event.startDate).toLocaleDateString("ru-RU", {
+                day: "numeric", month: "long", year: "numeric",
+              })}, {event.city}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {existing && (
         <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -373,9 +396,44 @@ export default function RosterForm({
       )}
 
       {/* Team section */}
-      <section id="page-roster-team-section" className="mt-8">
+      <section id="page-roster-team-section" className={embedded ? "mt-4" : "mt-8"}>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted">Команда</h2>
         <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
+          {presetTeams ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">
+                Команда <span className="text-danger">*</span>
+              </label>
+              <select
+                value={teamChgkId ?? ""}
+                onChange={(e) => {
+                  const id = Number(e.target.value);
+                  const t = presetTeams.find((x) => x.teamChgkId === id);
+                  if (!t) {
+                    setTeamChgkId(null);
+                    setTeamName("");
+                    setCity("");
+                    setPlayers([]);
+                    setRecentSuggestions([]);
+                    return;
+                  }
+                  setTeamName(t.teamName);
+                  setTeamChgkId(t.teamChgkId);
+                  setCity(t.city);
+                }}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:border-accent focus:outline-none"
+              >
+                <option value="">Выберите команду</option>
+                {presetTeams.map((t) => (
+                  <option key={t.teamChgkId} value={t.teamChgkId}>
+                    {t.number != null ? `${String(t.number).padStart(2, "0")}. ` : ""}
+                    {t.teamName}
+                    {t.city ? ` · ${t.city}` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
           <div>
             <label className="mb-1 block text-xs font-medium text-muted">
               Поиск по рейтингу ЧГК (по названию или ID команды)
@@ -416,7 +474,20 @@ export default function RosterForm({
               </ul>
             )}
           </div>
+          )}
 
+          {presetTeams ? (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted">Город</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Город команды"
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none"
+              />
+            </div>
+          ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-muted">
@@ -441,6 +512,7 @@ export default function RosterForm({
               />
             </div>
           </div>
+          )}
 
           {teamChgkId && (
             <div className="flex items-center gap-2 text-xs text-muted">
@@ -454,6 +526,7 @@ export default function RosterForm({
               {!rosterLoading && basePlayerIds.size > 0 && (
                 <span className="text-emerald-600">· базовый состав: {basePlayerIds.size} игр.</span>
               )}
+              {!presetTeams && (
               <button
                 type="button"
                 onClick={() => {
@@ -467,6 +540,7 @@ export default function RosterForm({
               >
                 сбросить
               </button>
+              )}
             </div>
           )}
         </div>

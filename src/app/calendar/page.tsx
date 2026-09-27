@@ -56,6 +56,9 @@ function eventUrl(
   if (event.id === "ochch-2026") {
     return action ? "/ochch/roster" : "/ochch";
   }
+  if (event.id === "prazma-2026") {
+    return "/prazma";
+  }
   if (isDzikiSopotEvent(event)) {
     return action ? "/dziki-sopot/participants" : "/dziki-sopot";
   }

@@ -7,6 +7,11 @@ import {
   resultHasChstFlag,
   tourSlicesFromQuestionQty,
 } from "@/lib/chgk-tournament-results";
+import {
+  PRAZMA_RATING_TOURNAMENT_ID,
+  ensurePrazmaEvent,
+  prazmaNamesByChgkId,
+} from "@/lib/prazma";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +120,19 @@ export async function GET(request: Request) {
           remainderSum,
         };
       });
+
+    if (tournamentId === PRAZMA_RATING_TOURNAMENT_ID) {
+      try {
+        await ensurePrazmaEvent();
+        const names = await prazmaNamesByChgkId();
+        for (const team of teams) {
+          const bound = names.get(team.teamId);
+          if (bound) team.name = bound;
+        }
+      } catch {
+        /* keep rating.chgk.info names */
+      }
+    }
 
     return NextResponse.json({
       tournamentId: tournament.id,

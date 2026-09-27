@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
+  ArrowLeft,
   ChevronDown,
   ChevronRight,
   Download,
@@ -152,6 +154,13 @@ export default function PraguePage() {
 
   return (
     <div id="page-prague" className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <Link
+        href="/prazma"
+        className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-accent"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Пражма
+      </Link>
       <div id="page-prague-header" className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           Pražma 2026. Пражский полумарафон: 15 часов ЧГК

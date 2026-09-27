@@ -3,11 +3,13 @@ import { db } from "@/lib/db";
 import { requireOrganizer } from "@/lib/admin";
 import { ensureDsFridaySyncEvents } from "@/lib/ds-friday-syncs";
 import { ensureOchchEvent } from "@/lib/ochch";
+import { ensurePrazmaEvent } from "@/lib/prazma";
 
 export async function GET() {
   try {
     await ensureDsFridaySyncEvents();
     await ensureOchchEvent();
+    await ensurePrazmaEvent();
     const events = await db.calendarEvent.findMany({
       orderBy: { startDate: "asc" },
     });

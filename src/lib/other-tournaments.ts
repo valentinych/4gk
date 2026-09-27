@@ -9,7 +9,7 @@ export interface OtherTournament {
   status: "upcoming" | "past";
 }
 
-/** Hub listing for «Другие турниры» — one item for now. */
+/** Hub listing for «Другие турниры». */
 export const OTHER_TOURNAMENTS: OtherTournament[] = [
   {
     href: "/ochch",
@@ -21,5 +21,15 @@ export const OTHER_TOURNAMENTS: OtherTournament[] = [
     dateLabel: "3–4 октября 2026",
     startDate: "2026-10-03",
     status: "upcoming",
+  },
+  {
+    href: "/prazma",
+    emoji: "🏃",
+    title: "Pražma 2026",
+    description: "Пражский полумарафон: 15 часов ЧГК.",
+    cities: ["Прага"],
+    dateLabel: "2 мая 2026",
+    startDate: "2026-05-02",
+    status: "past",
   },
 ];

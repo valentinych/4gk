@@ -6,7 +6,7 @@ import { OTHER_TOURNAMENTS } from "@/lib/other-tournaments";
 export const metadata: Metadata = {
   title: "Другие турниры",
   description:
-    "Турниры вне польских лиг портала — Открытый чемпионат Чехии и другие фестивали.",
+    "Турниры вне польских лиг портала — ОЧЧ, Пражма и другие фестивали.",
 };
 
 export default function OthersPage() {

@@ -8,6 +8,7 @@ import { allocateManualTeamChgkId } from "@/lib/event-teams";
 import { withBaseFlags } from "@/lib/roster-flags";
 import { ensureDsFridaySyncEvents, allowsDsGuestJoin, isDsFridaySync } from "@/lib/ds-friday-syncs";
 import { ensureOchchEvent, isOchchEvent } from "@/lib/ochch";
+import { ensurePrazmaEvent, isPrazmaEvent } from "@/lib/prazma";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -21,6 +22,9 @@ async function ensureGuestJoinEvent(eventId: string) {
   }
   if (isOchchEvent(eventId)) {
     await ensureOchchEvent();
+  }
+  if (isPrazmaEvent(eventId)) {
+    await ensurePrazmaEvent();
   }
 }
 

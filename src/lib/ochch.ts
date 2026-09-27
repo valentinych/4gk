@@ -1,4 +1,9 @@
 import { db } from "./db";
+import {
+  PRAZMA_TEAMS,
+  loadPrazmaImportedTeams,
+  type PrazmaImportedTeam,
+} from "./prazma";
 
 export const OCHCH_EVENT_ID = "ochch-2026";
 export const OCHCH_PATH = "/ochch";
@@ -131,27 +136,85 @@ export const OCHCH = {
   ratingUrl: ochchRatingPublicUrl(),
 } as const;
 
-/** Idempotent — creates the CalendarEvent row if missing. No schema change. */
+/** Same 01–46 workbook as Pražma: names from teams tab, IDs from exact-name join. */
+export type OchchImportedTeam = PrazmaImportedTeam;
+export const OCHCH_TEAMS: readonly OchchImportedTeam[] = PRAZMA_TEAMS;
+
+async function seedOchchTeams(teams: readonly OchchImportedTeam[]) {
+  await db.$transaction(
+    teams.map((team) =>
+      db.eventTeam.upsert({
+        where: {
+          eventId_teamChgkId: {
+            eventId: OCHCH_EVENT_ID,
+            teamChgkId: team.teamChgkId,
+          },
+        },
+        create: {
+          eventId: OCHCH_EVENT_ID,
+          teamChgkId: team.teamChgkId,
+          teamName: team.name,
+          displayName: team.name,
+          city: team.city,
+        },
+        update: {
+          teamName: team.name,
+          displayName: team.name,
+          city: team.city,
+        },
+      }),
+    ),
+  );
+}
+
+/** Idempotent — CalendarEvent + EventTeam rows with rating.chgk.info IDs. */
 export async function ensureOchchEvent() {
   const existing = await db.calendarEvent.findUnique({
     where: { id: OCHCH_EVENT_ID },
+    include: { _count: { select: { eventTeams: true } } },
   });
-  if (existing) return existing;
 
-  return db.calendarEvent.create({
-    data: {
-      id: OCHCH_EVENT_ID,
-      title: `${OCHCH.longTitle} (ОЧЧ-2026)`,
-      type: "multi-day",
-      startDate: OCHCH.startDate,
-      endDate: OCHCH.endDate,
-      city: OCHCH.city,
-      venue: OCHCH_VENUE_MAIN.name,
-      venueMapUrl: OCHCH_VENUE_MAIN.mapUrl,
-      description: OCHCH.description,
-      ratingUrl: OCHCH.ratingUrl,
-      mediaLink: OCHCH_CHANNEL_URL,
-      mediaLinkLabel: "Канал ОЧЧ",
-    },
+  const event =
+    existing ??
+    (await db.calendarEvent.create({
+      data: {
+        id: OCHCH_EVENT_ID,
+        title: `${OCHCH.longTitle} (ОЧЧ-2026)`,
+        type: "multi-day",
+        startDate: OCHCH.startDate,
+        endDate: OCHCH.endDate,
+        city: OCHCH.city,
+        venue: OCHCH_VENUE_MAIN.name,
+        venueMapUrl: OCHCH_VENUE_MAIN.mapUrl,
+        description: OCHCH.description,
+        ratingUrl: OCHCH.ratingUrl,
+        mediaLink: OCHCH_CHANNEL_URL,
+        mediaLinkLabel: "Канал ОЧЧ",
+      },
+    }));
+
+  if (!existing || existing._count.eventTeams < OCHCH_TEAMS.length) {
+    const teams = await loadPrazmaImportedTeams();
+    await seedOchchTeams(teams.length > 0 ? teams : OCHCH_TEAMS);
+  }
+
+  return event;
+}
+
+export async function listOchchParticipants(): Promise<OchchImportedTeam[]> {
+  const rows = await db.eventTeam.findMany({
+    where: { eventId: OCHCH_EVENT_ID, withdrawnAt: null },
+    select: { teamChgkId: true, teamName: true, displayName: true, city: true },
   });
+  const numberById = new Map(OCHCH_TEAMS.map((t) => [t.teamChgkId, t.number]));
+  const teams = rows
+    .filter((r) => r.teamChgkId > 0)
+    .map((r) => ({
+      number: numberById.get(r.teamChgkId) ?? r.teamChgkId,
+      name: (r.displayName || r.teamName).trim(),
+      city: r.city?.trim() || "",
+      teamChgkId: r.teamChgkId,
+    }));
+  teams.sort((a, b) => a.number - b.number || a.name.localeCompare(b.name, "ru"));
+  return teams;
 }

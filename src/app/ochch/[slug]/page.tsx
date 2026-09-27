@@ -67,7 +67,7 @@ function FormPlaceholder({ kind }: { kind: "спорный" | "апелляци�
 export default async function OchchSlugPage({ params }: Props) {
   const { slug } = await params;
 
-  if (slug === "roster" && process.env.DATABASE_URL) {
+  if (process.env.DATABASE_URL) {
     try {
       await ensureOchchEvent();
     } catch (e) {

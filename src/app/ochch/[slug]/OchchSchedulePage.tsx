@@ -1,7 +1,6 @@
 import { Clock, ExternalLink, MapPin, Navigation } from "lucide-react";
 import {
   OCHCH_CHANNEL_URL,
-  OCHCH_CHGK_EDITORS,
   OCHCH_GOROD_GREKHOV_REG_URL,
   OCHCH_SI_EDITOR,
   OCHCH_SPY_TOUR_REG_URL,
@@ -60,20 +59,19 @@ const SCHEDULE: ScheduleDay[] = [
     venueAddress: OCHCH_VENUE_MAIN.address,
     venueMapUrl: OCHCH_VENUE_MAIN.mapUrl,
     items: [
-      { time: "10:30–11:30", title: "Отбор на Свою игру" },
+      { time: "10:30–11:30", title: "Отбор на Свою Игру" },
       {
-        time: "12:00–16:00",
+        time: "12:00–16:00*",
         title: "ЧГК — 4 тура по 15 вопросов",
-        editors: OCHCH_CHGK_EDITORS.slice(0, 4),
-        editorLabel: "Редакторы туров 1–4",
+        note: "Время со звёздочкой — как в анонсе канала.",
       },
       {
-        time: "17:30–20:00",
+        time: "17:45–20:15",
         title: "Тминное поле",
         editors: ["Амаль Имангулов", "Максим Янке", "Елена Тищенко"],
       },
       {
-        time: "20:15*–22:00",
+        time: "20:15*–22:30",
         title: "Музыкальный квиз",
         note: "Андрей Ярмола. Время со звёздочкой — как в анонсе канала.",
       },
@@ -87,14 +85,12 @@ const SCHEDULE: ScheduleDay[] = [
     items: [
       {
         time: "9:00–11:30",
-        title: "Своя игра (1/8, 1/4, 1/2, финал)",
+        title: "Своя игра (1/8 и 1/4, 1/2, финал)",
         note: `Редактор: ${OCHCH_SI_EDITOR}`,
       },
       {
         time: "12:00–15:00",
         title: "ЧГК — 3 тура по 15 вопросов",
-        editors: OCHCH_CHGK_EDITORS.slice(4),
-        editorLabel: "Редакторы туров 5–7",
       },
     ],
   },

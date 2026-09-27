@@ -140,6 +140,63 @@ export const OCHCH = {
 export type OchchImportedTeam = PrazmaImportedTeam;
 export const OCHCH_TEAMS: readonly OchchImportedTeam[] = PRAZMA_TEAMS;
 
+/** Invitation group from «Группа приглашений» on the ОЧЧ teams tab. */
+export type OchchInviteCriterion =
+  | "Аукцион"
+  | "Лотерея"
+  | "Wildcard"
+  | "Рейтинг"
+  | "Чешские команды";
+
+export interface OchchInviteMeta {
+  czech: boolean;
+  criterion: OchchInviteCriterion | null;
+}
+
+function inviteCriterionByNumber(n: number): OchchInviteCriterion | null {
+  if (n >= 1 && n <= 2) return "Аукцион";
+  if (n >= 3 && n <= 13) return "Лотерея";
+  if (n >= 14 && n <= 27) return "Wildcard";
+  if (n >= 28 && n <= 37) return "Рейтинг";
+  if (n >= 38 && n <= 46) return "Чешские команды";
+  return null;
+}
+
+function normOchchName(s: string): string {
+  return s.trim().replace(/\s+/g, " ").toLocaleLowerCase("ru");
+}
+
+const OCHCH_INVITE_BY_ID = new Map<number, OchchInviteMeta>();
+const OCHCH_INVITE_BY_NAME = new Map<string, OchchInviteMeta>();
+const OCHCH_INVITE_BY_NUMBER = new Map<number, OchchInviteMeta>();
+
+for (const team of OCHCH_TEAMS) {
+  const criterion = inviteCriterionByNumber(team.number);
+  const meta: OchchInviteMeta = {
+    czech: criterion === "Чешские команды",
+    criterion,
+  };
+  OCHCH_INVITE_BY_ID.set(team.teamChgkId, meta);
+  OCHCH_INVITE_BY_NAME.set(normOchchName(team.name), meta);
+  OCHCH_INVITE_BY_NUMBER.set(team.number, meta);
+}
+
+const EMPTY_INVITE: OchchInviteMeta = { czech: false, criterion: null };
+
+/** Match by chgk ID, then name, then seed number. */
+export function ochchInviteFor(team: {
+  number: number;
+  name: string;
+  teamChgkId: number;
+}): OchchInviteMeta {
+  return (
+    OCHCH_INVITE_BY_ID.get(team.teamChgkId) ??
+    OCHCH_INVITE_BY_NAME.get(normOchchName(team.name)) ??
+    OCHCH_INVITE_BY_NUMBER.get(team.number) ??
+    EMPTY_INVITE
+  );
+}
+
 async function seedOchchTeams(teams: readonly OchchImportedTeam[]) {
   await db.$transaction(
     teams.map((team) =>

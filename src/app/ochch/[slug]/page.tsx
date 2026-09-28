@@ -5,10 +5,12 @@ import { ChgkLiveBoard } from "@/components/ChgkLiveBoard";
 import {
   OCHCH_CHANNEL_URL,
   OCHCH_CHGK_SHEET_URL,
+  OCHCH_TMINNOE_COPY,
   ensureOchchEvent,
 } from "@/lib/ochch";
 import { isPrismaMissingTable } from "@/lib/page-widgets";
 import { OchchParticipantsPage } from "./OchchParticipantsPage";
+import { OchchQuizPage } from "./OchchQuizPage";
 import { OchchRosterPage } from "./OchchRosterPage";
 import { OchchRulesPage } from "./OchchRulesPage";
 import { OchchSchedulePage } from "./OchchSchedulePage";
@@ -23,6 +25,7 @@ const PAGE_TITLES: Record<string, string> = {
   rules: "Положение ОЧЧ-2026",
   "results-chgk": "Результаты Что? Где? Когда?",
   "results-tminnoe": "Результаты «Тминное поле»",
+  "results-quiz": "Музыкальный квиз",
   "results-si": "Результаты Своей игры",
   roster: "Подать состав — ОЧЧ-2026",
   controversial: "Спорный",
@@ -114,7 +117,12 @@ export default async function OchchSlugPage({ params }: Props) {
       ) : slug === "roster" ? (
         <OchchRosterPage />
       ) : slug === "results-tminnoe" ? (
-        <ComingSoon hint="Таблица или трансляция появятся после игры — или их добавит администратор." />
+        <div className="space-y-4">
+          <p className="text-sm leading-relaxed text-muted">{OCHCH_TMINNOE_COPY}</p>
+          <ComingSoon hint="Таблица или трансляция появятся после игры — или их добавит администратор." />
+        </div>
+      ) : slug === "results-quiz" ? (
+        <OchchQuizPage />
       ) : slug === "results-si" ? (
         <ComingSoon hint="Результаты Своей игры появятся после финала — или их добавит администратор." />
       ) : slug === "appeals" ? (

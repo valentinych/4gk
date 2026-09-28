@@ -68,7 +68,16 @@ function competitionPlaces(rows: string[][], summaCol: number): Map<string[], nu
   return places;
 }
 
-export function TableWidgetClient({ widgetId }: { widgetId: string }) {
+export function TableWidgetClient({
+  widgetId,
+  apiPath,
+}: {
+  widgetId?: string;
+  apiPath?: string;
+}) {
+  const tableApiPath =
+    apiPath ??
+    (widgetId ? `/api/page-widgets/${encodeURIComponent(widgetId)}/table` : "");
   const [data, setData] = useState<SheetTableData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +89,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/page-widgets/${encodeURIComponent(widgetId)}/table`);
+      const res = await fetch(tableApiPath);
       const json = (await res.json()) as SheetTableData & { error?: string };
       if (!res.ok) {
         throw new Error(json.error ?? "Ошибка загрузки");
@@ -94,7 +103,7 @@ export function TableWidgetClient({ widgetId }: { widgetId: string }) {
     } finally {
       setLoading(false);
     }
-  }, [widgetId]);
+  }, [tableApiPath]);
 
   const scheduleNextRefresh = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);

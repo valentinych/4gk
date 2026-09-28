@@ -73,11 +73,19 @@ export const OCHCH_GOROD_GREKHOV_REG_URL = "https://forms.gle/DGWPBur8J8SrkfWG7"
 export const OCHCH_SPY_TOUR_REG_URL =
   "https://docs.google.com/forms/d/1CacoM9itbotOLHBjaoPmhRUuHUiXDp31RkThLb4_aYw/viewform";
 
+export const OCHCH_TMINNOE_COPY =
+  "3 октября в Праге состоится «Тминное поле №4» — турнир, в котором свои редакторские работы представляют Амаль Имангулов, Елена Тищенко и Максим Янке.";
+
+export const OCHCH_QUIZ_SHEET_ID = "16_vt0L9Aq4Ph3rceBal7MOB0J-mNJwmo-E42zPHXlLM";
+export const OCHCH_QUIZ_GID = "9";
+export const OCHCH_QUIZ_SHEET_URL = `https://docs.google.com/spreadsheets/d/${OCHCH_QUIZ_SHEET_ID}/edit?gid=${OCHCH_QUIZ_GID}`;
+
 export interface OchchLandingTile {
   slug: string;
   emoji: string;
   title: string;
   href: string;
+  note?: string;
 }
 
 export const OCHCH_CURRENT_TILES: OchchLandingTile[] = [
@@ -110,6 +118,14 @@ export const OCHCH_CURRENT_TILES: OchchLandingTile[] = [
     emoji: "🌿",
     title: "Результаты «Тминное поле»",
     href: "/ochch/results-tminnoe",
+    note: OCHCH_TMINNOE_COPY,
+  },
+  {
+    slug: "results-quiz",
+    emoji: "🎸",
+    title: "Музыкальный квиз",
+    href: "/ochch/results-quiz",
+    note: "Третий авторский музыкальный квиз от Андрея Ярмолы.",
   },
   {
     slug: "results-si",

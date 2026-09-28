@@ -4,6 +4,7 @@ import {
   OCHCH_GOROD_GREKHOV_REG_URL,
   OCHCH_SI_EDITOR,
   OCHCH_SPY_TOUR_REG_URL,
+  OCHCH_TMINNOE_COPY,
   OCHCH_VENUE_IRIS,
   OCHCH_VENUE_MAIN,
 } from "@/lib/ochch";
@@ -68,12 +69,12 @@ const SCHEDULE: ScheduleDay[] = [
       {
         time: "17:45–20:15",
         title: "Тминное поле",
-        editors: ["Амаль Имангулов", "Максим Янке", "Елена Тищенко"],
+        note: OCHCH_TMINNOE_COPY,
       },
       {
         time: "20:15*–22:30",
         title: "Музыкальный квиз",
-        note: "Андрей Ярмола. Время со звёздочкой — как в анонсе канала.",
+        note: "Третий авторский музыкальный квиз от Андрея Ярмолы. Время со звёздочкой — как в анонсе канала.",
       },
     ],
   },

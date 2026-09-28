@@ -37,6 +37,13 @@ function tileLabel(title: string): string {
   return text || title;
 }
 
+function tileNote(title: string): { label: string; note: string } {
+  const label = tileLabel(title);
+  const m = label.match(/^(.*) \((.+)\)\s*$/);
+  if (!m) return { label, note: "" };
+  return { label: m[1], note: m[2] };
+}
+
 function moveId(ids: string[], fromId: string, toId: string): string[] {
   const from = ids.indexOf(fromId);
   const to = ids.indexOf(toId);
@@ -217,6 +224,7 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
 
   function renderTile(w: PageWidgetDto, draggable: boolean) {
     const editing = editingId === w.id;
+    const { label, note } = tileNote(w.title);
     const cardClass = `group flex flex-col rounded-xl border border-border bg-surface transition-all ${
       w.archived ? "opacity-50 grayscale" : "hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
     }${dragId === w.id ? " opacity-60" : ""}`;
@@ -228,8 +236,13 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
         </span>
         <span className="min-w-0">
           <span className="block text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
-            {tileLabel(w.title)}
+            {label}
           </span>
+          {note ? (
+            <span className="mt-1 block text-xs leading-relaxed text-muted">
+              {note}
+            </span>
+          ) : null}
         </span>
       </>
     );

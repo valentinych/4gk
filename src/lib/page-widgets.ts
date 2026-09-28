@@ -16,7 +16,7 @@ export const PAGE_WIDGET_LINK = "link";
 export const PAGE_WIDGET_BRAIN = "brain";
 export const PAGE_WIDGET_TABLE = "table";
 export const PAGE_WIDGETS_CHANGED_EVENT = "4gk:page-widgets-changed";
-export const PAGE_WIDGET_TITLE_MAX = 160;
+export const PAGE_WIDGET_TITLE_MAX = 280;
 
 export const DS_HAZA_WIDGET_PATH = "/dziki-sopot";
 export const DS_HAZA_WIDGET_URL = "https://www.haza.online/broadcast/672";
@@ -164,7 +164,7 @@ export function syrenyWidgetSeeds(): PageWidgetSeed[] {
 }
 
 export function ochchCurrentWidgetSeeds(): PageWidgetSeed[] {
-  return OCHCH_CURRENT_TILES.map((t) => seedLink(t.emoji, t.title, t.href));
+  return OCHCH_CURRENT_TILES.map((t) => seedLink(t.emoji, t.title, t.href, t.note));
 }
 
 export function parseHazaBroadcastId(url: string): number | null {
@@ -391,7 +391,19 @@ export async function ensureLandingWidgets(path: string): Promise<void> {
     return;
   }
   if (path === OCHCH_WIDGET_PATH) {
-    await ensurePageWidgets(path, ochchCurrentWidgetSeeds());
+    const seeds = ochchCurrentWidgetSeeds();
+    await ensurePageWidgets(path, seeds);
+    for (const seed of seeds) {
+      await db.pageWidget.updateMany({
+        where: {
+          path,
+          type: seed.type,
+          url: seed.url,
+          title: { not: seed.title },
+        },
+        data: { title: seed.title },
+      });
+    }
   }
 }
 

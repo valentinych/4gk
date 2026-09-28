@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
+import { ChgkLiveBoard } from "@/components/ChgkLiveBoard";
 import {
   OCHCH_CHANNEL_URL,
-  OCHCH_RATING_TOURNAMENT_ID,
+  OCHCH_CHGK_SHEET_URL,
   ensureOchchEvent,
 } from "@/lib/ochch";
 import { isPrismaMissingTable } from "@/lib/page-widgets";
@@ -75,6 +75,19 @@ export default async function OchchSlugPage({ params }: Props) {
     }
   }
 
+  if (slug === "results-chgk") {
+    return (
+      <ChgkLiveBoard
+        apiPath="/api/ochch"
+        title="ОЧЧ-2026. Результаты Что? Где? Когда?"
+        backHref="/ochch"
+        backLabel="Назад к ОЧЧ"
+        sheetUrl={OCHCH_CHGK_SHEET_URL}
+        pageId="ochch-results"
+      />
+    );
+  }
+
   const title = PAGE_TITLES[slug];
 
   return (
@@ -100,17 +113,6 @@ export default async function OchchSlugPage({ params }: Props) {
         <OchchParticipantsPage />
       ) : slug === "roster" ? (
         <OchchRosterPage />
-      ) : slug === "results-chgk" ? (
-        <div className="space-y-4">
-          <p className="text-sm text-muted">
-            Таблица из rating.chgk.info. Трансляцию ХаЗа администратор может добавить
-            плиткой на главной ОЧЧ.
-          </p>
-          <ChgkRatingApiResults
-            tournamentId={OCHCH_RATING_TOURNAMENT_ID}
-            showChst={false}
-          />
-        </div>
       ) : slug === "results-tminnoe" ? (
         <ComingSoon hint="Таблица или трансляция появятся после игры — или их добавит администратор." />
       ) : slug === "results-si" ? (

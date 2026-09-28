@@ -20,6 +20,12 @@ export interface PragueTeamRow {
   tours: PragueTourResult[];
 }
 
+export interface PraguePayload {
+  updatedAt: string;
+  tours: PragueTourMeta[];
+  teams: PragueTeamRow[];
+}
+
 /** Highest global question index (1-based across tours) where at least one team has «+». */
 export function lastQuestionWithAnyPlus(
   teams: PragueTeamRow[],

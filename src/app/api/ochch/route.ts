@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { OCHCH_CHGK_SHEET_ID, OCHCH_CHGK_TOURS } from "@/lib/ochch";
 import {
   loadChgkLiveSheet,
   type ChgkLivePayload,
@@ -8,20 +9,11 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PRAGUE_LIVE_SHEET: ChgkLiveSheetConfig = {
-  sheetId: "16nsdiqD9cd4Uw-XLH1TTrAhmG0EstAHvRCL_bVml0fc",
-  tours: [
-    { name: "Тур 1", gid: "0" },
-    { name: "Тур 2", gid: "277312779" },
-    { name: "Тур 3", gid: "1473758408" },
-    { name: "Тур 4", gid: "2035071153" },
-    { name: "Тур 5", gid: "282065552" },
-    { name: "Тур 6", gid: "689794601" },
-  ],
-  /** Last counted global question is 235 (drop two extra columns in tour 6). */
-  questionTrimByTourIndex: { 5: 2 },
-  defaultQuestionsPerTour: 36,
-  userAgent: "4gk-prague/1.0",
+const OCHCH_LIVE_SHEET: ChgkLiveSheetConfig = {
+  sheetId: OCHCH_CHGK_SHEET_ID,
+  tours: OCHCH_CHGK_TOURS,
+  defaultQuestionsPerTour: 15,
+  userAgent: "4gk-ochch/1.0",
 };
 
 type CacheEntry = { ts: number; payload: ChgkLivePayload };
@@ -37,7 +29,7 @@ export async function GET() {
   }
 
   try {
-    const payload = await loadChgkLiveSheet(PRAGUE_LIVE_SHEET);
+    const payload = await loadChgkLiveSheet(OCHCH_LIVE_SHEET);
     cache = { ts: now, payload };
     return NextResponse.json(payload, {
       headers: { "Cache-Control": "public, max-age=15, stale-while-revalidate=30" },

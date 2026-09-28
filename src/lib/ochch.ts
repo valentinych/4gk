@@ -11,6 +11,19 @@ export const OCHCH_RATING_TOURNAMENT_ID = 14219;
 export const OCHCH_CHANNEL_URL = "https://t.me/o44praha";
 export const OCHCH_DATE_LABEL = "3–4 октября 2026";
 
+/** Live CHGK tablo (Pražma-style: one tab per tour, 7 × 15). */
+export const OCHCH_CHGK_SHEET_ID = "1GdbaO82m_ROvZ6l0kLi6zKpFcHaCoA5Acwfg1D2FiZo";
+export const OCHCH_CHGK_SHEET_URL = `https://docs.google.com/spreadsheets/d/${OCHCH_CHGK_SHEET_ID}/edit?usp=sharing`;
+export const OCHCH_CHGK_TOURS: { name: string; gid: string }[] = [
+  { name: "Тур 1", gid: "0" },
+  { name: "Тур 2", gid: "1617803648" },
+  { name: "Тур 3", gid: "1444833333" },
+  { name: "Тур 4", gid: "514844789" },
+  { name: "Тур 5", gid: "1048826253" },
+  { name: "Тур 6", gid: "1755691667" },
+  { name: "Тур 7", gid: "1089470890" },
+];
+
 export function ochchRatingPublicUrl(
   tournamentId: number = OCHCH_RATING_TOURNAMENT_ID,
 ): string {

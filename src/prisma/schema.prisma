@@ -193,6 +193,7 @@ model OchchAppeal {
   locked          Boolean             @default(false)
   lockedAt        DateTime?
   lockedByChgkId  Int?
+  trashed         Boolean             @default(false)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 

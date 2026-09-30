@@ -208,7 +208,7 @@ export async function loadOchchAppealMine(
   teamChgkId: number,
 ): Promise<OchchAppealMineItem[]> {
   const rows = await db.ochchAppeal.findMany({
-    where: { eventId: OCHCH_EVENT_ID, teamChgkId },
+    where: { eventId: OCHCH_EVENT_ID, teamChgkId, trashed: false },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
@@ -232,6 +232,7 @@ export async function loadOchchAppealMineByPlayer(
       eventId: OCHCH_EVENT_ID,
       playerChgkId,
       teamChgkId: OCHCH_ADMIN_TEAM_CHGK_ID,
+      trashed: false,
     },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
@@ -248,9 +249,11 @@ export async function loadOchchAppealMineByPlayer(
   return mapAppealMine(rows);
 }
 
-export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {
+async function loadOchchAppealAdminByTrashed(
+  trashed: boolean,
+): Promise<OchchAppealAdminItem[]> {
   const rows = await db.ochchAppeal.findMany({
-    where: { eventId: OCHCH_EVENT_ID },
+    where: { eventId: OCHCH_EVENT_ID, trashed },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
   });
   const names = await ratingPlayerDisplayNames(
@@ -271,6 +274,14 @@ export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {
     decidedByName:
       r.decidedByChgkId != null ? (names.get(r.decidedByChgkId) ?? null) : null,
   }));
+}
+
+export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {
+  return loadOchchAppealAdminByTrashed(false);
+}
+
+export async function loadOchchAppealGraveyard(): Promise<OchchAppealAdminItem[]> {
+  return loadOchchAppealAdminByTrashed(true);
 }
 
 export function parseQuestionNumber(value: unknown): number | null {

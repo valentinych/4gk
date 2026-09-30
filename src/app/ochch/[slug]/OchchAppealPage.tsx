@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import {
   OCHCH_APPEAL_KIND_LABELS,
   loadOchchAppealAdmin,
+  loadOchchAppealGraveyard,
   loadOchchAppealMine,
   loadOchchAppealMineByPlayer,
   resolveOchchAppealPageAccess,
@@ -121,8 +122,9 @@ export async function OchchAppealPage() {
     );
   }
 
-  const [adminRows, mineItems] = await Promise.all([
+  const [adminRows, graveyardRows, mineItems] = await Promise.all([
     access.isPageAdmin ? loadOchchAppealAdmin() : Promise.resolve(null),
+    access.isPageAdmin ? loadOchchAppealGraveyard() : Promise.resolve(null),
     access.teamChgkId
       ? loadOchchAppealMine(access.teamChgkId)
       : access.isPageAdmin
@@ -133,7 +135,12 @@ export async function OchchAppealPage() {
   return (
     <div id="page-ochch-appeals" className="space-y-8">
       {access.canSubmit ? <OchchAppealForm /> : null}
-      {adminRows ? <OchchAppealAdminTable initialRows={adminRows} /> : null}
+      {adminRows ? (
+        <OchchAppealAdminTable
+          initialRows={adminRows}
+          initialGraveyard={graveyardRows ?? []}
+        />
+      ) : null}
       {mineItems ? <MineList items={mineItems} /> : null}
     </div>
   );

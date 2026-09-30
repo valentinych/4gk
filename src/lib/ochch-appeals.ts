@@ -25,6 +25,10 @@ export const OCHCH_APPEAL_ADMIN_RATIONALE_REQUIRED =
 export const OCHCH_APPEAL_QUESTION_MIN = 1;
 export const OCHCH_APPEAL_QUESTION_MAX = 105;
 
+export const OCHCH_APPEAL_LOCKED = "Решение уже зафиксировано";
+export const OCHCH_APPEAL_UNLOCK_FORBIDDEN = "Разблокировка невозможна";
+export const OCHCH_APPEAL_LOCK_PENDING = "Сначала выберите вердикт";
+
 export type OchchAppealKind = "REMOVE" | "CREDIT";
 export type OchchAppealVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
 
@@ -83,6 +87,7 @@ export type OchchAppealMineItem = {
 };
 
 export type OchchAppealAdminItem = OchchAppealMineItem & {
+  locked: boolean;
   teamNumber: number | null;
   decidedByName: string | null;
 };
@@ -167,6 +172,16 @@ function trimText(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+/** Submitter view: hide the real verdict until this row is locked. */
+export function serializeAppealMineVerdict(
+  locked: boolean,
+  status: OchchAppealVerdict,
+  adminRationale: string | null,
+): Pick<OchchAppealMineItem, "status" | "adminRationale"> {
+  if (!locked) return { status: "PENDING", adminRationale: null };
+  return { status, adminRationale: trimText(adminRationale) };
+}
+
 function mapAppealMine(
   rows: {
     id: string;
@@ -176,6 +191,7 @@ function mapAppealMine(
     argumentation: string;
     status: OchchAppealVerdict;
     adminRationale: string | null;
+    locked: boolean;
   }[],
 ): OchchAppealMineItem[] {
   return rows.map((r) => ({
@@ -184,8 +200,7 @@ function mapAppealMine(
     questionNumber: r.questionNumber,
     answerText: r.answerText,
     argumentation: r.argumentation,
-    status: r.status,
-    adminRationale: trimText(r.adminRationale),
+    ...serializeAppealMineVerdict(r.locked, r.status, r.adminRationale),
   }));
 }
 
@@ -203,6 +218,7 @@ export async function loadOchchAppealMine(
       argumentation: true,
       status: true,
       adminRationale: true,
+      locked: true,
     },
   });
   return mapAppealMine(rows);
@@ -226,6 +242,7 @@ export async function loadOchchAppealMineByPlayer(
       argumentation: true,
       status: true,
       adminRationale: true,
+      locked: true,
     },
   });
   return mapAppealMine(rows);
@@ -249,6 +266,7 @@ export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {
     argumentation: r.argumentation,
     status: r.status,
     adminRationale: trimText(r.adminRationale),
+    locked: r.locked,
     teamNumber: ochchSlotNumber(r.teamChgkId),
     decidedByName:
       r.decidedByChgkId != null ? (names.get(r.decidedByChgkId) ?? null) : null,

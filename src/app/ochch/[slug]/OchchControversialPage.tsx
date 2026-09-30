@@ -5,10 +5,12 @@ import type { ReactNode } from "react";
 import { authOptions } from "@/lib/auth";
 import {
   loadOchchControversialAdmin,
+  loadOchchControversialGraveyard,
   loadOchchControversialMine,
   loadOchchControversialMineByPlayer,
   resolveOchchControversialPageAccess,
 } from "@/lib/ochch-controversial";
+import { OchchControversialAutoRefresh } from "./OchchControversialAutoRefresh";
 import {
   OchchControversialAdminTable,
   OchchControversialVerdictMark,
@@ -103,8 +105,9 @@ export async function OchchControversialPage() {
     );
   }
 
-  const [adminRows, mineItems] = await Promise.all([
+  const [adminRows, graveyardRows, mineItems] = await Promise.all([
     access.isPageAdmin ? loadOchchControversialAdmin() : Promise.resolve(null),
+    access.isPageAdmin ? loadOchchControversialGraveyard() : Promise.resolve(null),
     access.teamChgkId
       ? loadOchchControversialMine(access.teamChgkId)
       : access.isPageAdmin
@@ -114,8 +117,14 @@ export async function OchchControversialPage() {
 
   return (
     <div id="page-ochch-controversial" className="space-y-8">
+      <OchchControversialAutoRefresh />
       {access.canSubmit ? <OchchControversialForm /> : null}
-      {adminRows ? <OchchControversialAdminTable initialRows={adminRows} /> : null}
+      {adminRows ? (
+        <OchchControversialAdminTable
+          initialRows={adminRows}
+          initialGraveyard={graveyardRows ?? []}
+        />
+      ) : null}
       {mineItems ? <MineList items={mineItems} /> : null}
     </div>
   );

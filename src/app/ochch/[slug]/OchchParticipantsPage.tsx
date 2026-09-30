@@ -1,10 +1,13 @@
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
+import { getServerSession } from "next-auth";
+import { OchchParticipantsTable } from "./OchchParticipantsTable";
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canToggleOchchAmateur, listOchchAmateurTeamIds } from "@/lib/ochch-amateur";
 import {
   OCHCH_EVENT_ID,
   OCHCH_TEAMS,
   listOchchParticipants,
-  ochchInviteFor,
   ochchRatingPublicUrl,
   type OchchImportedTeam,
 } from "@/lib/ochch";
@@ -14,19 +17,17 @@ function sortByNumber(rows: OchchImportedTeam[]): OchchImportedTeam[] {
 }
 
 /** A roster is submitted once TeamRoster exists for the team (POST requires ≥1 player). */
-async function loadRosterChgkIds(): Promise<Set<number>> {
+async function loadRosterChgkIds(): Promise<number[]> {
   try {
     const rosters = await db.teamRoster.findMany({
       where: { eventId: OCHCH_EVENT_ID },
       select: { teamChgkId: true },
     });
-    return new Set(
-      rosters
-        .map((r) => r.teamChgkId)
-        .filter((id): id is number => id != null && id > 0),
-    );
+    return rosters
+      .map((r) => r.teamChgkId)
+      .filter((id): id is number => id != null && id > 0);
   } catch {
-    return new Set();
+    return [];
   }
 }
 
@@ -39,7 +40,15 @@ export async function OchchParticipantsPage() {
     teams = sortByNumber([...OCHCH_TEAMS]);
   }
 
-  const rosterChgkIds = await loadRosterChgkIds();
+  const [rosterChgkIds, amateurChgkIds, session] = await Promise.all([
+    loadRosterChgkIds(),
+    listOchchAmateurTeamIds(),
+    getServerSession(authOptions),
+  ]);
+  const canToggle = await canToggleOchchAmateur(
+    session?.user?.role,
+    session?.user?.chgkId,
+  );
 
   return (
     <div id="page-ochch-participants" className="space-y-4">
@@ -64,58 +73,12 @@ export async function OchchParticipantsPage() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
-                <th className="w-10 px-3 py-2.5 text-left font-medium">№</th>
-                <th className="px-3 py-2.5 text-left font-medium">Команда</th>
-                <th
-                  className="w-14 px-1.5 py-2.5 text-center font-medium"
-                  title="Подан состав"
-                >
-                  Состав
-                </th>
-                <th className="px-3 py-2.5 text-left font-medium">Город</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {teams.map((t) => {
-                const invite = ochchInviteFor(t);
-                const hasRoster = rosterChgkIds.has(t.teamChgkId);
-                return (
-                  <tr key={t.teamChgkId} className="hover:bg-surface/50">
-                    <td className="px-3 py-2.5 font-mono text-muted">{t.number}</td>
-                    <td className="whitespace-nowrap px-3 py-2.5 font-medium">
-                      {invite.czech ? (
-                        <span title="Чешская команда" className="mr-1">
-                          🇨🇿
-                        </span>
-                      ) : null}
-                      {t.name}
-                    </td>
-                    <td className="px-1.5 py-2.5 text-center">
-                      {hasRoster ? (
-                        <span
-                          className="inline-flex justify-center"
-                          role="img"
-                          title="Состав подан"
-                          aria-label="Состав подан"
-                        >
-                          <CheckCircle2
-                            className="h-4 w-4 text-emerald-500"
-                            aria-hidden
-                          />
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-muted">{t.city}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <OchchParticipantsTable
+          teams={teams}
+          rosterChgkIds={rosterChgkIds}
+          amateurChgkIds={[...amateurChgkIds]}
+          canToggleAmateur={canToggle}
+        />
       )}
     </div>
   );

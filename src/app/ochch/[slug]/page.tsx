@@ -66,6 +66,7 @@ export default async function OchchSlugPage({ params }: Props) {
         backLabel="Назад к ОЧЧ"
         sheetUrl={OCHCH_CHGK_SHEET_URL}
         pageId="ochch-results"
+        standingsToggles
       />
     );
   }

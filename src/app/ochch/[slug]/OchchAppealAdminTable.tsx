@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, HelpCircle, X } from "lucide-react";
+import { Check, HelpCircle, Lock, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type AppealKind = "REMOVE" | "CREDIT";
@@ -22,6 +23,7 @@ export type AppealAdminRow = {
   argumentation: string;
   status: AppealVerdict;
   adminRationale: string | null;
+  locked: boolean;
   teamNumber: number | null;
   decidedByName: string | null;
 };
@@ -79,7 +81,11 @@ export function OchchAppealAdminTable({
 }: {
   initialRows: AppealAdminRow[];
 }) {
+  const router = useRouter();
   const [rows, setRows] = useState(initialRows);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialRows[0]?.id ?? null,
+  );
   const [showTeamNo, setShowTeamNo] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -87,12 +93,19 @@ export function OchchAppealAdminTable({
 
   useEffect(() => {
     setRows(initialRows);
+    setSelectedId((prev) =>
+      prev && initialRows.some((r) => r.id === prev)
+        ? prev
+        : (initialRows[0]?.id ?? null),
+    );
   }, [initialRows]);
+
+  const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   async function patch(
     id: string,
-    body: { status?: AppealVerdict; adminRationale?: string },
-  ): Promise<AppealAdminRow | null> {
+    body: { status?: AppealVerdict; adminRationale?: string; action?: "lock" },
+  ): Promise<(Partial<AppealAdminRow> & { error?: string }) | null> {
     setPendingId(id);
     setError(null);
     try {
@@ -108,17 +121,7 @@ export function OchchAppealAdminTable({
         setError(data?.error || "Не удалось сохранить");
         return null;
       }
-      return {
-        id,
-        kind: "REMOVE",
-        questionNumber: 0,
-        answerText: "",
-        argumentation: "",
-        status: (data?.status as AppealVerdict) ?? "PENDING",
-        adminRationale: data?.adminRationale ?? null,
-        teamNumber: null,
-        decidedByName: data?.decidedByName ?? null,
-      };
+      return data;
     } catch {
       setError("Не удалось сохранить");
       return null;
@@ -128,7 +131,7 @@ export function OchchAppealAdminTable({
   }
 
   async function onVerdict(row: AppealAdminRow, status: AppealVerdict) {
-    if (row.status === status || pendingId) return;
+    if (row.locked || row.status === status || pendingId) return;
     const adminRationale = drafts[row.id] ?? row.adminRationale ?? "";
     if (needsJuryRationale(status) && !adminRationale.trim()) {
       setError(ADMIN_RATIONALE_REQUIRED);
@@ -141,9 +144,9 @@ export function OchchAppealAdminTable({
         r.id === row.id
           ? {
               ...r,
-              status: updated.status,
-              adminRationale: updated.adminRationale,
-              decidedByName: updated.decidedByName,
+              status: updated.status ?? r.status,
+              adminRationale: updated.adminRationale ?? r.adminRationale,
+              decidedByName: updated.decidedByName ?? r.decidedByName,
             }
           : r,
       ),
@@ -151,7 +154,7 @@ export function OchchAppealAdminTable({
   }
 
   async function onSaveRationale(row: AppealAdminRow) {
-    if (pendingId) return;
+    if (row.locked || pendingId) return;
     const adminRationale = drafts[row.id] ?? row.adminRationale ?? "";
     if (needsJuryRationale(row.status) && !adminRationale.trim()) {
       setError(ADMIN_RATIONALE_REQUIRED);
@@ -164,8 +167,8 @@ export function OchchAppealAdminTable({
         r.id === row.id
           ? {
               ...r,
-              adminRationale: updated.adminRationale,
-              decidedByName: updated.decidedByName,
+              adminRationale: updated.adminRationale ?? r.adminRationale,
+              decidedByName: updated.decidedByName ?? r.decidedByName,
             }
           : r,
       ),
@@ -175,6 +178,16 @@ export function OchchAppealAdminTable({
       delete next[row.id];
       return next;
     });
+  }
+
+  async function onLock(row: AppealAdminRow) {
+    if (row.locked || pendingId || row.status === "PENDING") return;
+    const updated = await patch(row.id, { action: "lock" });
+    if (!updated) return;
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, locked: true } : r)),
+    );
+    router.refresh();
   }
 
   return (
@@ -198,91 +211,158 @@ export function OchchAppealAdminTable({
       {rows.length === 0 ? (
         <p className="text-sm text-muted">Пока нет поданных апелляций.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="w-full min-w-[48rem] text-sm">
-            <thead>
-              <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
-                <th className="px-3 py-2.5 text-left font-medium">Вид</th>
-                <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
-                <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
-                <th className="px-3 py-2.5 text-left font-medium">Аргументация</th>
-                <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
-                <th className="px-3 py-2.5 text-left font-medium">Обоснование жюри</th>
-                <th className="px-3 py-2.5 text-left font-medium">Решение</th>
-                {showTeamNo ? (
-                  <th className="px-3 py-2.5 text-left font-medium">№</th>
-                ) : null}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="whitespace-nowrap px-3 py-2.5">
-                    {KIND_LABELS[row.kind]}
-                  </td>
-                  <td className="px-3 py-2.5 font-mono tabular-nums">
-                    {row.questionNumber}
-                  </td>
-                  <td className="px-3 py-2.5">{row.answerText}</td>
-                  <td className="max-w-[16rem] px-3 py-2.5 whitespace-pre-wrap">
-                    {row.argumentation}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <div role="group" aria-label="Вердикт" className="flex gap-1">
-                      {VERDICT_BUTTONS.map(({ value, label, Icon, activeClass }) => {
-                        const pressed = row.status === value;
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            aria-pressed={pressed}
-                            aria-label={label}
-                            disabled={pendingId === row.id}
-                            onClick={() => onVerdict(row, value)}
-                            className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
-                              pressed ? activeClass : "text-muted/40"
-                            } disabled:opacity-60`}
-                          >
-                            <Icon className="h-5 w-5" aria-hidden />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </td>
-                  <td className="min-w-[12rem] px-3 py-2.5">
-                    <textarea
-                      aria-label="Обоснование жюри"
-                      rows={2}
-                      value={drafts[row.id] ?? row.adminRationale ?? ""}
-                      onChange={(e) =>
-                        setDrafts((d) => ({ ...d, [row.id]: e.target.value }))
-                      }
-                      className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
-                    />
-                    <button
-                      type="button"
-                      disabled={pendingId === row.id}
-                      onClick={() => onSaveRationale(row)}
-                      className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
-                    >
-                      Сохранить
-                    </button>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-muted">
-                    {row.decidedByName ?? ""}
-                  </td>
+        <div className="space-y-3">
+          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
+            <table className="w-full min-w-[32rem] text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
+                  <th className="px-3 py-2.5 text-left font-medium">Вид</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Решение</th>
                   {showTeamNo ? (
-                    <td
-                      className="px-3 py-2.5 font-mono tabular-nums text-muted"
-                      title={row.teamNumber === 0 ? "Админы" : undefined}
-                    >
-                      {row.teamNumber ?? "—"}
-                    </td>
+                    <th className="px-3 py-2.5 text-left font-medium">№</th>
                   ) : null}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((row) => {
+                  const busy = pendingId === row.id;
+                  const isSelected = row.id === selectedId;
+                  const verdictDisabled = row.locked || busy;
+                  const lockNeedsVerdict = !row.locked && row.status === "PENDING";
+                  const lockDisabled = row.locked || busy || lockNeedsVerdict;
+                  return (
+                    <tr
+                      key={row.id}
+                      aria-selected={isSelected}
+                      onClick={() => setSelectedId(row.id)}
+                      onFocusCapture={() => setSelectedId(row.id)}
+                      className={`cursor-pointer ${
+                        isSelected ? "bg-accent/10" : "hover:bg-surface/50"
+                      }`}
+                    >
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        {KIND_LABELS[row.kind]}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono tabular-nums">
+                        {row.questionNumber}
+                      </td>
+                      <td className="px-3 py-2.5">{row.answerText}</td>
+                      <td className="px-3 py-2.5">
+                        <div role="group" aria-label="Вердикт" className="flex gap-1">
+                          {VERDICT_BUTTONS.map(
+                            ({ value, label, Icon, activeClass }) => {
+                              const pressed = row.status === value;
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  aria-pressed={pressed}
+                                  aria-label={label}
+                                  aria-disabled={verdictDisabled}
+                                  disabled={verdictDisabled}
+                                  onClick={() => onVerdict(row, value)}
+                                  className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
+                                    pressed ? activeClass : "text-muted/40"
+                                  } disabled:opacity-60`}
+                                >
+                                  <Icon className="h-5 w-5" aria-hidden />
+                                </button>
+                              );
+                            },
+                          )}
+                          <button
+                            type="button"
+                            aria-label={
+                              row.locked
+                                ? "Решение зафиксировано"
+                                : lockNeedsVerdict
+                                  ? "Сначала выберите вердикт"
+                                  : "Заблокировать решение"
+                            }
+                            title={
+                              lockNeedsVerdict
+                                ? "Сначала выберите вердикт"
+                                : undefined
+                            }
+                            aria-pressed={row.locked}
+                            aria-disabled={lockDisabled}
+                            disabled={lockDisabled}
+                            onClick={() => onLock(row)}
+                            className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
+                              row.locked
+                                ? "cursor-default text-red-600 disabled:opacity-100"
+                                : "text-muted disabled:opacity-60"
+                            }`}
+                          >
+                            <Lock className="h-5 w-5" aria-hidden />
+                          </button>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">
+                        {row.decidedByName ?? ""}
+                      </td>
+                      {showTeamNo ? (
+                        <td
+                          className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                          title={row.teamNumber === 0 ? "Админы" : undefined}
+                        >
+                          {row.teamNumber ?? "—"}
+                        </td>
+                      ) : null}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {selected ? (
+            <div className="space-y-3">
+              <div className="w-full rounded-xl border border-border bg-surface p-4">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Аргументация
+                  <span className="ml-2 font-normal normal-case tracking-normal">
+                    {KIND_LABELS[selected.kind]} · вопрос {selected.questionNumber}
+                  </span>
+                </h3>
+                <p className="mt-2 whitespace-pre-wrap text-sm">
+                  {selected.argumentation}
+                </p>
+              </div>
+              <div className="w-full rounded-xl border border-border bg-surface p-4">
+                <label
+                  htmlFor="ochch-appeal-admin-rationale"
+                  className="text-xs font-medium uppercase tracking-wider text-muted"
+                >
+                  Обоснование жюри
+                </label>
+                <textarea
+                  id="ochch-appeal-admin-rationale"
+                  aria-label="Обоснование жюри"
+                  rows={6}
+                  disabled={selected.locked}
+                  readOnly={selected.locked}
+                  value={drafts[selected.id] ?? selected.adminRationale ?? ""}
+                  onChange={(e) =>
+                    setDrafts((d) => ({ ...d, [selected.id]: e.target.value }))
+                  }
+                  className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60"
+                />
+                {selected.locked ? null : (
+                  <button
+                    type="button"
+                    disabled={pendingId === selected.id}
+                    onClick={() => onSaveRationale(selected)}
+                    className="mt-2 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+                  >
+                    Сохранить
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </section>

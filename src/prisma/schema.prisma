@@ -170,6 +170,7 @@ model OchchControversial {
   locked          Boolean                   @default(false)
   lockedAt        DateTime?
   lockedByChgkId  Int?
+  trashed         Boolean                   @default(false)
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
@@ -189,10 +190,23 @@ model OchchAppeal {
   adminRationale  String?
   decidedByChgkId Int?
   decidedAt       DateTime?
+  locked          Boolean             @default(false)
+  lockedAt        DateTime?
+  lockedByChgkId  Int?
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
   @@index([eventId])
+}
+
+/** OCHCH «любительская команда» flags. Determination by site ADMIN or 14219 orgcommittee. */
+model OchchAmateurTeam {
+  eventId    String
+  teamChgkId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@id([eventId, teamChgkId])
 }
 
 model CalendarTemplate {

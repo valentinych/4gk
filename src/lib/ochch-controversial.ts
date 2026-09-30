@@ -184,7 +184,7 @@ export async function loadOchchControversialMine(
   teamChgkId: number,
 ): Promise<OchchControversialMineItem[]> {
   const rows = await db.ochchControversial.findMany({
-    where: { eventId: OCHCH_EVENT_ID, teamChgkId },
+    where: { eventId: OCHCH_EVENT_ID, teamChgkId, trashed: false },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
@@ -206,6 +206,7 @@ export async function loadOchchControversialMineByPlayer(
       eventId: OCHCH_EVENT_ID,
       playerChgkId,
       teamChgkId: OCHCH_ADMIN_TEAM_CHGK_ID,
+      trashed: false,
     },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
@@ -220,11 +221,11 @@ export async function loadOchchControversialMineByPlayer(
   return mapControversialMine(rows);
 }
 
-export async function loadOchchControversialAdmin(): Promise<
-  OchchControversialAdminItem[]
-> {
+async function loadOchchControversialAdminByTrashed(
+  trashed: boolean,
+): Promise<OchchControversialAdminItem[]> {
   const rows = await db.ochchControversial.findMany({
-    where: { eventId: OCHCH_EVENT_ID },
+    where: { eventId: OCHCH_EVENT_ID, trashed },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
   });
   const names = await ratingPlayerDisplayNames(
@@ -243,6 +244,18 @@ export async function loadOchchControversialAdmin(): Promise<
     decidedByName:
       r.decidedByChgkId != null ? (names.get(r.decidedByChgkId) ?? null) : null,
   }));
+}
+
+export async function loadOchchControversialAdmin(): Promise<
+  OchchControversialAdminItem[]
+> {
+  return loadOchchControversialAdminByTrashed(false);
+}
+
+export async function loadOchchControversialGraveyard(): Promise<
+  OchchControversialAdminItem[]
+> {
+  return loadOchchControversialAdminByTrashed(true);
 }
 
 export function parseQuestionNumber(value: unknown): number | null {

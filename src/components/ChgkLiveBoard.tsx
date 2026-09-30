@@ -35,6 +35,123 @@ function truncateTeamNameFullscreen(name: string, maxLen = 36): string {
   return `${cut}…`;
 }
 
+function BoardTeamMarks({ team }: { team: PragueTeamRow }) {
+  return (
+    <>
+      {team.czech ? (
+        <span title="Чешский зачёт" className="mr-0.5">
+          🇨🇿
+        </span>
+      ) : null}
+      {team.amateur ? (
+        <span title="Любительская команда" className="mr-0.5">
+          🟢
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+function BoardTeamName({
+  team,
+  compact,
+}: {
+  team: PragueTeamRow;
+  compact: boolean;
+}) {
+  const visible = compact
+    ? truncateTeamNameFullscreen(team.team)
+    : team.team;
+  const nameNode = team.href ? (
+    <Link
+      href={team.href}
+      className="text-inherit hover:text-accent hover:underline"
+    >
+      {visible}
+    </Link>
+  ) : (
+    visible
+  );
+  if (!compact && team.team.length > 30) {
+    return (
+      <span
+        className="block text-xs leading-tight"
+        style={{
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+        title={team.team}
+      >
+        <BoardTeamMarks team={team} />
+        {nameNode}
+      </span>
+    );
+  }
+  return (
+    <>
+      <BoardTeamMarks team={team} />
+      {nameNode}
+    </>
+  );
+}
+
+type StandingsKind = "all" | "amateur" | "czech";
+
+/** Same 1–2 / 1,1,3-style labels as the overall sheet table (ties share a range). */
+function withCompetitionPlaces(teams: PragueTeamRow[]): PragueTeamRow[] {
+  const out: PragueTeamRow[] = [];
+  for (let i = 0; i < teams.length; ) {
+    let j = i + 1;
+    while (j < teams.length && teams[j].total === teams[i].total) j++;
+    const label = j > i + 1 ? `${i + 1}-${j}` : `${i + 1}`;
+    for (let k = i; k < j; k++) out.push({ ...teams[k], place: label });
+    i = j;
+  }
+  return out;
+}
+
+function czechPlaceRows(teams: PragueTeamRow[]): { team: PragueTeamRow; place: string }[] {
+  return withCompetitionPlaces(teams.filter((t) => t.czech)).map((team) => ({
+    team,
+    place: team.place,
+  }));
+}
+
+function CzechStandings({ teams }: { teams: PragueTeamRow[] }) {
+  const rows = czechPlaceRows(teams);
+  if (rows.length === 0) return null;
+  return (
+    <div className="mt-6 rounded-xl border border-border bg-surface p-4">
+      <h2 className="text-sm font-semibold">🇨🇿 Чешский зачёт</h2>
+      <p className="mt-1 text-xs text-muted">
+        Те же суммы, только команды с чешским флагом.
+      </p>
+      <table className="mt-3 w-full text-sm">
+        <thead>
+          <tr className="text-left text-xs uppercase tracking-wider text-muted">
+            <th className="w-10 py-1 font-medium">М</th>
+            <th className="py-1 font-medium">Команда</th>
+            <th className="w-12 py-1 text-right font-medium">Σ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ team, place }) => (
+            <tr key={`${team.team}|${team.city}`} className="border-t border-border">
+              <td className="py-1.5 font-mono text-muted">{place}</td>
+              <td className="py-1.5 font-medium">
+                <BoardTeamName team={team} compact={false} />
+              </td>
+              <td className="py-1.5 text-right font-mono tabular-nums">{team.total}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export interface ChgkLiveBoardProps {
   apiPath: string;
   title: string;
@@ -43,6 +160,8 @@ export interface ChgkLiveBoardProps {
   sheetUrl: string;
   pageId: string;
   adminCsvHref?: string;
+  /** OCHCH: любительский / чешский зачёт toggles next to rating. */
+  standingsToggles?: boolean;
 }
 
 export function ChgkLiveBoard({
@@ -53,6 +172,7 @@ export function ChgkLiveBoard({
   sheetUrl,
   pageId,
   adminCsvHref,
+  standingsToggles = false,
 }: ChgkLiveBoardProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -65,6 +185,7 @@ export function ChgkLiveBoard({
   const fitTableRef = useRef<HTMLTableElement | null>(null);
   const [fitScale, setFitScale] = useState(1);
   const [showRating, setShowRating] = useState(false);
+  const [standings, setStandings] = useState<StandingsKind>("all");
 
   const lastQuestionEntered = useMemo(
     () => (data ? lastQuestionWithAnyPlus(data.teams, data.tours) : 0),
@@ -80,6 +201,15 @@ export function ChgkLiveBoard({
     }
     return m;
   }, [data]);
+
+  const displayedTeams = useMemo(() => {
+    if (!data) return [];
+    if (standings === "all") return data.teams;
+    const filtered = data.teams.filter((t) =>
+      standings === "amateur" ? t.amateur : t.czech,
+    );
+    return withCompetitionPlaces(filtered);
+  }, [data, standings]);
 
   useEffect(() => {
     if (!fullscreen) return;
@@ -124,7 +254,7 @@ export function ChgkLiveBoard({
       ro.disconnect();
       window.removeEventListener("resize", recalc);
     };
-  }, [fullscreen, data, expanded, showRating]);
+  }, [fullscreen, data, expanded, showRating, standings]);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,6 +391,38 @@ export function ChgkLiveBoard({
               >
                 {showRating ? "Скрыть рейтинг" : "Показать рейтинг"}
               </button>
+              {standingsToggles ? (
+                <>
+                  <button
+                    type="button"
+                    aria-pressed={standings === "amateur"}
+                    onClick={() =>
+                      setStandings((cur) => (cur === "amateur" ? "all" : "amateur"))
+                    }
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                      standings === "amateur"
+                        ? "border-gray-400 bg-gray-200 dark:border-gray-500 dark:bg-gray-700"
+                        : "border-border bg-surface"
+                    }`}
+                  >
+                    Любительский зачёт
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={standings === "czech"}
+                    onClick={() =>
+                      setStandings((cur) => (cur === "czech" ? "all" : "czech"))
+                    }
+                    className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                      standings === "czech"
+                        ? "border-gray-400 bg-gray-200 dark:border-gray-500 dark:bg-gray-700"
+                        : "border-border bg-surface"
+                    }`}
+                  >
+                    Чешский зачёт
+                  </button>
+                </>
+              ) : null}
             </div>
             <button
               type="button"
@@ -281,90 +443,105 @@ export function ChgkLiveBoard({
               )}
             </button>
           </div>
-          <div
-            ref={fitWrapRef}
-            className={`rounded-xl border border-border bg-surface shadow-sm ${
-              fullscreen
-                ? "flex-1 overflow-hidden flex justify-center items-start"
-                : "overflow-auto"
-            }`}
-          >
+          {displayedTeams.length === 0 ? (
             <div
-              style={
-                fullscreen
-                  ? {
-                      transform: `scale(${fitScale})`,
-                      transformOrigin: "top center",
-                    }
-                  : undefined
-              }
+              className={`rounded-xl border border-border bg-surface p-6 text-sm text-muted ${
+                fullscreen ? "flex-1" : ""
+              }`}
             >
-              <table
-                ref={fitTableRef}
-                className={fullscreen ? "text-sm" : "w-full text-sm"}
-              >
-                <thead className="sticky top-0 z-10">
-                  <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                    <th
-                      className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}
-                    >
-                      М
-                    </th>
-                    <th
-                      className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}
-                    >
-                      Команда
-                    </th>
-                    <th
-                      className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}
-                    >
-                      Город
-                    </th>
-                    <th
-                      className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}
-                    >
-                      Σ
-                    </th>
-                    {showRating && (
-                      <th
-                        className={`text-right font-semibold ${fullscreen ? "px-1 py-0.5 text-xs tabular-nums font-normal normal-case text-muted" : "px-3 py-3 text-xs font-normal normal-case text-muted"}`}
-                      >
-                        Рейтинг
-                      </th>
-                    )}
-                    {data.tours.map((t, i) => (
-                      <th
-                        key={i}
-                        className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-1 py-0.5" : "px-3 py-3"}`}
-                      >
-                        {t.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.teams.map((team, rowIdx) => {
-                    const teamKey = `${team.team}|${team.city}`;
-                    return (
-                      <RowFragment
-                        key={teamKey}
-                        teamKey={teamKey}
-                        rowIdx={rowIdx}
-                        team={team}
-                        tours={data.tours}
-                        expanded={expanded}
-                        onToggle={toggle}
-                        compact={fullscreen}
-                        showRating={showRating}
-                        ratingSum={ratingByTeamKey.get(teamKey) ?? 0}
-                        ordinalPlace={rowIdx + 1}
-                      />
-                    );
-                  })}
-                </tbody>
-              </table>
+              {standings === "amateur"
+                ? "Нет любительских команд"
+                : "Нет чешских команд"}
             </div>
-          </div>
+          ) : (
+            <div
+              ref={fitWrapRef}
+              className={`rounded-xl border border-border bg-surface shadow-sm ${
+                fullscreen
+                  ? "flex-1 overflow-hidden flex justify-center items-start"
+                  : "overflow-auto"
+              }`}
+            >
+              <div
+                style={
+                  fullscreen
+                    ? {
+                        transform: `scale(${fitScale})`,
+                        transformOrigin: "top center",
+                      }
+                    : undefined
+                }
+              >
+                <table
+                  ref={fitTableRef}
+                  className={fullscreen ? "text-sm" : "w-full text-sm"}
+                >
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                      <th
+                        className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}
+                      >
+                        М
+                      </th>
+                      <th
+                        className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}
+                      >
+                        Команда
+                      </th>
+                      <th
+                        className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}
+                      >
+                        Город
+                      </th>
+                      <th
+                        className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}
+                      >
+                        Σ
+                      </th>
+                      {showRating && (
+                        <th
+                          className={`text-right font-semibold ${fullscreen ? "px-1 py-0.5 text-xs tabular-nums font-normal normal-case text-muted" : "px-3 py-3 text-xs font-normal normal-case text-muted"}`}
+                        >
+                          Рейтинг
+                        </th>
+                      )}
+                      {data.tours.map((t, i) => (
+                        <th
+                          key={i}
+                          className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-1 py-0.5" : "px-3 py-3"}`}
+                        >
+                          {t.name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedTeams.map((team, rowIdx) => {
+                      const teamKey = `${team.team}|${team.city}`;
+                      return (
+                        <RowFragment
+                          key={teamKey}
+                          teamKey={teamKey}
+                          rowIdx={rowIdx}
+                          team={team}
+                          tours={data.tours}
+                          expanded={expanded}
+                          onToggle={toggle}
+                          compact={fullscreen}
+                          showRating={showRating}
+                          ratingSum={ratingByTeamKey.get(teamKey) ?? 0}
+                          ordinalPlace={rowIdx + 1}
+                        />
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {!fullscreen && standings === "all" ? (
+            <CzechStandings teams={data.teams} />
+          ) : null}
         </div>
       )}
     </div>
@@ -427,24 +604,7 @@ function RowFragment({
           className={`font-semibold ${compact ? "px-1 py-0.5 text-center text-[17px] leading-snug whitespace-nowrap" : "px-3 py-2.5"}`}
           title={compact ? team.team : undefined}
         >
-          {compact ? (
-            truncateTeamNameFullscreen(team.team)
-          ) : team.team.length > 30 ? (
-            <span
-              className="block text-xs leading-tight"
-              style={{
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-              title={team.team}
-            >
-              {team.team}
-            </span>
-          ) : (
-            team.team
-          )}
+          <BoardTeamName team={team} compact={compact} />
         </td>
         <td
           className={`hidden sm:table-cell font-semibold ${compact ? "px-1 py-0.5 text-center whitespace-nowrap text-sm" : "px-3 py-2.5"}`}

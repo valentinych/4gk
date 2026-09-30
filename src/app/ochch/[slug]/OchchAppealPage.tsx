@@ -55,11 +55,14 @@ function MineList({
       {items.length === 0 ? (
         <p className="text-sm text-muted">Пока нет поданных апелляций.</p>
       ) : (
-        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+        <ul className="space-y-3">
           {items.map((item) => (
-            <li key={item.id} className="flex gap-3 px-4 py-3 text-sm">
-              <OchchAppealVerdictMark status={item.status} />
-              <div className="min-w-0">
+            <li
+              key={item.id}
+              className="space-y-3 overflow-hidden rounded-xl border border-border bg-surface px-4 py-3 text-sm"
+            >
+              <div className="flex gap-3">
+                <OchchAppealVerdictMark status={item.status} />
                 <p>
                   <span className="text-muted">
                     {OCHCH_APPEAL_KIND_LABELS[item.kind]}
@@ -69,11 +72,21 @@ function MineList({
                   </span>{" "}
                   {item.answerText}
                 </p>
-                <p className="mt-1 whitespace-pre-wrap">{item.argumentation}</p>
-                {item.adminRationale ? (
-                  <p className="mt-1 text-muted">{item.adminRationale}</p>
-                ) : null}
               </div>
+              <div className="w-full">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Аргументация
+                </p>
+                <p className="mt-1.5 whitespace-pre-wrap">{item.argumentation}</p>
+              </div>
+              {item.adminRationale ? (
+                <div className="w-full">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Обоснование жюри
+                  </p>
+                  <p className="mt-1.5 whitespace-pre-wrap">{item.adminRationale}</p>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

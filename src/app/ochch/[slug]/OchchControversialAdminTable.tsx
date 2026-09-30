@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, HelpCircle, Lock, X } from "lucide-react";
+import { Check, HelpCircle, Lock, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -63,11 +63,14 @@ export function OchchControversialVerdictMark({
 
 export function OchchControversialAdminTable({
   initialRows,
+  initialGraveyard,
 }: {
   initialRows: ControversialAdminRow[];
+  initialGraveyard: ControversialAdminRow[];
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
+  const [graveyard, setGraveyard] = useState(initialGraveyard);
   const [showTeamNo, setShowTeamNo] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -75,17 +78,23 @@ export function OchchControversialAdminTable({
 
   useEffect(() => {
     setRows(initialRows);
-  }, [initialRows]);
+    setGraveyard(initialGraveyard);
+  }, [initialRows, initialGraveyard]);
 
   async function patch(
     id: string,
-    body: { status?: ControversialVerdict; rationale?: string; action?: "lock" },
+    body: {
+      status?: ControversialVerdict;
+      rationale?: string;
+      action?: "lock" | "trash" | "hardDelete";
+    },
+    method: "PATCH" | "DELETE" = "PATCH",
   ): Promise<(Partial<ControversialAdminRow> & { error?: string }) | null> {
     setPendingId(id);
     setError(null);
     try {
       const res = await fetch("/api/ochch/controversial", {
-        method: "PATCH",
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...body }),
       });
@@ -155,7 +164,33 @@ export function OchchControversialAdminTable({
     router.refresh();
   }
 
+  async function onTrash(row: ControversialAdminRow) {
+    if (pendingId) return;
+    if (!window.confirm("На кладбище?")) return;
+    const updated = await patch(row.id, { action: "trash" });
+    if (!updated) return;
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    setGraveyard((prev) => [...prev, row]);
+    setDrafts((d) => {
+      if (!(row.id in d)) return d;
+      const next = { ...d };
+      delete next[row.id];
+      return next;
+    });
+    router.refresh();
+  }
+
+  async function onHardDelete(row: ControversialAdminRow) {
+    if (pendingId) return;
+    if (!window.confirm("Удалить навсегда?")) return;
+    const updated = await patch(row.id, { action: "hardDelete" }, "DELETE");
+    if (!updated) return;
+    setGraveyard((prev) => prev.filter((r) => r.id !== row.id));
+    router.refresh();
+  }
+
   return (
+    <>
     <section id="page-ochch-controversial-admin" className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-bold">Поданные спорные</h2>
@@ -188,6 +223,9 @@ export function OchchControversialAdminTable({
                 {showTeamNo ? (
                   <th className="px-3 py-2.5 text-left font-medium">№</th>
                 ) : null}
+                <th className="px-3 py-2.5 text-left font-medium">
+                  <span className="sr-only">На кладбище</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -285,6 +323,17 @@ export function OchchControversialAdminTable({
                         {row.teamNumber ?? "—"}
                       </td>
                     ) : null}
+                    <td className="px-3 py-2.5">
+                      <button
+                        type="button"
+                        aria-label="На кладбище"
+                        disabled={busy}
+                        onClick={() => onTrash(row)}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted hover:text-foreground disabled:opacity-60"
+                      >
+                        <Trash2 className="h-5 w-5" aria-hidden />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -293,5 +342,79 @@ export function OchchControversialAdminTable({
         </div>
       )}
     </section>
+    <details
+      id="page-ochch-controversial-graveyard"
+      className="rounded-xl border border-border bg-surface"
+    >
+      <summary className="cursor-pointer px-4 py-3 text-lg font-bold">
+        Кладбище спорных
+      </summary>
+      <div className="border-t border-border px-4 py-3">
+        {graveyard.length === 0 ? (
+          <p className="text-sm text-muted">Пусто.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[24rem] text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wider text-muted">
+                  <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
+                  <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
+                  <th className="px-3 py-2.5 text-left font-medium">
+                    <span className="sr-only">Удалить</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {graveyard.map((row) => {
+                  const busy = pendingId === row.id;
+                  return (
+                    <tr key={row.id}>
+                      <td className="px-3 py-2.5 font-mono tabular-nums">
+                        {row.questionNumber}
+                      </td>
+                      <td className="px-3 py-2.5">{row.answerText}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1">
+                          <OchchControversialVerdictMark status={row.status} />
+                          <span
+                            className={
+                              row.locked ? "text-red-600" : "text-muted/40"
+                            }
+                            title={
+                              row.locked
+                                ? "Решение зафиксировано"
+                                : "Решение не зафиксировано"
+                            }
+                            aria-label={
+                              row.locked
+                                ? "Решение зафиксировано"
+                                : "Решение не зафиксировано"
+                            }
+                          >
+                            <Lock className="h-5 w-5" aria-hidden />
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => onHardDelete(row)}
+                          className="inline-flex h-11 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-danger hover:bg-red-50 disabled:opacity-60"
+                        >
+                          Удалить навсегда
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </details>
+    </>
   );
 }

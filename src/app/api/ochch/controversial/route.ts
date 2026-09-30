@@ -87,10 +87,15 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, id: row.id, questionNumber });
 }
 
-export async function PATCH(req: Request) {
+async function requirePageAdmin(): Promise<
+  { ok: true; chgkId: number } | { ok: false; response: NextResponse }
+> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Недостаточно прав" }, { status: 403 }),
+    };
   }
 
   const user = await db.user.findUnique({
@@ -98,22 +103,60 @@ export async function PATCH(req: Request) {
     select: { chgkId: true, role: true },
   });
   if (!user?.chgkId) {
-    return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Недостаточно прав" }, { status: 403 }),
+    };
   }
   const isAdmin = await isOchchControversialPageAdmin(user.role, user.chgkId);
   if (!isAdmin) {
-    return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Недостаточно прав" }, { status: 403 }),
+    };
   }
+  return { ok: true, chgkId: user.chgkId };
+}
 
+async function parseJsonBody(
+  req: Request,
+): Promise<
+  { ok: true; raw: Record<string, unknown> } | { ok: false; response: NextResponse }
+> {
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Invalid JSON" }, { status: 400 }),
+    };
   }
-
   const raw =
     body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  return { ok: true, raw };
+}
+
+async function hardDeleteControversial(id: string) {
+  const existing = await db.ochchControversial.findFirst({
+    where: { id, eventId: OCHCH_EVENT_ID },
+    select: { id: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  await db.ochchControversial.delete({ where: { id: existing.id } });
+  return NextResponse.json({ ok: true, id: existing.id, deleted: true });
+}
+
+export async function PATCH(req: Request) {
+  const admin = await requirePageAdmin();
+  if (!admin.ok) return admin.response;
+  const user = { chgkId: admin.chgkId };
+
+  const parsed = await parseJsonBody(req);
+  if (!parsed.ok) return parsed.response;
+  const raw = parsed.raw;
   const id = typeof raw.id === "string" ? raw.id : "";
   if (!id) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
@@ -126,7 +169,10 @@ export async function PATCH(req: Request) {
       { status: 409 },
     );
   }
-  if (action != null && action !== "lock") {
+  if (action === "hardDelete") {
+    return hardDeleteControversial(id);
+  }
+  if (action != null && action !== "lock" && action !== "trash") {
     return NextResponse.json({ error: "invalid action" }, { status: 400 });
   }
 
@@ -137,11 +183,22 @@ export async function PATCH(req: Request) {
       status: true,
       rationale: true,
       locked: true,
+      trashed: true,
       decidedByChgkId: true,
     },
   });
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (action === "trash") {
+    const row = existing.trashed
+      ? existing
+      : await db.ochchControversial.update({
+          where: { id: existing.id },
+          data: { trashed: true },
+        });
+    return NextResponse.json({ ok: true, id: row.id, trashed: true });
   }
 
   if (action === "lock") {
@@ -245,4 +302,17 @@ export async function PATCH(req: Request) {
     decidedByChgkId: row.decidedByChgkId,
     decidedByName,
   });
+}
+
+export async function DELETE(req: Request) {
+  const admin = await requirePageAdmin();
+  if (!admin.ok) return admin.response;
+
+  const parsed = await parseJsonBody(req);
+  if (!parsed.ok) return parsed.response;
+  const id = typeof parsed.raw.id === "string" ? parsed.raw.id : "";
+  if (!id) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
+  }
+  return hardDeleteControversial(id);
 }

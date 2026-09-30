@@ -6,8 +6,11 @@ import { OCHCH_EVENT_ID, resolveOchchSubmitTeamChgkId } from "@/lib/ochch";
 import {
   OCHCH_APPEAL_ADMIN_RATIONALE_REQUIRED,
   OCHCH_APPEAL_ARGUMENTATION_REQUIRED,
+  OCHCH_APPEAL_LOCKED,
+  OCHCH_APPEAL_LOCK_PENDING,
   OCHCH_APPEAL_NO_ID,
   OCHCH_APPEAL_NOT_IN_ROSTER,
+  OCHCH_APPEAL_UNLOCK_FORBIDDEN,
   isOchchAppealPageAdmin,
   isValidQuestionNumber,
   parseAppealKind,
@@ -135,6 +138,62 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
+  const action = typeof raw.action === "string" ? raw.action : null;
+  if (action === "unlock" || raw.locked === false) {
+    return NextResponse.json(
+      { error: OCHCH_APPEAL_UNLOCK_FORBIDDEN },
+      { status: 409 },
+    );
+  }
+  if (action != null && action !== "lock") {
+    return NextResponse.json({ error: "invalid action" }, { status: 400 });
+  }
+
+  const existing = await db.ochchAppeal.findFirst({
+    where: { id, eventId: OCHCH_EVENT_ID },
+    select: {
+      id: true,
+      status: true,
+      adminRationale: true,
+      locked: true,
+      decidedByChgkId: true,
+    },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (action === "lock") {
+    if (!existing.locked && existing.status === "PENDING") {
+      return NextResponse.json(
+        { error: OCHCH_APPEAL_LOCK_PENDING },
+        { status: 409 },
+      );
+    }
+    const row = existing.locked
+      ? existing
+      : await db.ochchAppeal.update({
+          where: { id: existing.id },
+          data: {
+            locked: true,
+            lockedAt: new Date(),
+            lockedByChgkId: user.chgkId,
+          },
+        });
+    const decidedByName =
+      row.decidedByChgkId != null
+        ? await ratingPlayerDisplayName(row.decidedByChgkId)
+        : null;
+    return NextResponse.json({
+      ok: true,
+      id: row.id,
+      status: row.status,
+      adminRationale: row.adminRationale,
+      locked: true,
+      decidedByName,
+    });
+  }
+
   const hasStatus = Object.prototype.hasOwnProperty.call(raw, "status");
   const hasRationale = Object.prototype.hasOwnProperty.call(raw, "adminRationale");
   if (!hasStatus && !hasRationale) {
@@ -144,12 +203,11 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const existing = await db.ochchAppeal.findFirst({
-    where: { id, eventId: OCHCH_EVENT_ID },
-    select: { id: true, status: true, adminRationale: true },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (existing.locked) {
+    return NextResponse.json(
+      { error: OCHCH_APPEAL_LOCKED },
+      { status: 409 },
+    );
   }
 
   const data: {
@@ -194,6 +252,7 @@ export async function PATCH(req: Request) {
       id: existing.id,
       status: existing.status,
       adminRationale: existing.adminRationale,
+      locked: false,
       decidedByName,
     });
   }
@@ -213,6 +272,7 @@ export async function PATCH(req: Request) {
     id: row.id,
     status: row.status,
     adminRationale: row.adminRationale,
+    locked: row.locked,
     decidedByChgkId: row.decidedByChgkId,
     decidedByName,
   });

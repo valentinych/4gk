@@ -18,6 +18,10 @@ export interface PragueTeamRow {
   total: number;
   place: string;
   tours: PragueTourResult[];
+  /** OCHCH: official participants name when the sheet row matched. */
+  href?: string;
+  czech?: boolean;
+  amateur?: boolean;
 }
 
 export interface PraguePayload {

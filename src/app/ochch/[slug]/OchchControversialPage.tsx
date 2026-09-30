@@ -3,7 +3,15 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { authOptions } from "@/lib/auth";
-import { resolveOchchControversialAccess } from "@/lib/ochch-controversial";
+import {
+  loadOchchControversialAdmin,
+  loadOchchControversialMine,
+  resolveOchchControversialPageAccess,
+} from "@/lib/ochch-controversial";
+import {
+  OchchControversialAdminTable,
+  OchchControversialVerdictMark,
+} from "./OchchControversialAdminTable";
 import { OchchControversialForm } from "./OchchControversialForm";
 
 function GateMessage({
@@ -34,6 +42,40 @@ function NoIdMessage() {
   );
 }
 
+function MineList({
+  items,
+}: {
+  items: Awaited<ReturnType<typeof loadOchchControversialMine>>;
+}) {
+  return (
+    <section id="page-ochch-controversial-mine" className="space-y-3">
+      <h2 className="text-lg font-bold">Мои спорные</h2>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted">Пока нет поданных спорных.</p>
+      ) : (
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface">
+          {items.map((item) => (
+            <li key={item.id} className="flex gap-3 px-4 py-3 text-sm">
+              <OchchControversialVerdictMark status={item.status} />
+              <div className="min-w-0">
+                <p>
+                  <span className="font-mono tabular-nums text-muted">
+                    {item.questionNumber}.
+                  </span>{" "}
+                  {item.answerText}
+                </p>
+                {item.rationale ? (
+                  <p className="mt-1 text-muted">{item.rationale}</p>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export async function OchchControversialPage() {
   await cookies();
   const session = await getServerSession(authOptions);
@@ -42,13 +84,13 @@ export async function OchchControversialPage() {
     return <NoIdMessage />;
   }
 
-  const access = await resolveOchchControversialAccess(session.user.id);
+  const access = await resolveOchchControversialPageAccess(session.user.id);
 
-  if (!access.ok && access.reason === "no-id") {
+  if (access.gate === "no-id") {
     return <NoIdMessage />;
   }
 
-  if (!access.ok) {
+  if (access.gate === "not-in-roster") {
     return (
       <GateMessage id="page-ochch-controversial-not-in-roster">
         Состав вашей команды не подан либо вы не находитесь в поданном составе вашей
@@ -60,9 +102,18 @@ export async function OchchControversialPage() {
     );
   }
 
+  const [adminRows, mineItems] = await Promise.all([
+    access.isPageAdmin ? loadOchchControversialAdmin() : Promise.resolve(null),
+    access.canSubmit && access.teamChgkId
+      ? loadOchchControversialMine(access.teamChgkId)
+      : Promise.resolve(null),
+  ]);
+
   return (
-    <div id="page-ochch-controversial" className="space-y-4">
-      <OchchControversialForm />
+    <div id="page-ochch-controversial" className="space-y-8">
+      {access.canSubmit ? <OchchControversialForm /> : null}
+      {adminRows ? <OchchControversialAdminTable initialRows={adminRows} /> : null}
+      {mineItems ? <MineList items={mineItems} /> : null}
     </div>
   );
 }

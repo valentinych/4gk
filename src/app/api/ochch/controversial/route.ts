@@ -6,8 +6,11 @@ import { OCHCH_EVENT_ID } from "@/lib/ochch";
 import {
   OCHCH_CONTROVERSIAL_NO_ID,
   OCHCH_CONTROVERSIAL_NOT_IN_ROSTER,
+  isOchchControversialPageAdmin,
   isValidQuestionNumber,
   parseQuestionNumber,
+  parseVerdict,
+  ratingPlayerDisplayName,
   resolveOchchControversialAccess,
 } from "@/lib/ochch-controversial";
 
@@ -75,4 +78,106 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ ok: true, id: row.id, questionNumber });
+}
+
+export async function PATCH(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { chgkId: true, role: true },
+  });
+  if (!user?.chgkId) {
+    return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+  }
+  const isAdmin = await isOchchControversialPageAdmin(user.role, user.chgkId);
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const raw =
+    body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const id = typeof raw.id === "string" ? raw.id : "";
+  if (!id) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
+  }
+
+  const hasStatus = Object.prototype.hasOwnProperty.call(raw, "status");
+  const hasRationale = Object.prototype.hasOwnProperty.call(raw, "rationale");
+  if (!hasStatus && !hasRationale) {
+    return NextResponse.json(
+      { error: "status or rationale is required" },
+      { status: 400 },
+    );
+  }
+
+  const data: {
+    status?: "PENDING" | "ACCEPTED" | "REJECTED";
+    rationale?: string | null;
+    decidedByChgkId: number;
+    decidedAt: Date;
+  } = {
+    decidedByChgkId: user.chgkId,
+    decidedAt: new Date(),
+  };
+
+  if (hasStatus) {
+    const status = parseVerdict(raw.status);
+    if (!status) {
+      return NextResponse.json({ error: "invalid status" }, { status: 400 });
+    }
+    data.status = status;
+  }
+
+  if (hasRationale) {
+    const text = typeof raw.rationale === "string" ? raw.rationale.trim() : "";
+    data.rationale = text || null;
+  }
+
+  const existing = await db.ochchControversial.findFirst({
+    where: { id, eventId: OCHCH_EVENT_ID },
+    select: { id: true, status: true },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (hasStatus && existing.status === data.status && !hasRationale) {
+    const decidedByName = await ratingPlayerDisplayName(user.chgkId);
+    return NextResponse.json({
+      ok: true,
+      id: existing.id,
+      status: existing.status,
+      decidedByName,
+    });
+  }
+
+  const row = await db.ochchControversial.update({
+    where: { id: existing.id },
+    data,
+  });
+
+  const decidedByName =
+    row.decidedByChgkId != null
+      ? await ratingPlayerDisplayName(row.decidedByChgkId)
+      : null;
+
+  return NextResponse.json({
+    ok: true,
+    id: row.id,
+    status: row.status,
+    rationale: row.rationale,
+    decidedByChgkId: row.decidedByChgkId,
+    decidedByName,
+  });
 }

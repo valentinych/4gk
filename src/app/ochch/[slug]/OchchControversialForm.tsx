@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 export function OchchControversialForm() {
+  const router = useRouter();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -39,6 +41,7 @@ export function OchchControversialForm() {
           : Number(question),
       );
       setAnswer("");
+      router.refresh();
     } catch {
       setError("Не удалось отправить");
     } finally {

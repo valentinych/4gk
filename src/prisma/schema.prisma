@@ -157,14 +157,18 @@ model RosterPlayer {
 }
 
 model OchchControversial {
-  id             String   @id @default(cuid())
-  eventId        String
-  teamChgkId     Int
-  playerChgkId   Int
-  questionNumber Int
-  answerText     String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String                    @id @default(cuid())
+  eventId         String
+  teamChgkId      Int
+  playerChgkId    Int
+  questionNumber  Int
+  answerText      String
+  status          OchchControversialStatus  @default(PENDING)
+  rationale       String?
+  decidedByChgkId Int?
+  decidedAt       DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
 
   @@unique([eventId, teamChgkId, questionNumber])
   @@index([eventId])
@@ -193,6 +197,12 @@ enum Role {
   MODERATOR
   ORGANIZER
   ADMIN
+}
+
+enum OchchControversialStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 // PageWidget: Haza / link / brain / table tiles attached to a page path.

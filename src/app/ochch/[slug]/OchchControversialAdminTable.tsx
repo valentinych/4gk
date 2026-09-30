@@ -146,7 +146,7 @@ export function OchchControversialAdminTable({
   }
 
   async function onLock(row: ControversialAdminRow) {
-    if (row.locked || pendingId) return;
+    if (row.locked || pendingId || row.status === "PENDING") return;
     const updated = await patch(row.id, { action: "lock" });
     if (!updated) return;
     setRows((prev) =>
@@ -194,6 +194,8 @@ export function OchchControversialAdminTable({
               {rows.map((row) => {
                 const busy = pendingId === row.id;
                 const verdictDisabled = row.locked || busy;
+                const lockNeedsVerdict = !row.locked && row.status === "PENDING";
+                const lockDisabled = row.locked || busy || lockNeedsVerdict;
                 return (
                   <tr key={row.id}>
                     <td className="px-3 py-2.5 font-mono tabular-nums">
@@ -226,11 +228,18 @@ export function OchchControversialAdminTable({
                           aria-label={
                             row.locked
                               ? "Решение зафиксировано"
-                              : "Заблокировать решение"
+                              : lockNeedsVerdict
+                                ? "Сначала выберите вердикт"
+                                : "Заблокировать решение"
+                          }
+                          title={
+                            lockNeedsVerdict
+                              ? "Сначала выберите вердикт"
+                              : undefined
                           }
                           aria-pressed={row.locked}
-                          aria-disabled={row.locked || busy}
-                          disabled={row.locked || busy}
+                          aria-disabled={lockDisabled}
+                          disabled={lockDisabled}
                           onClick={() => onLock(row)}
                           className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
                             row.locked

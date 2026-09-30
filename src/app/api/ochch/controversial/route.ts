@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { OCHCH_EVENT_ID, resolveOchchSubmitTeamChgkId } from "@/lib/ochch";
 import {
   OCHCH_CONTROVERSIAL_LOCKED,
+  OCHCH_CONTROVERSIAL_LOCK_PENDING,
   OCHCH_CONTROVERSIAL_NO_ID,
   OCHCH_CONTROVERSIAL_NOT_IN_ROSTER,
   OCHCH_CONTROVERSIAL_UNLOCK_FORBIDDEN,
@@ -144,6 +145,12 @@ export async function PATCH(req: Request) {
   }
 
   if (action === "lock") {
+    if (!existing.locked && existing.status === "PENDING") {
+      return NextResponse.json(
+        { error: OCHCH_CONTROVERSIAL_LOCK_PENDING },
+        { status: 409 },
+      );
+    }
     const row = existing.locked
       ? existing
       : await db.ochchControversial.update({

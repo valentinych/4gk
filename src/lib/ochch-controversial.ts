@@ -21,6 +21,7 @@ export const OCHCH_CONTROVERSIAL_QUESTION_MAX = 105;
 
 export const OCHCH_CONTROVERSIAL_LOCKED = "Решение уже зафиксировано";
 export const OCHCH_CONTROVERSIAL_UNLOCK_FORBIDDEN = "Разблокировка невозможна";
+export const OCHCH_CONTROVERSIAL_LOCK_PENDING = "Сначала выберите вердикт";
 
 export type OchchControversialVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
 

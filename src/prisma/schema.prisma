@@ -156,6 +156,20 @@ model RosterPlayer {
   roster TeamRoster @relation(fields: [rosterId], references: [id], onDelete: Cascade)
 }
 
+model OchchControversial {
+  id             String   @id @default(cuid())
+  eventId        String
+  teamChgkId     Int
+  playerChgkId   Int
+  questionNumber Int
+  answerText     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([eventId, teamChgkId, questionNumber])
+  @@index([eventId])
+}
+
 model CalendarTemplate {
   id               String   @id @default(cuid())
   name             String

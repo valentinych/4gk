@@ -142,7 +142,7 @@ export const OCHCH_CURRENT_TILES: OchchLandingTile[] = [
   {
     slug: "controversial",
     emoji: "💬",
-    title: "Спорный",
+    title: "Спорные",
     href: "/ochch/controversial",
   },
   {
@@ -167,7 +167,43 @@ export const OCHCH = {
 
 /** Same 01–46 workbook as Pražma: names from teams tab, IDs from exact-name join. */
 export type OchchImportedTeam = PrazmaImportedTeam;
-export const OCHCH_TEAMS: readonly OchchImportedTeam[] = PRAZMA_TEAMS;
+
+/** One-off OCHCH display names. Rating ID / teamChgkId stays the same. */
+const OCHCH_DISPLAY_NAMES: Readonly<Record<number, string>> = {
+  78405: "Уже победа",
+};
+
+export function applyOchchDisplayName(teamChgkId: number, name: string): string {
+  return OCHCH_DISPLAY_NAMES[teamChgkId] ?? name;
+}
+
+/** Same table №, different rating team. Official name/city from rating.chgk.info. */
+const OCHCH_SLOT_REPLACEMENTS: Readonly<
+  Record<number, Pick<OchchImportedTeam, "name" | "city" | "teamChgkId">>
+> = {
+  26: {
+    name: "✕ ⚠️ Имангулов Амаль Бахтиёрович",
+    city: "Сборная",
+    teamChgkId: 109099,
+  },
+};
+
+function applyOchchTeamSlots(
+  teams: readonly OchchImportedTeam[],
+): OchchImportedTeam[] {
+  return teams.map((t) => {
+    const slot = OCHCH_SLOT_REPLACEMENTS[t.number];
+    const next = slot ? { ...t, ...slot } : t;
+    return {
+      ...next,
+      name: applyOchchDisplayName(next.teamChgkId, next.name),
+    };
+  });
+}
+
+export const OCHCH_TEAMS: readonly OchchImportedTeam[] = applyOchchTeamSlots(
+  PRAZMA_TEAMS,
+);
 
 /** Invitation group from «Группа приглашений» on the ОЧЧ teams tab. */
 export type OchchInviteCriterion =
@@ -227,9 +263,12 @@ export function ochchInviteFor(team: {
 }
 
 async function seedOchchTeams(teams: readonly OchchImportedTeam[]) {
+  const slotted = applyOchchTeamSlots(teams);
+  const officialById = new Map(PRAZMA_TEAMS.map((t) => [t.teamChgkId, t.name]));
   await db.$transaction(
-    teams.map((team) =>
-      db.eventTeam.upsert({
+    slotted.map((team) => {
+      const officialName = officialById.get(team.teamChgkId) ?? team.name;
+      return db.eventTeam.upsert({
         where: {
           eventId_teamChgkId: {
             eventId: OCHCH_EVENT_ID,
@@ -239,18 +278,35 @@ async function seedOchchTeams(teams: readonly OchchImportedTeam[]) {
         create: {
           eventId: OCHCH_EVENT_ID,
           teamChgkId: team.teamChgkId,
-          teamName: team.name,
-          displayName: team.name,
+          teamName: officialName,
+          displayName: applyOchchDisplayName(team.teamChgkId, team.name),
           city: team.city,
         },
         update: {
-          teamName: team.name,
-          displayName: team.name,
+          teamName: officialName,
+          displayName: applyOchchDisplayName(team.teamChgkId, team.name),
           city: team.city,
         },
-      }),
-    ),
+      });
+    }),
   );
+}
+
+/** Point EventTeam at the replacement ID; leave TeamRoster on the old ID. */
+async function syncOchchSlotReplacements() {
+  for (const seed of PRAZMA_TEAMS) {
+    const slot = OCHCH_SLOT_REPLACEMENTS[seed.number];
+    if (!slot || slot.teamChgkId === seed.teamChgkId) continue;
+    await db.eventTeam.updateMany({
+      where: { eventId: OCHCH_EVENT_ID, teamChgkId: seed.teamChgkId },
+      data: {
+        teamChgkId: slot.teamChgkId,
+        teamName: slot.name,
+        displayName: applyOchchDisplayName(slot.teamChgkId, slot.name),
+        city: slot.city,
+      },
+    });
+  }
 }
 
 /** Idempotent — CalendarEvent + EventTeam rows with rating.chgk.info IDs. */
@@ -284,6 +340,8 @@ export async function ensureOchchEvent() {
     await seedOchchTeams(teams.length > 0 ? teams : OCHCH_TEAMS);
   }
 
+  if (existing) await syncOchchSlotReplacements();
+
   return event;
 }
 
@@ -297,7 +355,10 @@ export async function listOchchParticipants(): Promise<OchchImportedTeam[]> {
     .filter((r) => r.teamChgkId > 0)
     .map((r) => ({
       number: numberById.get(r.teamChgkId) ?? r.teamChgkId,
-      name: (r.displayName || r.teamName).trim(),
+      name: applyOchchDisplayName(
+        r.teamChgkId,
+        (r.displayName || r.teamName).trim(),
+      ),
       city: r.city?.trim() || "",
       teamChgkId: r.teamChgkId,
     }));

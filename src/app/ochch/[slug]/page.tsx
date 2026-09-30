@@ -9,6 +9,7 @@ import {
   ensureOchchEvent,
 } from "@/lib/ochch";
 import { isPrismaMissingTable } from "@/lib/page-widgets";
+import { OchchControversialPage } from "./OchchControversialPage";
 import { OchchParticipantsPage } from "./OchchParticipantsPage";
 import { OchchQuizPage } from "./OchchQuizPage";
 import { OchchRosterPage } from "./OchchRosterPage";
@@ -28,7 +29,7 @@ const PAGE_TITLES: Record<string, string> = {
   "results-quiz": "Музыкальный квиз",
   "results-si": "Результаты Своей игры",
   roster: "Подать состав — ОЧЧ-2026",
-  controversial: "Спорный",
+  controversial: "Спорные",
   appeals: "Апелляции на ЧГК",
 };
 
@@ -46,12 +47,11 @@ function ComingSoon({ hint }: { hint?: string }) {
   );
 }
 
-function FormPlaceholder({ kind }: { kind: "спорный" | "апелляцию" }) {
+function FormPlaceholder() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        Форма для {kind === "апелляцию" ? "апелляции" : "спорного"} ещё не опубликована.
-        Пока пишите в{" "}
+        Форма для апелляции ещё не опубликована. Пока пишите в{" "}
         <a
           href={OCHCH_CHANNEL_URL}
           target="_blank"
@@ -126,9 +126,9 @@ export default async function OchchSlugPage({ params }: Props) {
       ) : slug === "results-si" ? (
         <ComingSoon hint="Результаты Своей игры появятся после финала — или их добавит администратор." />
       ) : slug === "appeals" ? (
-        <FormPlaceholder kind="апелляцию" />
+        <FormPlaceholder />
       ) : slug === "controversial" ? (
-        <FormPlaceholder kind="спорный" />
+        <OchchControversialPage />
       ) : (
         <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
           <p className="text-base font-medium text-muted/60">Страница не найдена</p>

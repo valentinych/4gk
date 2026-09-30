@@ -79,17 +79,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const row = await db.ochchAppeal.upsert({
-    // One appeal per team per question per kind (REMOVE vs CREDIT can both exist).
-    where: {
-      eventId_teamChgkId_questionNumber_kind: {
-        eventId: OCHCH_EVENT_ID,
-        teamChgkId: team.teamChgkId,
-        questionNumber,
-        kind,
-      },
-    },
-    create: {
+  const row = await db.ochchAppeal.create({
+    data: {
       eventId: OCHCH_EVENT_ID,
       teamChgkId: team.teamChgkId,
       playerChgkId: access.playerChgkId,
@@ -98,11 +89,6 @@ export async function POST(req: Request) {
       answerText,
       argumentation,
     },
-    update: {
-      answerText,
-      argumentation,
-      playerChgkId: access.playerChgkId,
-    },
   });
 
   const persisted = await db.ochchAppeal.findUnique({
@@ -110,7 +96,7 @@ export async function POST(req: Request) {
     select: { id: true },
   });
   if (!persisted) {
-    console.error("[ochch-appeals] upsert missing after write", row.id);
+    console.error("[ochch-appeals] create missing after write", row.id);
     return NextResponse.json({ error: "Не удалось сохранить" }, { status: 500 });
   }
 

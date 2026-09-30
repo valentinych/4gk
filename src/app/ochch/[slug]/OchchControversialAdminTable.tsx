@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, HelpCircle, X } from "lucide-react";
+import { Check, HelpCircle, Lock, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export type ControversialVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
@@ -11,6 +12,7 @@ export type ControversialAdminRow = {
   answerText: string;
   status: ControversialVerdict;
   rationale: string | null;
+  locked: boolean;
   teamNumber: number | null;
   decidedByName: string | null;
 };
@@ -64,6 +66,7 @@ export function OchchControversialAdminTable({
 }: {
   initialRows: ControversialAdminRow[];
 }) {
+  const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   const [showTeamNo, setShowTeamNo] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
@@ -76,8 +79,8 @@ export function OchchControversialAdminTable({
 
   async function patch(
     id: string,
-    body: { status?: ControversialVerdict; rationale?: string },
-  ): Promise<ControversialAdminRow | null> {
+    body: { status?: ControversialVerdict; rationale?: string; action?: "lock" },
+  ): Promise<(Partial<ControversialAdminRow> & { error?: string }) | null> {
     setPendingId(id);
     setError(null);
     try {
@@ -93,15 +96,7 @@ export function OchchControversialAdminTable({
         setError(data?.error || "Не удалось сохранить");
         return null;
       }
-      return {
-        id,
-        questionNumber: 0,
-        answerText: "",
-        status: (data?.status as ControversialVerdict) ?? "PENDING",
-        rationale: data?.rationale ?? null,
-        teamNumber: null,
-        decidedByName: data?.decidedByName ?? null,
-      };
+      return data;
     } catch {
       setError("Не удалось сохранить");
       return null;
@@ -111,20 +106,24 @@ export function OchchControversialAdminTable({
   }
 
   async function onVerdict(row: ControversialAdminRow, status: ControversialVerdict) {
-    if (row.status === status || pendingId) return;
+    if (row.locked || row.status === status || pendingId) return;
     const updated = await patch(row.id, { status });
     if (!updated) return;
     setRows((prev) =>
       prev.map((r) =>
         r.id === row.id
-          ? { ...r, status: updated.status, decidedByName: updated.decidedByName }
+          ? {
+              ...r,
+              status: updated.status ?? r.status,
+              decidedByName: updated.decidedByName ?? r.decidedByName,
+            }
           : r,
       ),
     );
   }
 
   async function onSaveRationale(row: ControversialAdminRow) {
-    if (pendingId) return;
+    if (row.locked || pendingId) return;
     const rationale = drafts[row.id] ?? row.rationale ?? "";
     const updated = await patch(row.id, { rationale });
     if (!updated) return;
@@ -133,8 +132,8 @@ export function OchchControversialAdminTable({
         r.id === row.id
           ? {
               ...r,
-              rationale: updated.rationale,
-              decidedByName: updated.decidedByName,
+              rationale: updated.rationale ?? r.rationale,
+              decidedByName: updated.decidedByName ?? r.decidedByName,
             }
           : r,
       ),
@@ -144,6 +143,16 @@ export function OchchControversialAdminTable({
       delete next[row.id];
       return next;
     });
+  }
+
+  async function onLock(row: ControversialAdminRow) {
+    if (row.locked || pendingId) return;
+    const updated = await patch(row.id, { action: "lock" });
+    if (!updated) return;
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, locked: true } : r)),
+    );
+    router.refresh();
   }
 
   return (
@@ -182,66 +191,94 @@ export function OchchControversialAdminTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td className="px-3 py-2.5 font-mono tabular-nums">
-                    {row.questionNumber}
-                  </td>
-                  <td className="px-3 py-2.5">{row.answerText}</td>
-                  <td className="px-3 py-2.5">
-                    <div role="group" aria-label="Вердикт" className="flex gap-1">
-                      {VERDICT_BUTTONS.map(({ value, label, Icon, activeClass }) => {
-                        const pressed = row.status === value;
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            aria-pressed={pressed}
-                            aria-label={label}
-                            disabled={pendingId === row.id}
-                            onClick={() => onVerdict(row, value)}
-                            className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
-                              pressed ? activeClass : "text-muted/40"
-                            } disabled:opacity-60`}
-                          >
-                            <Icon className="h-5 w-5" aria-hidden />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </td>
-                  <td className="min-w-[12rem] px-3 py-2.5">
-                    <textarea
-                      aria-label="Аргументация"
-                      rows={2}
-                      value={drafts[row.id] ?? row.rationale ?? ""}
-                      onChange={(e) =>
-                        setDrafts((d) => ({ ...d, [row.id]: e.target.value }))
-                      }
-                      className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
-                    />
-                    <button
-                      type="button"
-                      disabled={pendingId === row.id}
-                      onClick={() => onSaveRationale(row)}
-                      className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
-                    >
-                      Сохранить
-                    </button>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-muted">
-                    {row.decidedByName ?? ""}
-                  </td>
-                  {showTeamNo ? (
-                    <td
-                      className="px-3 py-2.5 font-mono tabular-nums text-muted"
-                      title={row.teamNumber === 0 ? "Админы" : undefined}
-                    >
-                      {row.teamNumber ?? "—"}
+              {rows.map((row) => {
+                const busy = pendingId === row.id;
+                const verdictDisabled = row.locked || busy;
+                return (
+                  <tr key={row.id}>
+                    <td className="px-3 py-2.5 font-mono tabular-nums">
+                      {row.questionNumber}
                     </td>
-                  ) : null}
-                </tr>
-              ))}
+                    <td className="px-3 py-2.5">{row.answerText}</td>
+                    <td className="px-3 py-2.5">
+                      <div role="group" aria-label="Вердикт" className="flex gap-1">
+                        {VERDICT_BUTTONS.map(({ value, label, Icon, activeClass }) => {
+                          const pressed = row.status === value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              aria-pressed={pressed}
+                              aria-label={label}
+                              aria-disabled={verdictDisabled}
+                              disabled={verdictDisabled}
+                              onClick={() => onVerdict(row, value)}
+                              className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
+                                pressed ? activeClass : "text-muted/40"
+                              } disabled:opacity-60`}
+                            >
+                              <Icon className="h-5 w-5" aria-hidden />
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          aria-label={
+                            row.locked
+                              ? "Решение зафиксировано"
+                              : "Заблокировать решение"
+                          }
+                          aria-pressed={row.locked}
+                          aria-disabled={row.locked || busy}
+                          disabled={row.locked || busy}
+                          onClick={() => onLock(row)}
+                          className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
+                            row.locked
+                              ? "cursor-default text-red-600 disabled:opacity-100"
+                              : "text-muted disabled:opacity-60"
+                          }`}
+                        >
+                          <Lock className="h-5 w-5" aria-hidden />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="min-w-[12rem] px-3 py-2.5">
+                      <textarea
+                        aria-label="Аргументация"
+                        rows={2}
+                        disabled={row.locked}
+                        readOnly={row.locked}
+                        value={drafts[row.id] ?? row.rationale ?? ""}
+                        onChange={(e) =>
+                          setDrafts((d) => ({ ...d, [row.id]: e.target.value }))
+                        }
+                        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60"
+                      />
+                      {row.locked ? null : (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => onSaveRationale(row)}
+                          className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+                        >
+                          Сохранить
+                        </button>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-muted">
+                      {row.decidedByName ?? ""}
+                    </td>
+                    {showTeamNo ? (
+                      <td
+                        className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                        title={row.teamNumber === 0 ? "Админы" : undefined}
+                      >
+                        {row.teamNumber ?? "—"}
+                      </td>
+                    ) : null}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

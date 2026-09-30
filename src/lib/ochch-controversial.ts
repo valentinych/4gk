@@ -19,6 +19,9 @@ export const OCHCH_CONTROVERSIAL_NOT_IN_ROSTER =
 export const OCHCH_CONTROVERSIAL_QUESTION_MIN = 1;
 export const OCHCH_CONTROVERSIAL_QUESTION_MAX = 105;
 
+export const OCHCH_CONTROVERSIAL_LOCKED = "Решение уже зафиксировано";
+export const OCHCH_CONTROVERSIAL_UNLOCK_FORBIDDEN = "Разблокировка невозможна";
+
 export type OchchControversialVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
 
 const VERDICTS = new Set<OchchControversialVerdict>([
@@ -63,6 +66,7 @@ export type OchchControversialMineItem = {
 };
 
 export type OchchControversialAdminItem = OchchControversialMineItem & {
+  locked: boolean;
   teamNumber: number | null;
   decidedByName: string | null;
 };
@@ -147,6 +151,16 @@ function trimRationale(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+/** Submitter view: hide the real verdict until this row is locked. */
+export function serializeControversialMineVerdict(
+  locked: boolean,
+  status: OchchControversialVerdict,
+  rationale: string | null,
+): Pick<OchchControversialMineItem, "status" | "rationale"> {
+  if (!locked) return { status: "PENDING", rationale: null };
+  return { status, rationale: trimRationale(rationale) };
+}
+
 function mapControversialMine(
   rows: {
     id: string;
@@ -154,14 +168,14 @@ function mapControversialMine(
     answerText: string;
     status: OchchControversialVerdict;
     rationale: string | null;
+    locked: boolean;
   }[],
 ): OchchControversialMineItem[] {
   return rows.map((r) => ({
     id: r.id,
     questionNumber: r.questionNumber,
     answerText: r.answerText,
-    status: r.status,
-    rationale: trimRationale(r.rationale),
+    ...serializeControversialMineVerdict(r.locked, r.status, r.rationale),
   }));
 }
 
@@ -170,13 +184,14 @@ export async function loadOchchControversialMine(
 ): Promise<OchchControversialMineItem[]> {
   const rows = await db.ochchControversial.findMany({
     where: { eventId: OCHCH_EVENT_ID, teamChgkId },
-    orderBy: { questionNumber: "asc" },
+    orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
       questionNumber: true,
       answerText: true,
       status: true,
       rationale: true,
+      locked: true,
     },
   });
   return mapControversialMine(rows);
@@ -191,13 +206,14 @@ export async function loadOchchControversialMineByPlayer(
       playerChgkId,
       teamChgkId: OCHCH_ADMIN_TEAM_CHGK_ID,
     },
-    orderBy: { questionNumber: "asc" },
+    orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
       questionNumber: true,
       answerText: true,
       status: true,
       rationale: true,
+      locked: true,
     },
   });
   return mapControversialMine(rows);
@@ -208,7 +224,7 @@ export async function loadOchchControversialAdmin(): Promise<
 > {
   const rows = await db.ochchControversial.findMany({
     where: { eventId: OCHCH_EVENT_ID },
-    orderBy: [{ questionNumber: "asc" }, { teamChgkId: "asc" }],
+    orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
   });
   const names = await ratingPlayerDisplayNames(
     rows
@@ -221,6 +237,7 @@ export async function loadOchchControversialAdmin(): Promise<
     answerText: r.answerText,
     status: r.status,
     rationale: trimRationale(r.rationale),
+    locked: r.locked,
     teamNumber: ochchSlotNumber(r.teamChgkId),
     decidedByName:
       r.decidedByChgkId != null ? (names.get(r.decidedByChgkId) ?? null) : null,

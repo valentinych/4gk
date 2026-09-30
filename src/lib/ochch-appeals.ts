@@ -194,7 +194,7 @@ export async function loadOchchAppealMine(
 ): Promise<OchchAppealMineItem[]> {
   const rows = await db.ochchAppeal.findMany({
     where: { eventId: OCHCH_EVENT_ID, teamChgkId },
-    orderBy: [{ questionNumber: "asc" }, { kind: "asc" }],
+    orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
       kind: true,
@@ -217,7 +217,7 @@ export async function loadOchchAppealMineByPlayer(
       playerChgkId,
       teamChgkId: OCHCH_ADMIN_TEAM_CHGK_ID,
     },
-    orderBy: [{ questionNumber: "asc" }, { kind: "asc" }],
+    orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
       kind: true,
@@ -234,7 +234,7 @@ export async function loadOchchAppealMineByPlayer(
 export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {
   const rows = await db.ochchAppeal.findMany({
     where: { eventId: OCHCH_EVENT_ID },
-    orderBy: [{ questionNumber: "asc" }, { kind: "asc" }, { teamChgkId: "asc" }],
+    orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
   });
   const names = await ratingPlayerDisplayNames(
     rows

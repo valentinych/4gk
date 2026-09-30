@@ -4,8 +4,10 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { OCHCH_EVENT_ID, resolveOchchSubmitTeamChgkId } from "@/lib/ochch";
 import {
+  OCHCH_CONTROVERSIAL_LOCKED,
   OCHCH_CONTROVERSIAL_NO_ID,
   OCHCH_CONTROVERSIAL_NOT_IN_ROSTER,
+  OCHCH_CONTROVERSIAL_UNLOCK_FORBIDDEN,
   isOchchControversialPageAdmin,
   isValidQuestionNumber,
   parseQuestionNumber,
@@ -62,24 +64,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "текст ответа is required" }, { status: 400 });
   }
 
-  const row = await db.ochchControversial.upsert({
-    where: {
-      eventId_teamChgkId_questionNumber: {
-        eventId: OCHCH_EVENT_ID,
-        teamChgkId: team.teamChgkId,
-        questionNumber,
-      },
-    },
-    create: {
+  const row = await db.ochchControversial.create({
+    data: {
       eventId: OCHCH_EVENT_ID,
       teamChgkId: team.teamChgkId,
       playerChgkId: access.playerChgkId,
       questionNumber,
       answerText,
-    },
-    update: {
-      answerText,
-      playerChgkId: access.playerChgkId,
     },
   });
 
@@ -88,7 +79,7 @@ export async function POST(req: Request) {
     select: { id: true },
   });
   if (!persisted) {
-    console.error("[ochch-controversial] upsert missing after write", row.id);
+    console.error("[ochch-controversial] create missing after write", row.id);
     return NextResponse.json({ error: "Не удалось сохранить" }, { status: 500 });
   }
 
@@ -127,12 +118,69 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
+  const action = typeof raw.action === "string" ? raw.action : null;
+  if (action === "unlock" || raw.locked === false) {
+    return NextResponse.json(
+      { error: OCHCH_CONTROVERSIAL_UNLOCK_FORBIDDEN },
+      { status: 409 },
+    );
+  }
+  if (action != null && action !== "lock") {
+    return NextResponse.json({ error: "invalid action" }, { status: 400 });
+  }
+
+  const existing = await db.ochchControversial.findFirst({
+    where: { id, eventId: OCHCH_EVENT_ID },
+    select: {
+      id: true,
+      status: true,
+      rationale: true,
+      locked: true,
+      decidedByChgkId: true,
+    },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (action === "lock") {
+    const row = existing.locked
+      ? existing
+      : await db.ochchControversial.update({
+          where: { id: existing.id },
+          data: {
+            locked: true,
+            lockedAt: new Date(),
+            lockedByChgkId: user.chgkId,
+          },
+        });
+    const decidedByName =
+      row.decidedByChgkId != null
+        ? await ratingPlayerDisplayName(row.decidedByChgkId)
+        : null;
+    return NextResponse.json({
+      ok: true,
+      id: row.id,
+      status: row.status,
+      rationale: row.rationale,
+      locked: true,
+      decidedByName,
+    });
+  }
+
   const hasStatus = Object.prototype.hasOwnProperty.call(raw, "status");
   const hasRationale = Object.prototype.hasOwnProperty.call(raw, "rationale");
   if (!hasStatus && !hasRationale) {
     return NextResponse.json(
       { error: "status or rationale is required" },
       { status: 400 },
+    );
+  }
+
+  if (existing.locked) {
+    return NextResponse.json(
+      { error: OCHCH_CONTROVERSIAL_LOCKED },
+      { status: 409 },
     );
   }
 
@@ -159,20 +207,14 @@ export async function PATCH(req: Request) {
     data.rationale = text || null;
   }
 
-  const existing = await db.ochchControversial.findFirst({
-    where: { id, eventId: OCHCH_EVENT_ID },
-    select: { id: true, status: true },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
   if (hasStatus && existing.status === data.status && !hasRationale) {
     const decidedByName = await ratingPlayerDisplayName(user.chgkId);
     return NextResponse.json({
       ok: true,
       id: existing.id,
       status: existing.status,
+      rationale: existing.rationale,
+      locked: false,
       decidedByName,
     });
   }
@@ -192,6 +234,7 @@ export async function PATCH(req: Request) {
     id: row.id,
     status: row.status,
     rationale: row.rationale,
+    locked: row.locked,
     decidedByChgkId: row.decidedByChgkId,
     decidedByName,
   });

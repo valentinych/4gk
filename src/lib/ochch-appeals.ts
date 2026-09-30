@@ -10,35 +10,53 @@ import {
 
 export { ochchSlotNumber, ratingPlayerDisplayName };
 
-export const OCHCH_CONTROVERSIAL_NO_ID =
+export const OCHCH_APPEAL_NO_ID =
   "Привяжите свой ID на странице https://4gk.pl/account";
 
-export const OCHCH_CONTROVERSIAL_NOT_IN_ROSTER =
+export const OCHCH_APPEAL_NOT_IN_ROSTER =
   "Состав вашей команды не подан либо вы не находитесь в поданном составе вашей команды. Подать состав можно здесь: https://4gk.pl/ochch/roster";
 
-export const OCHCH_CONTROVERSIAL_QUESTION_MIN = 1;
-export const OCHCH_CONTROVERSIAL_QUESTION_MAX = 105;
+export const OCHCH_APPEAL_ARGUMENTATION_REQUIRED =
+  "Для Апелляций обоснование является обязательным";
 
-export type OchchControversialVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
+export const OCHCH_APPEAL_ADMIN_RATIONALE_REQUIRED =
+  "Для принятия или отклонения апелляции заполните обоснование жюри";
 
-const VERDICTS = new Set<OchchControversialVerdict>([
+export const OCHCH_APPEAL_QUESTION_MIN = 1;
+export const OCHCH_APPEAL_QUESTION_MAX = 105;
+
+export type OchchAppealKind = "REMOVE" | "CREDIT";
+export type OchchAppealVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
+
+export const OCHCH_APPEAL_KIND_LABELS: Record<OchchAppealKind, string> = {
+  REMOVE: "На снятие",
+  CREDIT: "На зачёт",
+};
+
+const KINDS = new Set<OchchAppealKind>(["REMOVE", "CREDIT"]);
+const VERDICTS = new Set<OchchAppealVerdict>([
   "PENDING",
   "ACCEPTED",
   "REJECTED",
 ]);
 
-export function parseVerdict(value: unknown): OchchControversialVerdict | null {
+export function parseAppealKind(value: unknown): OchchAppealKind | null {
   if (typeof value !== "string") return null;
-  return VERDICTS.has(value as OchchControversialVerdict)
-    ? (value as OchchControversialVerdict)
+  return KINDS.has(value as OchchAppealKind) ? (value as OchchAppealKind) : null;
+}
+
+export function parseAppealVerdict(value: unknown): OchchAppealVerdict | null {
+  if (typeof value !== "string") return null;
+  return VERDICTS.has(value as OchchAppealVerdict)
+    ? (value as OchchAppealVerdict)
     : null;
 }
 
-export type OchchControversialAccess =
+export type OchchAppealAccess =
   | { ok: true; playerChgkId: number; teamChgkId: number }
   | { ok: false; reason: "no-id" | "not-in-roster" };
 
-export type OchchControversialPageAccess =
+export type OchchAppealPageAccess =
   | { gate: "no-id" }
   | { gate: "not-in-roster" }
   | {
@@ -49,23 +67,25 @@ export type OchchControversialPageAccess =
       teamChgkId: number | null;
     };
 
-export type OchchControversialMineItem = {
+export type OchchAppealMineItem = {
   id: string;
+  kind: OchchAppealKind;
   questionNumber: number;
   answerText: string;
-  status: OchchControversialVerdict;
-  rationale: string | null;
+  argumentation: string;
+  status: OchchAppealVerdict;
+  adminRationale: string | null;
 };
 
-export type OchchControversialAdminItem = OchchControversialMineItem & {
+export type OchchAppealAdminItem = OchchAppealMineItem & {
   teamNumber: number | null;
   decidedByName: string | null;
 };
 
 /** Server-side: linked rating ID first, then player on a submitted ochch-2026 roster. */
-export async function resolveOchchControversialAccess(
+export async function resolveOchchAppealAccess(
   userId: string,
-): Promise<OchchControversialAccess> {
+): Promise<OchchAppealAccess> {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { chgkId: true },
@@ -89,9 +109,9 @@ export async function resolveOchchControversialAccess(
   };
 }
 
-export async function resolveOchchControversialPageAccess(
+export async function resolveOchchAppealPageAccess(
   userId: string,
-): Promise<OchchControversialPageAccess> {
+): Promise<OchchAppealPageAccess> {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: { chgkId: true, role: true },
@@ -107,7 +127,7 @@ export async function resolveOchchControversialPageAccess(
     select: { teamChgkId: true },
   });
   const teamChgkId = roster?.teamChgkId ?? null;
-  const isPageAdmin = await isOchchControversialPageAdmin(user.role, user.chgkId);
+  const isPageAdmin = await isOchchAppealPageAdmin(user.role, user.chgkId);
   if (!teamChgkId && !isPageAdmin) return { gate: "not-in-roster" };
 
   return {
@@ -119,55 +139,57 @@ export async function resolveOchchControversialPageAccess(
   };
 }
 
-/** Спорные staff: orgcommittee + editors + gameJury. Not appealJury. */
-export async function getOchchControversialStaffIds(): Promise<Set<number> | null> {
-  return getOchchStaffIds(["orgcommittee", "editors", "gameJury"]);
+/** Appeals staff: orgcommittee + appealJury. Not editors, not gameJury. */
+export async function getOchchAppealStaffIds(): Promise<Set<number> | null> {
+  return getOchchStaffIds(["orgcommittee", "appealJury"]);
 }
 
-export async function isOchchControversialPageAdmin(
+export async function isOchchAppealPageAdmin(
   role: string | null | undefined,
   chgkId: number | null | undefined,
 ): Promise<boolean> {
   if (isOchchSiteAdmin(role)) return true;
   if (chgkId == null) return false;
-  const ids = await getOchchControversialStaffIds();
+  const ids = await getOchchAppealStaffIds();
   return ids?.has(chgkId) ?? false;
 }
 
-function trimRationale(value: string | null | undefined): string | null {
+function trimText(value: string | null | undefined): string | null {
   const t = value?.trim();
   return t ? t : null;
 }
 
-export async function loadOchchControversialMine(
+export async function loadOchchAppealMine(
   teamChgkId: number,
-): Promise<OchchControversialMineItem[]> {
-  const rows = await db.ochchControversial.findMany({
+): Promise<OchchAppealMineItem[]> {
+  const rows = await db.ochchAppeal.findMany({
     where: { eventId: OCHCH_EVENT_ID, teamChgkId },
-    orderBy: { questionNumber: "asc" },
+    orderBy: [{ questionNumber: "asc" }, { kind: "asc" }],
     select: {
       id: true,
+      kind: true,
       questionNumber: true,
       answerText: true,
+      argumentation: true,
       status: true,
-      rationale: true,
+      adminRationale: true,
     },
   });
   return rows.map((r) => ({
     id: r.id,
+    kind: r.kind,
     questionNumber: r.questionNumber,
     answerText: r.answerText,
+    argumentation: r.argumentation,
     status: r.status,
-    rationale: trimRationale(r.rationale),
+    adminRationale: trimText(r.adminRationale),
   }));
 }
 
-export async function loadOchchControversialAdmin(): Promise<
-  OchchControversialAdminItem[]
-> {
-  const rows = await db.ochchControversial.findMany({
+export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {
+  const rows = await db.ochchAppeal.findMany({
     where: { eventId: OCHCH_EVENT_ID },
-    orderBy: [{ questionNumber: "asc" }, { teamChgkId: "asc" }],
+    orderBy: [{ questionNumber: "asc" }, { kind: "asc" }, { teamChgkId: "asc" }],
   });
   const names = await ratingPlayerDisplayNames(
     rows
@@ -176,10 +198,12 @@ export async function loadOchchControversialAdmin(): Promise<
   );
   return rows.map((r) => ({
     id: r.id,
+    kind: r.kind,
     questionNumber: r.questionNumber,
     answerText: r.answerText,
+    argumentation: r.argumentation,
     status: r.status,
-    rationale: trimRationale(r.rationale),
+    adminRationale: trimText(r.adminRationale),
     teamNumber: ochchSlotNumber(r.teamChgkId),
     decidedByName:
       r.decidedByChgkId != null ? (names.get(r.decidedByChgkId) ?? null) : null,
@@ -195,8 +219,9 @@ export function parseQuestionNumber(value: unknown): number | null {
 }
 
 export function isValidQuestionNumber(n: number): boolean {
-  return (
-    n >= OCHCH_CONTROVERSIAL_QUESTION_MIN &&
-    n <= OCHCH_CONTROVERSIAL_QUESTION_MAX
-  );
+  return n >= OCHCH_APPEAL_QUESTION_MIN && n <= OCHCH_APPEAL_QUESTION_MAX;
+}
+
+export function requiresAdminRationale(status: OchchAppealVerdict): boolean {
+  return status === "ACCEPTED" || status === "REJECTED";
 }

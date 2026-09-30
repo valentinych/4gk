@@ -3,12 +3,12 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ChgkLiveBoard } from "@/components/ChgkLiveBoard";
 import {
-  OCHCH_CHANNEL_URL,
   OCHCH_CHGK_SHEET_URL,
   OCHCH_TMINNOE_COPY,
   ensureOchchEvent,
 } from "@/lib/ochch";
 import { isPrismaMissingTable } from "@/lib/page-widgets";
+import { OchchAppealPage } from "./OchchAppealPage";
 import { OchchControversialPage } from "./OchchControversialPage";
 import { OchchParticipantsPage } from "./OchchParticipantsPage";
 import { OchchQuizPage } from "./OchchQuizPage";
@@ -30,7 +30,7 @@ const PAGE_TITLES: Record<string, string> = {
   "results-si": "Результаты Своей игры",
   roster: "Подать состав — ОЧЧ-2026",
   controversial: "Спорные",
-  appeals: "Апелляции на ЧГК",
+  appeals: "Апелляции",
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -43,26 +43,6 @@ function ComingSoon({ hint }: { hint?: string }) {
     <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
       <p className="text-base font-medium text-muted/60">Содержимое появится скоро</p>
       {hint ? <p className="mt-2 text-sm text-muted">{hint}</p> : null}
-    </div>
-  );
-}
-
-function FormPlaceholder() {
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted">
-        Форма для апелляции ещё не опубликована. Пока пишите в{" "}
-        <a
-          href={OCHCH_CHANNEL_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent hover:underline"
-        >
-          канал ОЧЧ
-        </a>
-        . Администратор может заменить эту плитку на ссылку или таблицу.
-      </p>
-      <ComingSoon />
     </div>
   );
 }
@@ -126,7 +106,7 @@ export default async function OchchSlugPage({ params }: Props) {
       ) : slug === "results-si" ? (
         <ComingSoon hint="Результаты Своей игры появятся после финала — или их добавит администратор." />
       ) : slug === "appeals" ? (
-        <FormPlaceholder />
+        <OchchAppealPage />
       ) : slug === "controversial" ? (
         <OchchControversialPage />
       ) : (

@@ -148,7 +148,7 @@ export const OCHCH_CURRENT_TILES: OchchLandingTile[] = [
   {
     slug: "appeals",
     emoji: "⚖️",
-    title: "Апелляции на ЧГК",
+    title: "Апелляции",
     href: "/ochch/appeals",
   },
 ];

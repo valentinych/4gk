@@ -365,3 +365,68 @@ export async function listOchchParticipants(): Promise<OchchImportedTeam[]> {
   teams.sort((a, b) => a.number - b.number || a.name.localeCompare(b.name, "ru"));
   return teams;
 }
+
+export const OCHCH_ADMIN_TEAM_REQUIRED =
+  "Выберите команду, за которую подаёте";
+
+export type OchchTeamOption = {
+  teamChgkId: number;
+  number: number;
+  name: string;
+};
+
+export function formatOchchTeamOptionLabel(team: OchchTeamOption): string {
+  return `№${team.number} ${team.name}`;
+}
+
+export async function listOchchTeamOptions(): Promise<OchchTeamOption[]> {
+  const teams = await listOchchParticipants().catch(() => []);
+  const source = teams.length > 0 ? teams : OCHCH_TEAMS;
+  return source.map((t) => ({
+    teamChgkId: t.teamChgkId,
+    number: t.number,
+    name: t.name,
+  }));
+}
+
+export function parseOchchTeamChgkId(value: unknown): number | null {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string" && /^\d+$/.test(value.trim())) {
+    const n = parseInt(value.trim(), 10);
+    return n > 0 ? n : null;
+  }
+  return null;
+}
+
+export async function isOchchSubmitTeamId(teamChgkId: number): Promise<boolean> {
+  if (OCHCH_TEAMS.some((t) => t.teamChgkId === teamChgkId)) return true;
+  const row = await db.eventTeam.findFirst({
+    where: { eventId: OCHCH_EVENT_ID, teamChgkId, withdrawnAt: null },
+    select: { teamChgkId: true },
+  });
+  return row != null;
+}
+
+/** Roster team wins. Page admin without roster may pick a known OCHCH team. Others cannot. */
+export async function resolveOchchSubmitTeamChgkId(opts: {
+  isPageAdmin: boolean;
+  rosterTeamChgkId: number | null;
+  requestedTeamChgkId: unknown;
+}): Promise<
+  | { ok: true; teamChgkId: number }
+  | { ok: false; error: string; status: 400 | 403 }
+> {
+  if (opts.rosterTeamChgkId != null) {
+    return { ok: true, teamChgkId: opts.rosterTeamChgkId };
+  }
+  if (!opts.isPageAdmin) {
+    return { ok: false, error: "not-in-roster", status: 403 };
+  }
+  const parsed = parseOchchTeamChgkId(opts.requestedTeamChgkId);
+  if (parsed == null || !(await isOchchSubmitTeamId(parsed))) {
+    return { ok: false, error: OCHCH_ADMIN_TEAM_REQUIRED, status: 400 };
+  }
+  return { ok: true, teamChgkId: parsed };
+}

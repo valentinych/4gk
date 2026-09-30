@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { OCHCH_EVENT_ID } from "@/lib/ochch";
+import { OCHCH_EVENT_ID, resolveOchchSubmitTeamChgkId } from "@/lib/ochch";
 import {
   OCHCH_APPEAL_ADMIN_RATIONALE_REQUIRED,
   OCHCH_APPEAL_ARGUMENTATION_REQUIRED,
@@ -45,6 +45,16 @@ export async function POST(req: Request) {
   const raw =
     body && typeof body === "object" ? (body as Record<string, unknown>) : {};
 
+  const team = await resolveOchchSubmitTeamChgkId({
+    isPageAdmin: access.isPageAdmin,
+    rosterTeamChgkId: access.teamChgkId,
+    requestedTeamChgkId: raw.teamChgkId,
+  });
+  if (!team.ok) {
+    if (team.status === 403) return accessError("not-in-roster");
+    return NextResponse.json({ error: team.error }, { status: team.status });
+  }
+
   const kind = parseAppealKind(raw.kind);
   if (!kind) {
     return NextResponse.json({ error: "вид is required" }, { status: 400 });
@@ -78,14 +88,14 @@ export async function POST(req: Request) {
     where: {
       eventId_teamChgkId_questionNumber_kind: {
         eventId: OCHCH_EVENT_ID,
-        teamChgkId: access.teamChgkId,
+        teamChgkId: team.teamChgkId,
         questionNumber,
         kind,
       },
     },
     create: {
       eventId: OCHCH_EVENT_ID,
-      teamChgkId: access.teamChgkId,
+      teamChgkId: team.teamChgkId,
       playerChgkId: access.playerChgkId,
       kind,
       questionNumber,
@@ -98,6 +108,15 @@ export async function POST(req: Request) {
       playerChgkId: access.playerChgkId,
     },
   });
+
+  const persisted = await db.ochchAppeal.findUnique({
+    where: { id: row.id },
+    select: { id: true },
+  });
+  if (!persisted) {
+    console.error("[ochch-appeals] upsert missing after write", row.id);
+    return NextResponse.json({ error: "Не удалось сохранить" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true, id: row.id, questionNumber, kind });
 }

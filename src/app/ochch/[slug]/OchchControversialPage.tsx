@@ -4,8 +4,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { authOptions } from "@/lib/auth";
 import {
+  formatOchchTeamOptionLabel,
+  listOchchTeamOptions,
+} from "@/lib/ochch";
+import {
   loadOchchControversialAdmin,
   loadOchchControversialMine,
+  loadOchchControversialMineByPlayer,
   resolveOchchControversialPageAccess,
 } from "@/lib/ochch-controversial";
 import {
@@ -102,16 +107,29 @@ export async function OchchControversialPage() {
     );
   }
 
-  const [adminRows, mineItems] = await Promise.all([
+  const needsTeamPicker = access.isPageAdmin && access.teamChgkId == null;
+  const [adminRows, mineItems, teamOptions] = await Promise.all([
     access.isPageAdmin ? loadOchchControversialAdmin() : Promise.resolve(null),
-    access.canSubmit && access.teamChgkId
+    access.teamChgkId
       ? loadOchchControversialMine(access.teamChgkId)
-      : Promise.resolve(null),
+      : access.isPageAdmin
+        ? loadOchchControversialMineByPlayer(access.chgkId)
+        : Promise.resolve(null),
+    needsTeamPicker ? listOchchTeamOptions() : Promise.resolve(null),
   ]);
 
   return (
     <div id="page-ochch-controversial" className="space-y-8">
-      {access.canSubmit ? <OchchControversialForm /> : null}
+      {access.canSubmit ? (
+        <OchchControversialForm
+          teamOptions={
+            teamOptions?.map((t) => ({
+              teamChgkId: t.teamChgkId,
+              label: formatOchchTeamOptionLabel(t),
+            })) ?? undefined
+          }
+        />
+      ) : null}
       {adminRows ? <OchchControversialAdminTable initialRows={adminRows} /> : null}
       {mineItems ? <MineList items={mineItems} /> : null}
     </div>

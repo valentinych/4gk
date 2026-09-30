@@ -3,13 +3,24 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-export function OchchControversialForm() {
+export type OchchSubmitTeamOption = {
+  teamChgkId: number;
+  label: string;
+};
+
+export function OchchControversialForm({
+  teamOptions,
+}: {
+  teamOptions?: OchchSubmitTeamOption[];
+}) {
   const router = useRouter();
+  const [teamChgkId, setTeamChgkId] = useState("");
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedQuestion, setSavedQuestion] = useState<number | null>(null);
+  const showTeamPicker = (teamOptions?.length ?? 0) > 0;
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,6 +37,7 @@ export function OchchControversialForm() {
         body: JSON.stringify({
           questionNumber: Number(question),
           answerText: answer,
+          ...(showTeamPicker ? { teamChgkId: Number(teamChgkId) } : {}),
         }),
       });
       const data = (await res.json().catch(() => null)) as
@@ -55,6 +67,30 @@ export function OchchControversialForm() {
       onSubmit={onSubmit}
       className="max-w-md space-y-4"
     >
+      {showTeamPicker ? (
+        <div>
+          <label htmlFor="ochch-controversial-team" className="block text-sm font-medium">
+            команда
+          </label>
+          <select
+            id="ochch-controversial-team"
+            name="teamChgkId"
+            required
+            value={teamChgkId}
+            onChange={(e) => setTeamChgkId(e.target.value)}
+            className="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+          >
+            <option value="" disabled>
+              Выберите команду
+            </option>
+            {teamOptions!.map((t) => (
+              <option key={t.teamChgkId} value={t.teamChgkId}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
       <div>
         <label htmlFor="ochch-controversial-question" className="block text-sm font-medium">
           номер вопроса

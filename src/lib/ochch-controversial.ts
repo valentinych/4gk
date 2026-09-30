@@ -35,7 +35,12 @@ export function parseVerdict(value: unknown): OchchControversialVerdict | null {
 }
 
 export type OchchControversialAccess =
-  | { ok: true; playerChgkId: number; teamChgkId: number }
+  | {
+      ok: true;
+      playerChgkId: number;
+      teamChgkId: number | null;
+      isPageAdmin: boolean;
+    }
   | { ok: false; reason: "no-id" | "not-in-roster" };
 
 export type OchchControversialPageAccess =
@@ -68,7 +73,7 @@ export async function resolveOchchControversialAccess(
 ): Promise<OchchControversialAccess> {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { chgkId: true },
+    select: { chgkId: true, role: true },
   });
   if (!user?.chgkId) return { ok: false, reason: "no-id" };
 
@@ -80,12 +85,15 @@ export async function resolveOchchControversialAccess(
     },
     select: { teamChgkId: true },
   });
-  if (!roster?.teamChgkId) return { ok: false, reason: "not-in-roster" };
+  const teamChgkId = roster?.teamChgkId ?? null;
+  const isPageAdmin = await isOchchControversialPageAdmin(user.role, user.chgkId);
+  if (!teamChgkId && !isPageAdmin) return { ok: false, reason: "not-in-roster" };
 
   return {
     ok: true,
     playerChgkId: user.chgkId,
-    teamChgkId: roster.teamChgkId,
+    teamChgkId,
+    isPageAdmin,
   };
 }
 
@@ -114,7 +122,7 @@ export async function resolveOchchControversialPageAccess(
     gate: "ok",
     chgkId: user.chgkId,
     isPageAdmin,
-    canSubmit: teamChgkId != null,
+    canSubmit: isPageAdmin || teamChgkId != null,
     teamChgkId,
   };
 }
@@ -139,6 +147,24 @@ function trimRationale(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+function mapControversialMine(
+  rows: {
+    id: string;
+    questionNumber: number;
+    answerText: string;
+    status: OchchControversialVerdict;
+    rationale: string | null;
+  }[],
+): OchchControversialMineItem[] {
+  return rows.map((r) => ({
+    id: r.id,
+    questionNumber: r.questionNumber,
+    answerText: r.answerText,
+    status: r.status,
+    rationale: trimRationale(r.rationale),
+  }));
+}
+
 export async function loadOchchControversialMine(
   teamChgkId: number,
 ): Promise<OchchControversialMineItem[]> {
@@ -153,13 +179,24 @@ export async function loadOchchControversialMine(
       rationale: true,
     },
   });
-  return rows.map((r) => ({
-    id: r.id,
-    questionNumber: r.questionNumber,
-    answerText: r.answerText,
-    status: r.status,
-    rationale: trimRationale(r.rationale),
-  }));
+  return mapControversialMine(rows);
+}
+
+export async function loadOchchControversialMineByPlayer(
+  playerChgkId: number,
+): Promise<OchchControversialMineItem[]> {
+  const rows = await db.ochchControversial.findMany({
+    where: { eventId: OCHCH_EVENT_ID, playerChgkId },
+    orderBy: { questionNumber: "asc" },
+    select: {
+      id: true,
+      questionNumber: true,
+      answerText: true,
+      status: true,
+      rationale: true,
+    },
+  });
+  return mapControversialMine(rows);
 }
 
 export async function loadOchchControversialAdmin(): Promise<

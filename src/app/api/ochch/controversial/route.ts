@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { OCHCH_EVENT_ID } from "@/lib/ochch";
+import { OCHCH_EVENT_ID, resolveOchchSubmitTeamChgkId } from "@/lib/ochch";
 import {
   OCHCH_CONTROVERSIAL_NO_ID,
   OCHCH_CONTROVERSIAL_NOT_IN_ROSTER,
@@ -42,6 +42,16 @@ export async function POST(req: Request) {
 
   const raw =
     body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const team = await resolveOchchSubmitTeamChgkId({
+    isPageAdmin: access.isPageAdmin,
+    rosterTeamChgkId: access.teamChgkId,
+    requestedTeamChgkId: raw.teamChgkId,
+  });
+  if (!team.ok) {
+    if (team.status === 403) return accessError("not-in-roster");
+    return NextResponse.json({ error: team.error }, { status: team.status });
+  }
+
   const questionNumber = parseQuestionNumber(raw.questionNumber);
   if (questionNumber == null || !isValidQuestionNumber(questionNumber)) {
     return NextResponse.json(
@@ -60,13 +70,13 @@ export async function POST(req: Request) {
     where: {
       eventId_teamChgkId_questionNumber: {
         eventId: OCHCH_EVENT_ID,
-        teamChgkId: access.teamChgkId,
+        teamChgkId: team.teamChgkId,
         questionNumber,
       },
     },
     create: {
       eventId: OCHCH_EVENT_ID,
-      teamChgkId: access.teamChgkId,
+      teamChgkId: team.teamChgkId,
       playerChgkId: access.playerChgkId,
       questionNumber,
       answerText,
@@ -76,6 +86,15 @@ export async function POST(req: Request) {
       playerChgkId: access.playerChgkId,
     },
   });
+
+  const persisted = await db.ochchControversial.findUnique({
+    where: { id: row.id },
+    select: { id: true },
+  });
+  if (!persisted) {
+    console.error("[ochch-controversial] upsert missing after write", row.id);
+    return NextResponse.json({ error: "Не удалось сохранить" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true, id: row.id, questionNumber });
 }

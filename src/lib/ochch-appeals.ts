@@ -53,7 +53,12 @@ export function parseAppealVerdict(value: unknown): OchchAppealVerdict | null {
 }
 
 export type OchchAppealAccess =
-  | { ok: true; playerChgkId: number; teamChgkId: number }
+  | {
+      ok: true;
+      playerChgkId: number;
+      teamChgkId: number | null;
+      isPageAdmin: boolean;
+    }
   | { ok: false; reason: "no-id" | "not-in-roster" };
 
 export type OchchAppealPageAccess =
@@ -88,7 +93,7 @@ export async function resolveOchchAppealAccess(
 ): Promise<OchchAppealAccess> {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { chgkId: true },
+    select: { chgkId: true, role: true },
   });
   if (!user?.chgkId) return { ok: false, reason: "no-id" };
 
@@ -100,12 +105,15 @@ export async function resolveOchchAppealAccess(
     },
     select: { teamChgkId: true },
   });
-  if (!roster?.teamChgkId) return { ok: false, reason: "not-in-roster" };
+  const teamChgkId = roster?.teamChgkId ?? null;
+  const isPageAdmin = await isOchchAppealPageAdmin(user.role, user.chgkId);
+  if (!teamChgkId && !isPageAdmin) return { ok: false, reason: "not-in-roster" };
 
   return {
     ok: true,
     playerChgkId: user.chgkId,
-    teamChgkId: roster.teamChgkId,
+    teamChgkId,
+    isPageAdmin,
   };
 }
 
@@ -134,7 +142,7 @@ export async function resolveOchchAppealPageAccess(
     gate: "ok",
     chgkId: user.chgkId,
     isPageAdmin,
-    canSubmit: teamChgkId != null,
+    canSubmit: isPageAdmin || teamChgkId != null,
     teamChgkId,
   };
 }
@@ -159,6 +167,28 @@ function trimText(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+function mapAppealMine(
+  rows: {
+    id: string;
+    kind: OchchAppealKind;
+    questionNumber: number;
+    answerText: string;
+    argumentation: string;
+    status: OchchAppealVerdict;
+    adminRationale: string | null;
+  }[],
+): OchchAppealMineItem[] {
+  return rows.map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    questionNumber: r.questionNumber,
+    answerText: r.answerText,
+    argumentation: r.argumentation,
+    status: r.status,
+    adminRationale: trimText(r.adminRationale),
+  }));
+}
+
 export async function loadOchchAppealMine(
   teamChgkId: number,
 ): Promise<OchchAppealMineItem[]> {
@@ -175,15 +205,26 @@ export async function loadOchchAppealMine(
       adminRationale: true,
     },
   });
-  return rows.map((r) => ({
-    id: r.id,
-    kind: r.kind,
-    questionNumber: r.questionNumber,
-    answerText: r.answerText,
-    argumentation: r.argumentation,
-    status: r.status,
-    adminRationale: trimText(r.adminRationale),
-  }));
+  return mapAppealMine(rows);
+}
+
+export async function loadOchchAppealMineByPlayer(
+  playerChgkId: number,
+): Promise<OchchAppealMineItem[]> {
+  const rows = await db.ochchAppeal.findMany({
+    where: { eventId: OCHCH_EVENT_ID, playerChgkId },
+    orderBy: [{ questionNumber: "asc" }, { kind: "asc" }],
+    select: {
+      id: true,
+      kind: true,
+      questionNumber: true,
+      answerText: true,
+      argumentation: true,
+      status: true,
+      adminRationale: true,
+    },
+  });
+  return mapAppealMine(rows);
 }
 
 export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {

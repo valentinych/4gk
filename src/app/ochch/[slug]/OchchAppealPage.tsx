@@ -4,10 +4,6 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { authOptions } from "@/lib/auth";
 import {
-  formatOchchTeamOptionLabel,
-  listOchchTeamOptions,
-} from "@/lib/ochch";
-import {
   OCHCH_APPEAL_KIND_LABELS,
   loadOchchAppealAdmin,
   loadOchchAppealMine,
@@ -112,29 +108,18 @@ export async function OchchAppealPage() {
     );
   }
 
-  const needsTeamPicker = access.isPageAdmin && access.teamChgkId == null;
-  const [adminRows, mineItems, teamOptions] = await Promise.all([
+  const [adminRows, mineItems] = await Promise.all([
     access.isPageAdmin ? loadOchchAppealAdmin() : Promise.resolve(null),
     access.teamChgkId
       ? loadOchchAppealMine(access.teamChgkId)
       : access.isPageAdmin
         ? loadOchchAppealMineByPlayer(access.chgkId)
         : Promise.resolve(null),
-    needsTeamPicker ? listOchchTeamOptions() : Promise.resolve(null),
   ]);
 
   return (
     <div id="page-ochch-appeals" className="space-y-8">
-      {access.canSubmit ? (
-        <OchchAppealForm
-          teamOptions={
-            teamOptions?.map((t) => ({
-              teamChgkId: t.teamChgkId,
-              label: formatOchchTeamOptionLabel(t),
-            })) ?? undefined
-          }
-        />
-      ) : null}
+      {access.canSubmit ? <OchchAppealForm /> : null}
       {adminRows ? <OchchAppealAdminTable initialRows={adminRows} /> : null}
       {mineItems ? <MineList items={mineItems} /> : null}
     </div>

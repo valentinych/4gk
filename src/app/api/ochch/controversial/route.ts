@@ -42,15 +42,11 @@ export async function POST(req: Request) {
 
   const raw =
     body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-  const team = await resolveOchchSubmitTeamChgkId({
+  const team = resolveOchchSubmitTeamChgkId({
     isPageAdmin: access.isPageAdmin,
     rosterTeamChgkId: access.teamChgkId,
-    requestedTeamChgkId: raw.teamChgkId,
   });
-  if (!team.ok) {
-    if (team.status === 403) return accessError("not-in-roster");
-    return NextResponse.json({ error: team.error }, { status: team.status });
-  }
+  if (!team.ok) return accessError("not-in-roster");
 
   const questionNumber = parseQuestionNumber(raw.questionNumber);
   if (questionNumber == null || !isValidQuestionNumber(questionNumber)) {

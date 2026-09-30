@@ -233,7 +233,10 @@ export function OchchControversialAdminTable({
                     {row.decidedByName ?? ""}
                   </td>
                   {showTeamNo ? (
-                    <td className="px-3 py-2.5 font-mono tabular-nums text-muted">
+                    <td
+                      className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                      title={row.teamNumber === 0 ? "Админы" : undefined}
+                    >
                       {row.teamNumber ?? "—"}
                     </td>
                   ) : null}

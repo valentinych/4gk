@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { OCHCH_EVENT_ID } from "./ochch";
+import { OCHCH_ADMIN_TEAM_CHGK_ID, OCHCH_EVENT_ID } from "./ochch";
 import {
   getOchchStaffIds,
   isOchchSiteAdmin,
@@ -186,7 +186,11 @@ export async function loadOchchControversialMineByPlayer(
   playerChgkId: number,
 ): Promise<OchchControversialMineItem[]> {
   const rows = await db.ochchControversial.findMany({
-    where: { eventId: OCHCH_EVENT_ID, playerChgkId },
+    where: {
+      eventId: OCHCH_EVENT_ID,
+      playerChgkId,
+      teamChgkId: OCHCH_ADMIN_TEAM_CHGK_ID,
+    },
     orderBy: { questionNumber: "asc" },
     select: {
       id: true,

@@ -1,5 +1,9 @@
 import { fetchPlayer } from "./chgk";
-import { OCHCH_RATING_TOURNAMENT_ID, OCHCH_TEAMS } from "./ochch";
+import {
+  OCHCH_ADMIN_TEAM_CHGK_ID,
+  OCHCH_RATING_TOURNAMENT_ID,
+  OCHCH_TEAMS,
+} from "./ochch";
 
 export function isOchchSiteAdmin(role: string | null | undefined): boolean {
   return role === "ADMIN";
@@ -89,6 +93,7 @@ export async function getOchchStaffIds(
 const SLOT_BY_TEAM = new Map(OCHCH_TEAMS.map((t) => [t.teamChgkId, t.number]));
 
 export function ochchSlotNumber(teamChgkId: number): number | null {
+  if (teamChgkId === OCHCH_ADMIN_TEAM_CHGK_ID) return 0;
   return SLOT_BY_TEAM.get(teamChgkId) ?? null;
 }
 

@@ -4,7 +4,6 @@ import {
   OCHCH_GOROD_GREKHOV_REG_URL,
   OCHCH_SI_EDITOR,
   OCHCH_SPY_TOUR_REG_URL,
-  OCHCH_TMINNOE_COPY,
   OCHCH_VENUE_IRIS,
   OCHCH_VENUE_MAIN,
 } from "@/lib/ochch";
@@ -69,7 +68,6 @@ const SCHEDULE: ScheduleDay[] = [
       {
         time: "17:45–20:15",
         title: "Тминное поле",
-        note: OCHCH_TMINNOE_COPY,
       },
       {
         time: "20:15*–22:30",

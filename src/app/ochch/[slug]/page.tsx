@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { ChgkLiveBoard } from "@/components/ChgkLiveBoard";
 import {
   OCHCH_CHGK_SHEET_URL,
-  OCHCH_TMINNOE_COPY,
   ensureOchchEvent,
 } from "@/lib/ochch";
 import { isPrismaMissingTable } from "@/lib/page-widgets";
@@ -97,10 +96,7 @@ export default async function OchchSlugPage({ params }: Props) {
       ) : slug === "roster" ? (
         <OchchRosterPage />
       ) : slug === "results-tminnoe" ? (
-        <div className="space-y-4">
-          <p className="text-sm leading-relaxed text-muted">{OCHCH_TMINNOE_COPY}</p>
-          <ComingSoon hint="Таблица или трансляция появятся после игры — или их добавит администратор." />
-        </div>
+        <ComingSoon hint="Таблица или трансляция появятся после игры — или их добавит администратор." />
       ) : slug === "results-quiz" ? (
         <OchchQuizPage />
       ) : slug === "results-si" ? (

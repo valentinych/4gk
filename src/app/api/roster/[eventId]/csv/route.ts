@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { canToggleOchchAmateur } from "@/lib/ochch-amateur";
+import { isOchchEvent } from "@/lib/ochch";
 import {
   loadBasePlayerIdsByTeam,
   playerIsBase,
@@ -12,14 +14,21 @@ type Params = { params: Promise<{ eventId: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const session = await getServerSession(authOptions);
+  const { eventId } = await params;
   const isOrganizer =
     session?.user?.role === "ADMIN" || session?.user?.role === "ORGANIZER";
 
-  if (!isOrganizer) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  let allowed = isOrganizer;
+  if (!allowed && isOchchEvent(eventId)) {
+    allowed = await canToggleOchchAmateur(
+      session?.user?.role,
+      session?.user?.chgkId,
+    );
   }
 
-  const { eventId } = await params;
+  if (!allowed) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const event = await db.calendarEvent.findUnique({ where: { id: eventId } });
   if (!event) return NextResponse.json({ error: "Event not found" }, { status: 404 });

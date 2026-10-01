@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 import { getServerSession } from "next-auth";
 import { OchchParticipantsTable } from "./OchchParticipantsTable";
 import { authOptions } from "@/lib/auth";
@@ -56,14 +56,26 @@ export async function OchchParticipantsPage() {
         <p className="text-sm text-muted">
           Всего команд: <strong>{teams.length}</strong>
         </p>
-        <a
-          href={ochchRatingPublicUrl()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 text-xs text-accent hover:underline"
-        >
-          rating.chgk.info <ExternalLink className="h-3 w-3" />
-        </a>
+        <div className="flex items-center gap-3">
+          {canToggle ? (
+            <a
+              href={`/api/roster/${OCHCH_EVENT_ID}/csv`}
+              download
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1 text-xs font-medium text-muted transition-colors hover:bg-surface hover:text-foreground"
+            >
+              <Download className="h-3 w-3" />
+              Скачать CSV
+            </a>
+          ) : null}
+          <a
+            href={ochchRatingPublicUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-accent hover:underline"
+          >
+            rating.chgk.info <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
       </div>
 
       {teams.length === 0 ? (

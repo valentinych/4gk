@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import {
   ArrowLeft,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Download,
   ExternalLink,
@@ -22,6 +23,8 @@ import {
 } from "@/lib/prague-stats";
 
 const POLL_INTERVAL_MS = 30_000;
+const FULLSCREEN_PAGE_SIZE = 23;
+const FULLSCREEN_FLIP_SEC = 15;
 
 /** Fullscreen table: keep one line, trim long names (prefer break at last space). */
 function truncateTeamNameFullscreen(name: string, maxLen = 36): string {
@@ -112,46 +115,6 @@ function withCompetitionPlaces(teams: PragueTeamRow[]): PragueTeamRow[] {
   return out;
 }
 
-function czechPlaceRows(teams: PragueTeamRow[]): { team: PragueTeamRow; place: string }[] {
-  return withCompetitionPlaces(teams.filter((t) => t.czech)).map((team) => ({
-    team,
-    place: team.place,
-  }));
-}
-
-function CzechStandings({ teams }: { teams: PragueTeamRow[] }) {
-  const rows = czechPlaceRows(teams);
-  if (rows.length === 0) return null;
-  return (
-    <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-      <h2 className="text-sm font-semibold">🇨🇿 Чешский зачёт</h2>
-      <p className="mt-1 text-xs text-muted">
-        Те же суммы, только команды с чешским флагом.
-      </p>
-      <table className="mt-3 w-full text-sm">
-        <thead>
-          <tr className="text-left text-xs uppercase tracking-wider text-muted">
-            <th className="w-10 py-1 font-medium">М</th>
-            <th className="py-1 font-medium">Команда</th>
-            <th className="w-12 py-1 text-right font-medium">Σ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(({ team, place }) => (
-            <tr key={`${team.team}|${team.city}`} className="border-t border-border">
-              <td className="py-1.5 font-mono text-muted">{place}</td>
-              <td className="py-1.5 font-medium">
-                <BoardTeamName team={team} compact={false} />
-              </td>
-              <td className="py-1.5 text-right font-mono tabular-nums">{team.total}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 export interface ChgkLiveBoardProps {
   apiPath: string;
   title: string;
@@ -186,6 +149,8 @@ export function ChgkLiveBoard({
   const [fitScale, setFitScale] = useState(1);
   const [showRating, setShowRating] = useState(false);
   const [standings, setStandings] = useState<StandingsKind>("all");
+  const [fsPage, setFsPage] = useState(0);
+  const [fsSecondsLeft, setFsSecondsLeft] = useState(FULLSCREEN_FLIP_SEC);
 
   const lastQuestionEntered = useMemo(
     () => (data ? lastQuestionWithAnyPlus(data.teams, data.tours) : 0),
@@ -211,6 +176,17 @@ export function ChgkLiveBoard({
     return withCompetitionPlaces(filtered);
   }, [data, standings]);
 
+  const fsPageCount = Math.max(
+    1,
+    Math.ceil(displayedTeams.length / FULLSCREEN_PAGE_SIZE),
+  );
+  const pagedTeams = fullscreen
+    ? displayedTeams.slice(
+        fsPage * FULLSCREEN_PAGE_SIZE,
+        (fsPage + 1) * FULLSCREEN_PAGE_SIZE,
+      )
+    : displayedTeams;
+
   useEffect(() => {
     if (!fullscreen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -224,6 +200,33 @@ export function ChgkLiveBoard({
       document.body.style.overflow = prevOverflow;
     };
   }, [fullscreen]);
+
+  useEffect(() => {
+    if (!fullscreen) {
+      setFsPage(0);
+      setFsSecondsLeft(FULLSCREEN_FLIP_SEC);
+    }
+  }, [fullscreen]);
+
+  useEffect(() => {
+    setFsPage((p) => Math.min(p, fsPageCount - 1));
+  }, [fsPageCount, standings]);
+
+  useEffect(() => {
+    if (!fullscreen || fsPageCount < 2) return;
+    let left = FULLSCREEN_FLIP_SEC;
+    setFsSecondsLeft(left);
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      left -= 1;
+      if (left <= 0) {
+        setFsPage((p) => (p + 1) % fsPageCount);
+        left = FULLSCREEN_FLIP_SEC;
+      }
+      setFsSecondsLeft(left);
+    }, 1_000);
+    return () => clearInterval(id);
+  }, [fullscreen, fsPageCount, fsPage]);
 
   useEffect(() => {
     if (!fullscreen) {
@@ -254,7 +257,7 @@ export function ChgkLiveBoard({
       ro.disconnect();
       window.removeEventListener("resize", recalc);
     };
-  }, [fullscreen, data, expanded, showRating, standings]);
+  }, [fullscreen, data, expanded, showRating, standings, fsPage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -384,6 +387,16 @@ export function ChgkLiveBoard({
                   После {lastQuestionEntered} вопроса
                 </span>
               )}
+              {fullscreen && fsPageCount > 1 && (
+                <span className="text-xs tabular-nums text-muted">
+                  {fsPage * FULLSCREEN_PAGE_SIZE + 1}–
+                  {Math.min(
+                    (fsPage + 1) * FULLSCREEN_PAGE_SIZE,
+                    displayedTeams.length,
+                  )}{" "}
+                  · {fsSecondsLeft} с
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => setShowRating((v) => !v)}
@@ -455,93 +468,122 @@ export function ChgkLiveBoard({
             </div>
           ) : (
             <div
-              ref={fitWrapRef}
-              className={`rounded-xl border border-border bg-surface shadow-sm ${
+              className={
                 fullscreen
-                  ? "flex-1 overflow-hidden flex justify-center items-start"
-                  : "overflow-auto"
-              }`}
+                  ? "flex min-h-0 flex-1 items-stretch gap-1"
+                  : ""
+              }
             >
-              <div
-                style={
-                  fullscreen
-                    ? {
-                        transform: `scale(${fitScale})`,
-                        transformOrigin: "top center",
-                      }
-                    : undefined
-                }
-              >
-                <table
-                  ref={fitTableRef}
-                  className={fullscreen ? "text-sm" : "w-full text-sm"}
+              {fullscreen && fsPageCount > 1 ? (
+                <button
+                  type="button"
+                  aria-label="Предыдущие команды"
+                  onClick={() =>
+                    setFsPage((p) => (p - 1 + fsPageCount) % fsPageCount)
+                  }
+                  className="shrink-0 self-center rounded-md p-1 text-muted transition-colors hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800"
                 >
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                      <th
-                        className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}
-                      >
-                        М
-                      </th>
-                      <th
-                        className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}
-                      >
-                        Команда
-                      </th>
-                      <th
-                        className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}
-                      >
-                        Город
-                      </th>
-                      <th
-                        className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}
-                      >
-                        Σ
-                      </th>
-                      {showRating && (
+                  <ChevronLeft className="h-10 w-10" />
+                </button>
+              ) : null}
+              <div
+                ref={fitWrapRef}
+                className={`rounded-xl border border-border bg-surface shadow-sm ${
+                  fullscreen
+                    ? "flex min-h-0 flex-1 items-start justify-center overflow-hidden"
+                    : "overflow-auto"
+                }`}
+              >
+                <div
+                  style={
+                    fullscreen
+                      ? {
+                          transform: `scale(${fitScale})`,
+                          transformOrigin: "top center",
+                        }
+                      : undefined
+                  }
+                >
+                  <table
+                    ref={fitTableRef}
+                    className={fullscreen ? "text-sm" : "w-full text-sm"}
+                  >
+                    <thead className="sticky top-0 z-10">
+                      <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                         <th
-                          className={`text-right font-semibold ${fullscreen ? "px-1 py-0.5 text-xs tabular-nums font-normal normal-case text-muted" : "px-3 py-3 text-xs font-normal normal-case text-muted"}`}
+                          className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}
                         >
-                          Рейтинг
+                          М
                         </th>
-                      )}
-                      {data.tours.map((t, i) => (
                         <th
-                          key={i}
-                          className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-1 py-0.5" : "px-3 py-3"}`}
+                          className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center text-sm" : "px-3 py-3 min-w-[180px]"}`}
                         >
-                          {t.name}
+                          Команда
                         </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayedTeams.map((team, rowIdx) => {
-                      const teamKey = `${team.team}|${team.city}`;
-                      return (
-                        <RowFragment
-                          key={teamKey}
-                          teamKey={teamKey}
-                          rowIdx={rowIdx}
-                          team={team}
-                          tours={data.tours}
-                          expanded={expanded}
-                          onToggle={toggle}
-                          compact={fullscreen}
-                          showRating={showRating}
-                          ratingSum={ratingByTeamKey.get(teamKey) ?? 0}
-                          ordinalPlace={rowIdx + 1}
-                        />
-                      );
-                    })}
-                  </tbody>
-                </table>
+                        <th
+                          className={`hidden sm:table-cell font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3 min-w-[120px]"}`}
+                        >
+                          Город
+                        </th>
+                        <th
+                          className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}
+                        >
+                          Σ
+                        </th>
+                        {showRating && (
+                          <th
+                            className={`text-right font-semibold ${fullscreen ? "px-1 py-0.5 text-xs tabular-nums font-normal normal-case text-muted" : "px-3 py-3 text-xs font-normal normal-case text-muted"}`}
+                          >
+                            Рейтинг
+                          </th>
+                        )}
+                        {data.tours.map((t, i) => (
+                          <th
+                            key={i}
+                            className={`text-right font-semibold w-16 whitespace-nowrap ${fullscreen ? "px-1 py-0.5" : "px-3 py-3"}`}
+                          >
+                            {t.name}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagedTeams.map((team, i) => {
+                        const rowIdx =
+                          (fullscreen ? fsPage * FULLSCREEN_PAGE_SIZE : 0) + i;
+                        const teamKey = `${team.team}|${team.city}`;
+                        return (
+                          <RowFragment
+                            key={teamKey}
+                            teamKey={teamKey}
+                            rowIdx={rowIdx}
+                            team={team}
+                            tours={data.tours}
+                            expanded={expanded}
+                            onToggle={toggle}
+                            compact={fullscreen}
+                            showRating={showRating}
+                            ratingSum={ratingByTeamKey.get(teamKey) ?? 0}
+                            ordinalPlace={rowIdx + 1}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+              {fullscreen && fsPageCount > 1 ? (
+                <button
+                  type="button"
+                  aria-label="Следующие команды"
+                  onClick={() => setFsPage((p) => (p + 1) % fsPageCount)}
+                  className="shrink-0 self-center rounded-md p-1 text-muted transition-colors hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800"
+                >
+                  <ChevronRight className="h-10 w-10" />
+                </button>
+              ) : null}
             </div>
           )}
-          {!fullscreen && standings === "all" ? (
-            <CzechStandings teams={data.teams} />
-          ) : null}
         </div>
       )}
     </div>

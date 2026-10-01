@@ -121,7 +121,6 @@ export const OCHCH_CURRENT_TILES: OchchLandingTile[] = [
     emoji: "🎸",
     title: "Музыкальный квиз",
     href: "/ochch/results-quiz",
-    note: "Третий авторский музыкальный квиз от Андрея Ярмолы.",
   },
   {
     slug: "results-si",

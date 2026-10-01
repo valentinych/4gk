@@ -39,19 +39,14 @@ function truncateTeamNameFullscreen(name: string, maxLen = 36): string {
 }
 
 function BoardTeamMarks({ team }: { team: PragueTeamRow }) {
+  if (!team.czech && !team.amateur) return null;
   return (
-    <>
-      {team.czech ? (
-        <span title="Чешский зачёт" className="mr-0.5">
-          🇨🇿
-        </span>
-      ) : null}
+    <span className="inline-flex items-center justify-end gap-0.5 whitespace-nowrap">
+      {team.czech ? <span title="Чешский зачёт">🇨🇿</span> : null}
       {team.amateur ? (
-        <span title="Любительская команда" className="mr-0.5">
-          🟢
-        </span>
+        <span title="Любительская команда">🟢</span>
       ) : null}
-    </>
+    </span>
   );
 }
 
@@ -87,17 +82,11 @@ function BoardTeamName({
         }}
         title={team.team}
       >
-        <BoardTeamMarks team={team} />
         {nameNode}
       </span>
     );
   }
-  return (
-    <>
-      <BoardTeamMarks team={team} />
-      {nameNode}
-    </>
-  );
+  return nameNode;
 }
 
 type StandingsKind = "all" | "amateur" | "czech";
@@ -525,6 +514,13 @@ export function ChgkLiveBoard({
                         >
                           Город
                         </th>
+                        {standingsToggles ? (
+                          <th
+                            className={`font-semibold ${fullscreen ? "px-1 py-0.5 text-center" : "px-2 py-3"}`}
+                          >
+                            <span className="sr-only">Зачёты</span>
+                          </th>
+                        ) : null}
                         <th
                           className={`text-right font-semibold w-16 ${fullscreen ? "px-1 py-0.5 text-sm tabular-nums" : "px-3 py-3"}`}
                         >
@@ -563,6 +559,7 @@ export function ChgkLiveBoard({
                             onToggle={toggle}
                             compact={fullscreen}
                             showRating={showRating}
+                            showMarks={standingsToggles}
                             ratingSum={ratingByTeamKey.get(teamKey) ?? 0}
                             ordinalPlace={rowIdx + 1}
                           />
@@ -599,6 +596,7 @@ interface RowFragmentProps {
   onToggle: (key: string) => void;
   compact?: boolean;
   showRating: boolean;
+  showMarks?: boolean;
   ratingSum: number;
   ordinalPlace: number;
 }
@@ -612,6 +610,7 @@ function RowFragment({
   onToggle,
   compact = false,
   showRating,
+  showMarks = false,
   ratingSum,
   ordinalPlace,
 }: RowFragmentProps) {
@@ -653,6 +652,13 @@ function RowFragment({
         >
           {team.city}
         </td>
+        {showMarks ? (
+          <td
+            className={`text-right leading-none ${compact ? "px-1 py-0.5" : "px-2 py-2.5"}`}
+          >
+            <BoardTeamMarks team={team} />
+          </td>
+        ) : null}
         <td
           className={`text-right font-mono font-extrabold tabular-nums ${compact ? "px-1 py-0.5 text-lg leading-none" : "px-3 py-2.5 text-base"}`}
         >
@@ -698,7 +704,12 @@ function RowFragment({
             className={`${stripe} border-b border-border`}
           >
             <td
-              colSpan={4 + (showRating ? 1 : 0) + team.tours.length}
+              colSpan={
+                4 +
+                (showMarks ? 1 : 0) +
+                (showRating ? 1 : 0) +
+                team.tours.length
+              }
               className="px-4 py-3"
             >
               <div className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">

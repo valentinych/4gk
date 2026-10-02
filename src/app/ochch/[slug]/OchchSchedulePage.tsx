@@ -14,6 +14,8 @@ interface ScheduleItem {
   note?: string;
   editors?: string[];
   editorLabel?: string;
+  /** First number in the editors list. ЧГК continues 1–7 across Saturday and Sunday. */
+  editorStart?: number;
   regUrl?: string;
   regLabel?: string;
 }
@@ -64,6 +66,13 @@ const SCHEDULE: ScheduleDay[] = [
         time: "12:00–16:00*",
         title: "ЧГК — 4 тура по 15 вопросов",
         note: "* - возможно незначительное изменение времени окончания / начала",
+        editorLabel: "Редакторы ЧГК",
+        editors: [
+          "Александр Рождествин",
+          "Мария Иванова",
+          "Тарас Вахрив",
+          "Сборный тур Максима Еремеева и редакторов ОЧЧ",
+        ],
       },
       {
         time: "17:45–20:15",
@@ -90,6 +99,13 @@ const SCHEDULE: ScheduleDay[] = [
       {
         time: "12:00–15:00",
         title: "ЧГК — 3 тура по 15 вопросов",
+        editorLabel: "Редакторы ЧГК",
+        editorStart: 5,
+        editors: [
+          "Наиль Фарукшин",
+          "Андрей Грищук - Ирина Данилюк",
+          "Михаил Карпук",
+        ],
       },
     ],
   },
@@ -157,7 +173,9 @@ export function OchchSchedulePage() {
                       <ol className="mt-0.5 space-y-0.5">
                         {item.editors.map((name, ei) => (
                           <li key={name} className="text-xs text-muted">
-                            <span className="font-mono text-muted/60">{ei + 1}. </span>
+                            <span className="font-mono text-muted/60">
+                              {(item.editorStart ?? 1) + ei}.{" "}
+                            </span>
                             {name}
                           </li>
                         ))}

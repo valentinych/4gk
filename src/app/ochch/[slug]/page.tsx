@@ -14,6 +14,8 @@ import { OchchQuizPage } from "./OchchQuizPage";
 import { OchchRosterPage } from "./OchchRosterPage";
 import { OchchRulesPage } from "./OchchRulesPage";
 import { OchchSchedulePage } from "./OchchSchedulePage";
+import { OchchSiPage } from "./OchchSiPage";
+import { OchchTminnoePage } from "./OchchTminnoePage";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -35,15 +37,6 @@ const PAGE_TITLES: Record<string, string> = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   return { title: PAGE_TITLES[slug] ?? slug };
-}
-
-function ComingSoon({ hint }: { hint?: string }) {
-  return (
-    <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
-      <p className="text-base font-medium text-muted/60">Содержимое появится скоро</p>
-      {hint ? <p className="mt-2 text-sm text-muted">{hint}</p> : null}
-    </div>
-  );
 }
 
 export default async function OchchSlugPage({ params }: Props) {
@@ -74,7 +67,12 @@ export default async function OchchSlugPage({ params }: Props) {
   const title = PAGE_TITLES[slug];
 
   return (
-    <div id="page-ochch-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div
+      id="page-ochch-slug"
+      className={`mx-auto px-4 py-12 sm:px-6 ${
+        slug === "results-tminnoe" || slug === "results-si" ? "max-w-[96rem]" : "max-w-4xl"
+      }`}
+    >
       <Link
         href="/ochch"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
@@ -97,11 +95,11 @@ export default async function OchchSlugPage({ params }: Props) {
       ) : slug === "roster" ? (
         <OchchRosterPage />
       ) : slug === "results-tminnoe" ? (
-        <ComingSoon hint="Таблица или трансляция появятся после игры — или их добавит администратор." />
+        <OchchTminnoePage />
       ) : slug === "results-quiz" ? (
         <OchchQuizPage />
       ) : slug === "results-si" ? (
-        <ComingSoon hint="Результаты Своей игры появятся после финала — или их добавит администратор." />
+        <OchchSiPage />
       ) : slug === "appeals" ? (
         <OchchAppealPage />
       ) : slug === "controversial" ? (

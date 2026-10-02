@@ -77,6 +77,10 @@ export const OCHCH_QUIZ_SHEET_ID = "16_vt0L9Aq4Ph3rceBal7MOB0J-mNJwmo-E42zPHXlLM
 export const OCHCH_QUIZ_GID = "9";
 export const OCHCH_QUIZ_SHEET_URL = `https://docs.google.com/spreadsheets/d/${OCHCH_QUIZ_SHEET_ID}/edit?gid=${OCHCH_QUIZ_GID}`;
 
+export const OCHCH_TMINNOE_SHEET_ID = "1Dkg_NQhtZOgAcig9x8h_GSigVXULNndYSLz5Z5-P_ws";
+export const OCHCH_TMINNOE_GID = "892611320";
+export const OCHCH_TMINNOE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${OCHCH_TMINNOE_SHEET_ID}/edit?gid=${OCHCH_TMINNOE_GID}`;
+
 export interface OchchLandingTile {
   slug: string;
   emoji: string;
@@ -101,7 +105,7 @@ export const OCHCH_CURRENT_TILES: OchchLandingTile[] = [
   {
     slug: "rules",
     emoji: "📜",
-    title: "Положение",
+    title: "Положение, регламенты, правила",
     href: "/ochch/rules",
   },
   {

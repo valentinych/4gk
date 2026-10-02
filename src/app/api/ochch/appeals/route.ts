@@ -11,6 +11,7 @@ import {
   OCHCH_APPEAL_NO_ID,
   OCHCH_APPEAL_NOT_IN_ROSTER,
   OCHCH_APPEAL_UNLOCK_FORBIDDEN,
+  isOchchAppealGraveyardMember,
   isOchchAppealPageAdmin,
   isValidQuestionNumber,
   parseAppealKind,
@@ -137,6 +138,11 @@ async function requirePageAdmin(): Promise<
   return { ok: true, chgkId: user.chgkId };
 }
 
+async function requireGraveyardMember(chgkId: number): Promise<NextResponse | null> {
+  if (await isOchchAppealGraveyardMember(chgkId)) return null;
+  return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+}
+
 async function parseJsonBody(
   req: Request,
 ): Promise<
@@ -189,10 +195,16 @@ export async function PATCH(req: Request) {
     );
   }
   if (action === "hardDelete") {
+    const denied = await requireGraveyardMember(user.chgkId);
+    if (denied) return denied;
     return hardDeleteAppeal(id);
   }
   if (action != null && action !== "lock" && action !== "trash") {
     return NextResponse.json({ error: "invalid action" }, { status: 400 });
+  }
+  if (action === "trash") {
+    const denied = await requireGraveyardMember(user.chgkId);
+    if (denied) return denied;
   }
 
   const existing = await db.ochchAppeal.findFirst({
@@ -338,6 +350,8 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const admin = await requirePageAdmin();
   if (!admin.ok) return admin.response;
+  const denied = await requireGraveyardMember(admin.chgkId);
+  if (denied) return denied;
 
   const parsed = await parseJsonBody(req);
   if (!parsed.ok) return parsed.response;

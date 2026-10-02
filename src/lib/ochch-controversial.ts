@@ -54,6 +54,7 @@ export type OchchControversialPageAccess =
       gate: "ok";
       chgkId: number;
       isPageAdmin: boolean;
+      canGraveyard: boolean;
       canSubmit: boolean;
       teamChgkId: number | null;
     };
@@ -127,6 +128,7 @@ export async function resolveOchchControversialPageAccess(
     gate: "ok",
     chgkId: user.chgkId,
     isPageAdmin,
+    canGraveyard: await isOchchControversialGraveyardMember(user.chgkId),
     canSubmit: isPageAdmin || teamChgkId != null,
     teamChgkId,
   };
@@ -144,6 +146,15 @@ export async function isOchchControversialPageAdmin(
   if (isOchchSiteAdmin(role)) return true;
   if (chgkId == null) return false;
   const ids = await getOchchControversialStaffIds();
+  return ids?.has(chgkId) ?? false;
+}
+
+/** Trash and hard-delete: Игровое жюри only. Site role is ignored. */
+export async function isOchchControversialGraveyardMember(
+  chgkId: number | null | undefined,
+): Promise<boolean> {
+  if (chgkId == null) return false;
+  const ids = await getOchchStaffIds(["gameJury"]);
   return ids?.has(chgkId) ?? false;
 }
 

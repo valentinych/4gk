@@ -72,6 +72,7 @@ export type OchchAppealPageAccess =
       gate: "ok";
       chgkId: number;
       isPageAdmin: boolean;
+      canGraveyard: boolean;
       canSubmit: boolean;
       teamChgkId: number | null;
     };
@@ -147,6 +148,7 @@ export async function resolveOchchAppealPageAccess(
     gate: "ok",
     chgkId: user.chgkId,
     isPageAdmin,
+    canGraveyard: await isOchchAppealGraveyardMember(user.chgkId),
     canSubmit: isPageAdmin || teamChgkId != null,
     teamChgkId,
   };
@@ -164,6 +166,15 @@ export async function isOchchAppealPageAdmin(
   if (isOchchSiteAdmin(role)) return true;
   if (chgkId == null) return false;
   const ids = await getOchchAppealStaffIds();
+  return ids?.has(chgkId) ?? false;
+}
+
+/** Trash and hard-delete: Апелляционное жюри only. Site role is ignored. */
+export async function isOchchAppealGraveyardMember(
+  chgkId: number | null | undefined,
+): Promise<boolean> {
+  if (chgkId == null) return false;
+  const ids = await getOchchStaffIds(["appealJury"]);
   return ids?.has(chgkId) ?? false;
 }
 

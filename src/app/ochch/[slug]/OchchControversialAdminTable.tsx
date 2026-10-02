@@ -64,9 +64,11 @@ export function OchchControversialVerdictMark({
 export function OchchControversialAdminTable({
   initialRows,
   initialGraveyard,
+  canGraveyard,
 }: {
   initialRows: ControversialAdminRow[];
   initialGraveyard: ControversialAdminRow[];
+  canGraveyard: boolean;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -223,9 +225,11 @@ export function OchchControversialAdminTable({
                 {showTeamNo ? (
                   <th className="px-3 py-2.5 text-left font-medium">№</th>
                 ) : null}
-                <th className="px-3 py-2.5 text-left font-medium">
-                  <span className="sr-only">На кладбище</span>
-                </th>
+                {canGraveyard ? (
+                  <th className="px-3 py-2.5 text-left font-medium">
+                    <span className="sr-only">На кладбище</span>
+                  </th>
+                ) : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -323,17 +327,19 @@ export function OchchControversialAdminTable({
                         {row.teamNumber ?? "—"}
                       </td>
                     ) : null}
-                    <td className="px-3 py-2.5">
-                      <button
-                        type="button"
-                        aria-label="На кладбище"
-                        disabled={busy}
-                        onClick={() => onTrash(row)}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted hover:text-foreground disabled:opacity-60"
-                      >
-                        <Trash2 className="h-5 w-5" aria-hidden />
-                      </button>
-                    </td>
+                    {canGraveyard ? (
+                      <td className="px-3 py-2.5">
+                        <button
+                          type="button"
+                          aria-label="На кладбище"
+                          disabled={busy}
+                          onClick={() => onTrash(row)}
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted hover:text-foreground disabled:opacity-60"
+                        >
+                          <Trash2 className="h-5 w-5" aria-hidden />
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -360,9 +366,11 @@ export function OchchControversialAdminTable({
                   <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
                   <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
                   <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
-                  <th className="px-3 py-2.5 text-left font-medium">
-                    <span className="sr-only">Удалить</span>
-                  </th>
+                  {canGraveyard ? (
+                    <th className="px-3 py-2.5 text-left font-medium">
+                      <span className="sr-only">Удалить</span>
+                    </th>
+                  ) : null}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -396,16 +404,18 @@ export function OchchControversialAdminTable({
                           </span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5">
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => onHardDelete(row)}
-                          className="inline-flex h-11 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-danger hover:bg-red-50 disabled:opacity-60"
-                        >
-                          Удалить навсегда
-                        </button>
-                      </td>
+                      {canGraveyard ? (
+                        <td className="px-3 py-2.5">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => onHardDelete(row)}
+                            className="inline-flex h-11 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-danger hover:bg-red-50 disabled:opacity-60"
+                          >
+                            Удалить навсегда
+                          </button>
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })}

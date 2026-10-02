@@ -123,6 +123,7 @@ export async function OchchControversialPage() {
         <OchchControversialAdminTable
           initialRows={adminRows}
           initialGraveyard={graveyardRows ?? []}
+          canGraveyard={access.canGraveyard}
         />
       ) : null}
       {mineItems ? <MineList items={mineItems} /> : null}

@@ -89,7 +89,8 @@ export async function POST(req: Request) {
 }
 
 async function requirePageAdmin(): Promise<
-  { ok: true; chgkId: number } | { ok: false; response: NextResponse }
+  | { ok: true; chgkId: number; role: string }
+  | { ok: false; response: NextResponse }
 > {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -116,11 +117,14 @@ async function requirePageAdmin(): Promise<
       response: NextResponse.json({ error: "Недостаточно прав" }, { status: 403 }),
     };
   }
-  return { ok: true, chgkId: user.chgkId };
+  return { ok: true, chgkId: user.chgkId, role: user.role };
 }
 
-async function requireGraveyardMember(chgkId: number): Promise<NextResponse | null> {
-  if (await isOchchControversialGraveyardMember(chgkId)) return null;
+async function requireGraveyardMember(
+  role: string,
+  chgkId: number,
+): Promise<NextResponse | null> {
+  if (await isOchchControversialGraveyardMember(role, chgkId)) return null;
   return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
 }
 
@@ -176,7 +180,7 @@ export async function PATCH(req: Request) {
     );
   }
   if (action === "hardDelete") {
-    const denied = await requireGraveyardMember(user.chgkId);
+    const denied = await requireGraveyardMember(admin.role, user.chgkId);
     if (denied) return denied;
     return hardDeleteControversial(id);
   }
@@ -184,7 +188,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "invalid action" }, { status: 400 });
   }
   if (action === "trash") {
-    const denied = await requireGraveyardMember(user.chgkId);
+    const denied = await requireGraveyardMember(admin.role, user.chgkId);
     if (denied) return denied;
   }
 
@@ -319,7 +323,7 @@ export async function PATCH(req: Request) {
 export async function DELETE(req: Request) {
   const admin = await requirePageAdmin();
   if (!admin.ok) return admin.response;
-  const denied = await requireGraveyardMember(admin.chgkId);
+  const denied = await requireGraveyardMember(admin.role, admin.chgkId);
   if (denied) return denied;
 
   const parsed = await parseJsonBody(req);

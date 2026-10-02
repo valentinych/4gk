@@ -128,7 +128,10 @@ export async function resolveOchchControversialPageAccess(
     gate: "ok",
     chgkId: user.chgkId,
     isPageAdmin,
-    canGraveyard: await isOchchControversialGraveyardMember(user.chgkId),
+    canGraveyard: await isOchchControversialGraveyardMember(
+      user.role,
+      user.chgkId,
+    ),
     canSubmit: isPageAdmin || teamChgkId != null,
     teamChgkId,
   };
@@ -149,10 +152,12 @@ export async function isOchchControversialPageAdmin(
   return ids?.has(chgkId) ?? false;
 }
 
-/** Trash and hard-delete: Игровое жюри only. Site role is ignored. */
+/** Trash and hard-delete: site ADMIN or Игровое жюри. */
 export async function isOchchControversialGraveyardMember(
+  role: string | null | undefined,
   chgkId: number | null | undefined,
 ): Promise<boolean> {
+  if (isOchchSiteAdmin(role)) return true;
   if (chgkId == null) return false;
   const ids = await getOchchStaffIds(["gameJury"]);
   return ids?.has(chgkId) ?? false;

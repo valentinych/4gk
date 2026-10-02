@@ -148,7 +148,7 @@ export async function resolveOchchAppealPageAccess(
     gate: "ok",
     chgkId: user.chgkId,
     isPageAdmin,
-    canGraveyard: await isOchchAppealGraveyardMember(user.chgkId),
+    canGraveyard: await isOchchAppealGraveyardMember(user.role, user.chgkId),
     canSubmit: isPageAdmin || teamChgkId != null,
     teamChgkId,
   };
@@ -169,10 +169,12 @@ export async function isOchchAppealPageAdmin(
   return ids?.has(chgkId) ?? false;
 }
 
-/** Trash and hard-delete: Апелляционное жюри only. Site role is ignored. */
+/** Trash and hard-delete: site ADMIN or Апелляционное жюри. */
 export async function isOchchAppealGraveyardMember(
+  role: string | null | undefined,
   chgkId: number | null | undefined,
 ): Promise<boolean> {
+  if (isOchchSiteAdmin(role)) return true;
   if (chgkId == null) return false;
   const ids = await getOchchStaffIds(["appealJury"]);
   return ids?.has(chgkId) ?? false;

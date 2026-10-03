@@ -80,7 +80,6 @@ export function OchchControversialAdminTable({
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   const [graveyard, setGraveyard] = useState(initialGraveyard);
-  const [showTeamNo, setShowTeamNo] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -95,15 +94,14 @@ export function OchchControversialAdminTable({
     body: {
       status?: ControversialVerdict;
       rationale?: string;
-      action?: "lock" | "trash" | "hardDelete";
+      action?: "lock" | "trash";
     },
-    method: "PATCH" | "DELETE" = "PATCH",
   ): Promise<(Partial<ControversialAdminRow> & { error?: string }) | null> {
     setPendingId(id);
     setError(null);
     try {
       const res = await fetch("/api/ochch/controversial", {
-        method,
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...body }),
       });
@@ -189,29 +187,10 @@ export function OchchControversialAdminTable({
     router.refresh();
   }
 
-  async function onHardDelete(row: ControversialAdminRow) {
-    if (pendingId) return;
-    if (!window.confirm("Удалить навсегда?")) return;
-    const updated = await patch(row.id, { action: "hardDelete" }, "DELETE");
-    if (!updated) return;
-    setGraveyard((prev) => prev.filter((r) => r.id !== row.id));
-    router.refresh();
-  }
-
   return (
     <>
     <section id="page-ochch-controversial-admin" className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-bold">Поданные спорные</h2>
-        <button
-          type="button"
-          aria-pressed={showTeamNo}
-          onClick={() => setShowTeamNo((v) => !v)}
-          className="text-xs text-muted hover:text-foreground"
-        >
-          {showTeamNo ? "Скрыть №" : "Показать №"}
-        </button>
-      </div>
+      <h2 className="text-lg font-bold">Поданные спорные</h2>
       {error ? (
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger" role="alert">
           {error}
@@ -227,11 +206,9 @@ export function OchchControversialAdminTable({
                 <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
                 <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
                 <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
+                <th className="px-3 py-2.5 text-left font-medium">№ команды</th>
                 <th className="px-3 py-2.5 text-left font-medium">Аргументация</th>
                 <th className="px-3 py-2.5 text-left font-medium">Решение</th>
-                {showTeamNo ? (
-                  <th className="px-3 py-2.5 text-left font-medium">№</th>
-                ) : null}
                 {canGraveyard ? (
                   <th className="px-3 py-2.5 text-left font-medium">
                     <span className="sr-only">На кладбище</span>
@@ -300,6 +277,12 @@ export function OchchControversialAdminTable({
                         </button>
                       </div>
                     </td>
+                    <td
+                      className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                      title={row.teamNumber === 0 ? "Админы" : undefined}
+                    >
+                      {row.teamNumber ?? "—"}
+                    </td>
                     <td className="min-w-[12rem] px-3 py-2.5">
                       <textarea
                         aria-label="Аргументация"
@@ -326,14 +309,6 @@ export function OchchControversialAdminTable({
                     <td className="whitespace-nowrap px-3 py-2.5 text-muted">
                       {row.decidedByName ?? ""}
                     </td>
-                    {showTeamNo ? (
-                      <td
-                        className="px-3 py-2.5 font-mono tabular-nums text-muted"
-                        title={row.teamNumber === 0 ? "Админы" : undefined}
-                      >
-                        {row.teamNumber ?? "—"}
-                      </td>
-                    ) : null}
                     {canGraveyard ? (
                       <td className="px-3 py-2.5">
                         <button
@@ -427,59 +402,39 @@ export function OchchControversialAdminTable({
                   <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
                   <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
                   <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
-                  {canGraveyard ? (
-                    <th className="px-3 py-2.5 text-left font-medium">
-                      <span className="sr-only">Удалить</span>
-                    </th>
-                  ) : null}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {graveyard.map((row) => {
-                  const busy = pendingId === row.id;
-                  return (
-                    <tr key={row.id}>
-                      <td className="px-3 py-2.5 font-mono tabular-nums">
-                        {row.questionNumber}
-                      </td>
-                      <td className="px-3 py-2.5">{row.answerText}</td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center gap-1">
-                          <OchchControversialVerdictMark status={row.status} />
-                          <span
-                            className={
-                              row.locked ? "text-red-600" : "text-muted/40"
-                            }
-                            title={
-                              row.locked
-                                ? "Решение зафиксировано"
-                                : "Решение не зафиксировано"
-                            }
-                            aria-label={
-                              row.locked
-                                ? "Решение зафиксировано"
-                                : "Решение не зафиксировано"
-                            }
-                          >
-                            <Lock className="h-5 w-5" aria-hidden />
-                          </span>
-                        </div>
-                      </td>
-                      {canGraveyard ? (
-                        <td className="px-3 py-2.5">
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => onHardDelete(row)}
-                            className="inline-flex h-11 items-center justify-center rounded-lg border border-border px-3 text-xs font-semibold text-danger hover:bg-red-50 disabled:opacity-60"
-                          >
-                            Удалить навсегда
-                          </button>
-                        </td>
-                      ) : null}
-                    </tr>
-                  );
-                })}
+                {graveyard.map((row) => (
+                  <tr key={row.id}>
+                    <td className="px-3 py-2.5 font-mono tabular-nums">
+                      {row.questionNumber}
+                    </td>
+                    <td className="px-3 py-2.5">{row.answerText}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center gap-1">
+                        <OchchControversialVerdictMark status={row.status} />
+                        <span
+                          className={
+                            row.locked ? "text-red-600" : "text-muted/40"
+                          }
+                          title={
+                            row.locked
+                              ? "Решение зафиксировано"
+                              : "Решение не зафиксировано"
+                          }
+                          aria-label={
+                            row.locked
+                              ? "Решение зафиксировано"
+                              : "Решение не зафиксировано"
+                          }
+                        >
+                          <Lock className="h-5 w-5" aria-hidden />
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

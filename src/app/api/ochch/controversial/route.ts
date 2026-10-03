@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { OCHCH_EVENT_ID, resolveOchchSubmitTeamChgkId } from "@/lib/ochch";
 import {
+  OCHCH_CONTROVERSIAL_HARD_DELETE_FORBIDDEN,
   OCHCH_CONTROVERSIAL_LOCKED,
   OCHCH_CONTROVERSIAL_LOCK_PENDING,
   OCHCH_CONTROVERSIAL_NO_ID,
@@ -147,16 +148,11 @@ async function parseJsonBody(
   return { ok: true, raw };
 }
 
-async function hardDeleteControversial(id: string) {
-  const existing = await db.ochchControversial.findFirst({
-    where: { id, eventId: OCHCH_EVENT_ID },
-    select: { id: true },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  await db.ochchControversial.delete({ where: { id: existing.id } });
-  return NextResponse.json({ ok: true, id: existing.id, deleted: true });
+function hardDeleteForbidden() {
+  return NextResponse.json(
+    { error: OCHCH_CONTROVERSIAL_HARD_DELETE_FORBIDDEN },
+    { status: 409 },
+  );
 }
 
 export async function PATCH(req: Request) {
@@ -180,9 +176,7 @@ export async function PATCH(req: Request) {
     );
   }
   if (action === "hardDelete") {
-    const denied = await requireGraveyardMember(admin.role, user.chgkId);
-    if (denied) return denied;
-    return hardDeleteControversial(id);
+    return hardDeleteForbidden();
   }
   if (action != null && action !== "lock" && action !== "trash") {
     return NextResponse.json({ error: "invalid action" }, { status: 400 });
@@ -320,17 +314,8 @@ export async function PATCH(req: Request) {
   });
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE() {
   const admin = await requirePageAdmin();
   if (!admin.ok) return admin.response;
-  const denied = await requireGraveyardMember(admin.role, admin.chgkId);
-  if (denied) return denied;
-
-  const parsed = await parseJsonBody(req);
-  if (!parsed.ok) return parsed.response;
-  const id = typeof parsed.raw.id === "string" ? parsed.raw.id : "";
-  if (!id) {
-    return NextResponse.json({ error: "id is required" }, { status: 400 });
-  }
-  return hardDeleteControversial(id);
+  return hardDeleteForbidden();
 }

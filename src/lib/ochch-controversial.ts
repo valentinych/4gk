@@ -21,6 +21,8 @@ export const OCHCH_CONTROVERSIAL_QUESTION_MAX = 105;
 
 export const OCHCH_CONTROVERSIAL_LOCKED = "Решение уже зафиксировано";
 export const OCHCH_CONTROVERSIAL_UNLOCK_FORBIDDEN = "Разблокировка невозможна";
+export const OCHCH_CONTROVERSIAL_HARD_DELETE_FORBIDDEN =
+  "Удаление навсегда невозможно";
 export const OCHCH_CONTROVERSIAL_LOCK_PENDING = "Сначала выберите вердикт";
 
 export type OchchControversialVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
@@ -163,7 +165,7 @@ export async function isOchchControversialPageAdmin(
   return ids?.has(chgkId) ?? false;
 }
 
-/** Trash and hard-delete: site ADMIN or Игровое жюри. */
+/** Trash to the graveyard: site ADMIN or Игровое жюри. Hard delete is disabled. */
 export async function isOchchControversialGraveyardMember(
   role: string | null | undefined,
   chgkId: number | null | undefined,
@@ -292,7 +294,7 @@ export async function loadOchchControversialGraveyard(): Promise<
  * `count` is every stored row, including trashed and unlocked.
  * `acceptedLocked` / `rejectedLocked` count only locked rows of that verdict,
  * including trashed. Unlocked and PENDING rows do not increment them.
- * Hard-deleted rows are already gone.
+ * Permanent delete is disabled; rows already removed are not in the table.
  */
 export async function loadOchchControversialLeaders(): Promise<
   OchchControversialLeader[]

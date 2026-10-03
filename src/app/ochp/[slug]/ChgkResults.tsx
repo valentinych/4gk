@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
-import { OCHP_CHGK_HAZA_BROADCAST_CURRENT } from "@/lib/ochp-seasons";
 import {
-  TRUEDL_COEFF_BASELINE,
-  formatTrueDlHundredths,
-  meanTrueDl,
-  teamTrueDl,
-} from "@/lib/truedl";
+  formatTenth,
+  hazaColumnStats,
+  tourScoresFromAnswers,
+} from "@/lib/chgk-column-stats";
+import { OCHP_CHGK_HAZA_BROADCAST_CURRENT } from "@/lib/ochp-seasons";
+import { formatTrueDlHundredths } from "@/lib/truedl";
 
 interface HazaTour {
   n: number;
@@ -34,20 +34,6 @@ interface HazaData {
 
 const REFRESH_INTERVAL = 60;
 
-function tourScoresFromAnswers(answers: string, tours: HazaTour[]): number[] {
-  const scores: number[] = [];
-  let offset = 0;
-  for (const tour of tours) {
-    let s = 0;
-    for (let i = 0; i < tour.q; i++) {
-      if (answers[offset + i] === "1") s++;
-    }
-    scores.push(s);
-    offset += tour.q;
-  }
-  return scores;
-}
-
 function hazaTourColumnMaxima(
   teams: HazaTeam[],
   tours: HazaTour[],
@@ -61,79 +47,6 @@ function hazaTourColumnMaxima(
     }
   }
   return maxes.map((m) => (Number.isFinite(m) ? m : null));
-}
-
-function medianOf(values: number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 1) return sorted[mid]!;
-  return (sorted[mid - 1]! + sorted[mid]!) / 2;
-}
-
-function meanOf(values: number[]): number | null {
-  if (values.length === 0) return null;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
-
-/** 1 decimal, period — same as other score tables on the site. */
-function formatTenth(n: number | null): string {
-  return n == null ? "—" : n.toFixed(1);
-}
-
-function tourHasStarted(tours: HazaTour[], tourIndex: number, lastQuestion: number): boolean {
-  let offset = 0;
-  for (let i = 0; i < tourIndex; i++) offset += tours[i]!.q;
-  return lastQuestion > offset;
-}
-
-function hazaColumnStats(
-  teams: HazaTeam[],
-  tours: HazaTour[],
-  lastQuestion: number,
-): {
-  sum: { median: number | null; mean: number | null; trueDl: number | null };
-  tours: Array<{ median: number | null; mean: number | null; trueDl: number | null }>;
-} {
-  const started = tours.map((_, ti) => tourHasStarted(tours, ti, lastQuestion));
-  const tourValues: number[][] = tours.map(() => []);
-  const tourTrueDls: number[][] = tours.map(() => []);
-  const sums: number[] = [];
-  const sumTrueDls: number[] = [];
-  let startedN = 0;
-  for (let ti = 0; ti < tours.length; ti++) {
-    if (started[ti]) startedN += tours[ti]!.q;
-  }
-  for (const team of teams) {
-    sums.push(team.score);
-    const sc = tourScoresFromAnswers(team.answers, tours);
-    const coeff = team.coeff ?? TRUEDL_COEFF_BASELINE;
-    let startedScore = 0;
-    for (let ti = 0; ti < tours.length; ti++) {
-      if (!started[ti]) continue;
-      const q = sc[ti] ?? 0;
-      tourValues[ti]!.push(q);
-      startedScore += q;
-      const dl = teamTrueDl(q, tours[ti]!.q, coeff);
-      if (dl != null) tourTrueDls[ti]!.push(dl);
-    }
-    if (startedN > 0) {
-      const dl = teamTrueDl(startedScore, startedN, coeff);
-      if (dl != null) sumTrueDls.push(dl);
-    }
-  }
-  return {
-    sum: {
-      median: medianOf(sums),
-      mean: meanOf(sums),
-      trueDl: meanTrueDl(sumTrueDls),
-    },
-    tours: tourValues.map((vals, ti) => ({
-      median: medianOf(vals),
-      mean: meanOf(vals),
-      trueDl: started[ti] ? meanTrueDl(tourTrueDls[ti]!) : null,
-    })),
-  };
 }
 
 export default function ChgkResults({

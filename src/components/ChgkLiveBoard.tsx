@@ -16,11 +16,17 @@ import {
 } from "lucide-react";
 
 import {
+  formatTenth,
+  pragueColumnStats,
+  type ChgkColumnStats,
+} from "@/lib/chgk-column-stats";
+import {
   lastQuestionWithAnyPlus,
   teamRatingSum,
   type PraguePayload,
   type PragueTeamRow,
 } from "@/lib/prague-stats";
+import { formatTrueDlHundredths } from "@/lib/truedl";
 
 const POLL_INTERVAL_MS = 30_000;
 const FULLSCREEN_PAGE_SIZE = 23;
@@ -116,6 +122,8 @@ export interface ChgkLiveBoardProps {
   adminCsvHref?: string;
   /** OCHCH: любительский / чешский зачёт toggles next to rating. */
   standingsToggles?: boolean;
+  /** OCHCH only: median, mean, and trueDL under Σ and each tour. */
+  showQuestionStats?: boolean;
 }
 
 export function ChgkLiveBoard({
@@ -127,6 +135,7 @@ export function ChgkLiveBoard({
   pageId,
   adminCsvHref,
   standingsToggles = false,
+  showQuestionStats = false,
 }: ChgkLiveBoardProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -169,6 +178,11 @@ export function ChgkLiveBoard({
     );
     return withCompetitionPlaces(filtered);
   }, [data, standings]);
+
+  const columnStats = useMemo(() => {
+    if (!showQuestionStats || !data || displayedTeams.length === 0) return null;
+    return pragueColumnStats(displayedTeams, data.tours, data.teams);
+  }, [showQuestionStats, data, displayedTeams]);
 
   const fsPageCount = Math.max(
     1,
@@ -571,6 +585,14 @@ export function ChgkLiveBoard({
                         );
                       })}
                     </tbody>
+                    {columnStats ? (
+                      <QuestionStatsFoot
+                        stats={columnStats}
+                        compact={fullscreen}
+                        showMarks={standingsToggles}
+                        showRating={showRating}
+                      />
+                    ) : null}
                   </table>
                 </div>
               </div>
@@ -589,6 +611,68 @@ export function ChgkLiveBoard({
         </div>
       )}
     </div>
+  );
+}
+
+function QuestionStatsFoot({
+  stats,
+  compact,
+  showMarks,
+  showRating,
+}: {
+  stats: ChgkColumnStats;
+  compact: boolean;
+  showMarks: boolean;
+  showRating: boolean;
+}) {
+  const rows: Array<{ label: string; sum: string; values: string[] }> = [
+    {
+      label: "Медиана",
+      sum: formatTenth(stats.sum.median),
+      values: stats.tours.map((t) => formatTenth(t.median)),
+    },
+    {
+      label: "Среднее",
+      sum: formatTenth(stats.sum.mean),
+      values: stats.tours.map((t) => formatTenth(t.mean)),
+    },
+    {
+      label: "trueDL",
+      sum: formatTrueDlHundredths(stats.sum.trueDl),
+      values: stats.tours.map((t) => formatTrueDlHundredths(t.trueDl)),
+    },
+  ];
+  const pad = compact ? "px-1 py-0.5" : "px-3 py-1.5";
+  return (
+    <tfoot>
+      {rows.map((row) => (
+        <tr
+          key={row.label}
+          className="border-t border-border bg-gray-50 text-muted dark:bg-gray-800/60"
+        >
+          <td className={`${pad} text-center font-mono text-xs`}>—</td>
+          <td
+            className={`${pad} font-medium text-xs ${compact ? "whitespace-nowrap text-center" : ""}`}
+          >
+            {row.label}
+          </td>
+          <td className={`hidden sm:table-cell ${pad}`} />
+          {showMarks ? <td className={pad} /> : null}
+          <td className={`${pad} text-right font-mono text-xs tabular-nums`}>
+            {row.sum}
+          </td>
+          {showRating ? <td className={pad} /> : null}
+          {row.values.map((value, ti) => (
+            <td
+              key={ti}
+              className={`${pad} text-right font-mono text-xs tabular-nums`}
+            >
+              {value}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tfoot>
   );
 }
 

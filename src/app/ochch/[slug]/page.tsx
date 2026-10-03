@@ -60,6 +60,7 @@ export default async function OchchSlugPage({ params }: Props) {
         sheetUrl={OCHCH_CHGK_SHEET_URL}
         pageId="ochch-results"
         standingsToggles
+        showQuestionStats
       />
     );
   }

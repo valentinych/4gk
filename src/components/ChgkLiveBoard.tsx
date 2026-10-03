@@ -164,7 +164,8 @@ export function ChgkLiveBoard({
   const [rasplyusovka, setRasplyusovka] = useState(false);
   const [rasTour, setRasTour] = useState<number | null>(null);
   const [questionQi, setQuestionQi] = useState<number | null>(null);
-  const questionPopupRef = useRef(false);
+  const [teamPopupKey, setTeamPopupKey] = useState<string | null>(null);
+  const rasOverlayRef = useRef(false);
   const [fsPage, setFsPage] = useState(0);
   const flipSec = standingsToggles
     ? OCHCH_FULLSCREEN_FLIP_SEC
@@ -210,10 +211,16 @@ export function ChgkLiveBoard({
           data.tours.length - 1,
         )
       : 0;
-  questionPopupRef.current =
+  const questionOpen =
     rasOn &&
     questionQi != null &&
     (data?.tours[rasTourIdx]?.questionCount ?? 0) > questionQi;
+  const teamPopup =
+    rasOn && teamPopupKey
+      ? displayedTeams.find((team) => teamRowKey(team) === teamPopupKey) ??
+        null
+      : null;
+  rasOverlayRef.current = questionOpen || teamPopup != null;
 
   const fsPageCount = Math.max(
     1,
@@ -230,7 +237,7 @@ export function ChgkLiveBoard({
     if (!fullscreen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (questionPopupRef.current) return;
+        if (rasOverlayRef.current) return;
         setFullscreen(false);
       }
     };
@@ -271,13 +278,21 @@ export function ChgkLiveBoard({
   }, [fullscreen, fsPageCount, fsPage, flipSec, rasOn]);
 
   useEffect(() => {
-    if (!rasOn || questionQi == null) return;
+    if (!rasOn || (questionQi == null && teamPopupKey == null)) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setQuestionQi(null);
+      if (e.key !== "Escape") return;
+      if (
+        questionQi != null &&
+        (data?.tours[rasTourIdx]?.questionCount ?? 0) > questionQi
+      ) {
+        setQuestionQi(null);
+      } else {
+        setTeamPopupKey(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [questionQi, rasOn]);
+  }, [questionQi, teamPopupKey, rasOn, data, rasTourIdx]);
 
   useEffect(() => {
     if (!fullscreen || rasOn) {
@@ -494,6 +509,7 @@ export function ChgkLiveBoard({
                   onClick={() => {
                     setRasplyusovka((v) => !v);
                     setQuestionQi(null);
+                    setTeamPopupKey(null);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
                     rasOn
@@ -567,6 +583,7 @@ export function ChgkLiveBoard({
               previousQuestion={previousAnswered}
               fill={fullscreen}
               onQuestion={(qi) => setQuestionQi(qi)}
+              onTeam={(team) => setTeamPopupKey(teamRowKey(team))}
             />
           ) : (
             <div
@@ -704,10 +721,7 @@ export function ChgkLiveBoard({
           )}
         </div>
       )}
-      {rasOn &&
-      data &&
-      questionQi != null &&
-      questionQi < (data.tours[rasTourIdx]?.questionCount ?? 0) ? (
+      {questionOpen && data && questionQi != null ? (
         <QuestionTakenPopup
           teams={displayedTeams}
           tours={data.tours}
@@ -715,6 +729,15 @@ export function ChgkLiveBoard({
           questionIdx={questionQi}
           lastQuestion={lastAnswered}
           onClose={() => setQuestionQi(null)}
+        />
+      ) : null}
+      {teamPopup && data ? (
+        <TeamTourPopup
+          team={teamPopup}
+          tours={data.tours}
+          tourIdx={rasTourIdx}
+          lastQuestion={lastAnswered}
+          onClose={() => setTeamPopupKey(null)}
         />
       ) : null}
     </div>
@@ -978,6 +1001,10 @@ function slotLabel(team: PragueTeamRow): string {
   return Number.isFinite(n) ? String(n) : "—";
 }
 
+function teamRowKey(team: PragueTeamRow): string {
+  return `${team.number}|${team.team}|${team.city}`;
+}
+
 function OchchRasplyusovka({
   teams,
   tours,
@@ -986,6 +1013,7 @@ function OchchRasplyusovka({
   previousQuestion,
   fill,
   onQuestion,
+  onTeam,
 }: {
   teams: PragueTeamRow[];
   tours: PragueTourMeta[];
@@ -994,6 +1022,7 @@ function OchchRasplyusovka({
   previousQuestion: number | null;
   fill: boolean;
   onQuestion: (questionIdx: number) => void;
+  onTeam: (team: PragueTeamRow) => void;
 }) {
   const qCount = tours[tourIdx]?.questionCount ?? 0;
   const arrows = useMemo(
@@ -1026,34 +1055,27 @@ function OchchRasplyusovka({
               <th className={`${pad} min-w-[7rem] text-left font-semibold`}>
                 Представляет
               </th>
-              <th className={`${pad} w-12 text-right font-semibold`}>О</th>
-              {tours.map((tour, i) => (
-                <th
-                  key={`sum-${i}`}
-                  title={tour.name}
-                  className={`${pad} w-10 text-right font-semibold tabular-nums`}
-                >
-                  T{i + 1}
-                </th>
-              ))}
-              {Array.from({ length: qCount }, (_, qi) => (
-                <th key={`q-${qi}`} className="p-0 text-center font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => onQuestion(qi)}
-                    title={`Вопрос ${qi + 1}`}
-                    className="w-full min-w-7 px-1 py-2 text-xs font-semibold tabular-nums hover:bg-gray-200 dark:hover:bg-gray-700"
-                  >
-                    {qi + 1}
-                  </button>
-                </th>
-              ))}
               <th
                 title={tours[tourIdx]?.name}
                 className={`${pad} w-10 text-right font-semibold tabular-nums`}
               >
                 T{tourIdx + 1}
               </th>
+              {Array.from({ length: qCount }, (_, qi) => {
+                const qNum = globalQuestionNumber(tours, tourIdx, qi);
+                return (
+                  <th key={`q-${qi}`} className="p-0 text-center font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => onQuestion(qi)}
+                      title={`Вопрос ${qNum}`}
+                      className="w-full min-w-8 px-1 py-2 text-xs font-semibold tabular-nums hover:bg-gray-200 dark:hover:bg-gray-700"
+                    >
+                      {qNum}
+                    </button>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -1065,7 +1087,7 @@ function OchchRasplyusovka({
                   : "bg-gray-50 dark:bg-gray-800/50";
               return (
                 <tr
-                  key={`${team.number}|${team.team}|${team.city}`}
+                  key={teamRowKey(team)}
                   className={`${stripe} border-b border-border`}
                 >
                   <td
@@ -1077,22 +1099,33 @@ function OchchRasplyusovka({
                     </span>
                   </td>
                   <td className={`${pad} text-left font-semibold`}>
-                    <BoardTeamName team={team} compact={false} />
+                    <button
+                      type="button"
+                      onClick={() => onTeam(team)}
+                      title={team.team}
+                      className={`text-left text-inherit hover:text-accent hover:underline ${
+                        team.team.length > 30 ? "text-xs leading-tight" : ""
+                      }`}
+                      style={
+                        team.team.length > 30
+                          ? {
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }
+                          : undefined
+                      }
+                    >
+                      {team.team}
+                    </button>
                   </td>
                   <td className={`${pad} text-left font-semibold`}>{team.city}</td>
                   <td
-                    className={`${pad} text-right font-mono font-extrabold tabular-nums`}
+                    className={`${pad} text-right font-mono font-bold tabular-nums`}
                   >
-                    {team.total}
+                    {team.tours[tourIdx]?.total ?? 0}
                   </td>
-                  {tours.map((_, ti) => (
-                    <td
-                      key={ti}
-                      className={`${pad} text-right font-mono font-bold tabular-nums`}
-                    >
-                      {team.tours[ti]?.total ?? 0}
-                    </td>
-                  ))}
                   {Array.from({ length: qCount }, (_, qi) => {
                     const mark = playedMark(
                       qi < marks.length ? marks[qi] : null,
@@ -1114,11 +1147,6 @@ function OchchRasplyusovka({
                       </td>
                     );
                   })}
-                  <td
-                    className={`${pad} text-right font-mono font-bold tabular-nums`}
-                  >
-                    {team.tours[tourIdx]?.total ?? 0}
-                  </td>
                 </tr>
               );
             })}
@@ -1159,6 +1187,7 @@ function QuestionTakenPopup({
     panelRef.current?.focus();
   }, []);
 
+  const qNum = globalQuestionNumber(tours, tourIdx, questionIdx);
   const pressed =
     "bg-gray-200 dark:bg-gray-700";
   const idle = "bg-surface hover:bg-gray-100 dark:hover:bg-gray-800";
@@ -1172,7 +1201,7 @@ function QuestionTakenPopup({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`Вопрос ${questionIdx + 1}`}
+        aria-label={`Вопрос ${qNum}`}
         tabIndex={-1}
         onMouseDown={(e) => e.stopPropagation()}
         className={`flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg outline-none ${
@@ -1182,7 +1211,7 @@ function QuestionTakenPopup({
         }`}
       >
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
-          <h2 className="text-sm font-semibold">Вопрос {questionIdx + 1}</h2>
+          <h2 className="text-sm font-semibold">Вопрос {qNum}</h2>
           <div className="flex items-center gap-2">
             <div className="inline-flex overflow-hidden rounded-md border border-border">
               <button
@@ -1249,6 +1278,96 @@ function QuestionTakenPopup({
                   }`}
                 >
                   {label === "name" ? team.team : slotLabel(team)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamTourPopup({
+  team,
+  tours,
+  tourIdx,
+  lastQuestion,
+  onClose,
+}: {
+  team: PragueTeamRow;
+  tours: PragueTourMeta[];
+  tourIdx: number;
+  lastQuestion: number;
+  onClose: () => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const qCount = tours[tourIdx]?.questionCount ?? 0;
+  const marks = team.tours[tourIdx]?.marks ?? [];
+  const tourSum = team.tours[tourIdx]?.total ?? 0;
+
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4"
+      onMouseDown={onClose}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={team.team}
+        tabIndex={-1}
+        onMouseDown={(e) => e.stopPropagation()}
+        className="flex max-h-[calc(100vh-2rem)] w-[min(42rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg outline-none"
+      >
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-2">
+          <h2 className="min-w-0 text-sm font-semibold" title={team.team}>
+            {team.team}
+          </h2>
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="font-mono text-sm font-bold tabular-nums">
+              T{tourIdx + 1} {tourSum}
+            </span>
+            <button
+              type="button"
+              aria-label="Закрыть"
+              onClick={onClose}
+              className="rounded-md p-1 text-muted hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto overscroll-contain p-3">
+          <div className="flex flex-wrap gap-1">
+            {Array.from({ length: qCount }, (_, qi) => {
+              const qNum = globalQuestionNumber(tours, tourIdx, qi);
+              const mark = playedMark(
+                qi < marks.length ? marks[qi] : null,
+                qNum,
+                lastQuestion,
+              );
+              const tone =
+                mark === true
+                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
+                  : mark === false
+                    ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
+                    : "text-muted";
+              return (
+                <div
+                  key={qi}
+                  className={`flex w-9 flex-col items-center rounded px-0.5 py-1 font-mono text-xs ${tone}`}
+                >
+                  <span className="text-[10px] leading-none tabular-nums opacity-80">
+                    {qNum}
+                  </span>
+                  <span className="mt-0.5 min-h-[1em] font-bold leading-none">
+                    {mark === true ? "+" : mark === false ? "−" : ""}
+                  </span>
                 </div>
               );
             })}

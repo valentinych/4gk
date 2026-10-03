@@ -65,10 +65,12 @@ export function OchchControversialAdminTable({
   initialRows,
   initialGraveyard,
   canGraveyard,
+  leaders,
 }: {
   initialRows: ControversialAdminRow[];
   initialGraveyard: ControversialAdminRow[];
   canGraveyard: boolean;
+  leaders: { teamNumber: number | null; count: number }[] | null;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -348,6 +350,42 @@ export function OchchControversialAdminTable({
         </div>
       )}
     </section>
+    {leaders ? (
+      <details
+        id="page-ochch-controversial-leaders"
+        className="rounded-xl border border-border bg-surface"
+      >
+        <summary className="cursor-pointer px-4 py-3 text-lg font-bold">
+          Лидеры по спорным
+        </summary>
+        <div className="border-t border-border px-4 py-3">
+          {leaders.length === 0 ? (
+            <p className="text-sm text-muted">Пока нет поданных спорных.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wider text-muted">
+                    <th className="px-3 py-2.5 text-left font-medium">№ команды</th>
+                    <th className="px-3 py-2.5 text-left font-medium">Подано</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {leaders.map((row, index) => (
+                    <tr key={`${row.teamNumber ?? "none"}-${index}`}>
+                      <td className="px-3 py-2.5 font-mono tabular-nums">
+                        {row.teamNumber ?? "—"}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono tabular-nums">{row.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </details>
+    ) : null}
     <details
       id="page-ochch-controversial-graveyard"
       className="rounded-xl border border-border bg-surface"

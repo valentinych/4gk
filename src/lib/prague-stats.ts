@@ -20,6 +20,13 @@ export interface PragueTeamRow {
   tours: PragueTourResult[];
   /** OCHCH: official participants name when the sheet row matched. */
   href?: string;
+  /** OCHCH: rating.chgk.info team id when the sheet row matched. */
+  teamChgkId?: number;
+  /**
+   * MAK band C for trueDL.
+   * Omitted → C = 1. `null` → keep the team in median/mean, leave it out of trueDL.
+   */
+  coeff?: number | null;
   czech?: boolean;
   amateur?: boolean;
 }
@@ -28,6 +35,8 @@ export interface PraguePayload {
   updatedAt: string;
   tours: PragueTourMeta[];
   teams: PragueTeamRow[];
+  /** OCHCH: where trueDL C came from. Absent on other boards. */
+  trueDlCoeffSource?: string;
 }
 
 /** Highest global question index (1-based across tours) where at least one team has «+». */

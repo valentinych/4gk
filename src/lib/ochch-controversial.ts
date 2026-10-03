@@ -65,12 +65,21 @@ export type OchchControversialMineItem = {
   answerText: string;
   status: OchchControversialVerdict;
   rationale: string | null;
+  trashed: boolean;
 };
 
-export type OchchControversialAdminItem = OchchControversialMineItem & {
+export type OchchControversialAdminItem = Omit<
+  OchchControversialMineItem,
+  "trashed"
+> & {
   locked: boolean;
   teamNumber: number | null;
   decidedByName: string | null;
+};
+
+export type OchchControversialLeader = {
+  teamNumber: number | null;
+  count: number;
 };
 
 /** Server-side: linked rating ID first, then player on a submitted ochch-2026 roster. */
@@ -186,12 +195,14 @@ function mapControversialMine(
     status: OchchControversialVerdict;
     rationale: string | null;
     locked: boolean;
+    trashed: boolean;
   }[],
 ): OchchControversialMineItem[] {
   return rows.map((r) => ({
     id: r.id,
     questionNumber: r.questionNumber,
     answerText: r.answerText,
+    trashed: r.trashed,
     ...serializeControversialMineVerdict(r.locked, r.status, r.rationale),
   }));
 }
@@ -200,7 +211,7 @@ export async function loadOchchControversialMine(
   teamChgkId: number,
 ): Promise<OchchControversialMineItem[]> {
   const rows = await db.ochchControversial.findMany({
-    where: { eventId: OCHCH_EVENT_ID, teamChgkId, trashed: false },
+    where: { eventId: OCHCH_EVENT_ID, teamChgkId },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
@@ -209,6 +220,7 @@ export async function loadOchchControversialMine(
       status: true,
       rationale: true,
       locked: true,
+      trashed: true,
     },
   });
   return mapControversialMine(rows);
@@ -222,7 +234,6 @@ export async function loadOchchControversialMineByPlayer(
       eventId: OCHCH_EVENT_ID,
       playerChgkId,
       teamChgkId: OCHCH_ADMIN_TEAM_CHGK_ID,
-      trashed: false,
     },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
@@ -232,6 +243,7 @@ export async function loadOchchControversialMineByPlayer(
       status: true,
       rationale: true,
       locked: true,
+      trashed: true,
     },
   });
   return mapControversialMine(rows);
@@ -272,6 +284,29 @@ export async function loadOchchControversialGraveyard(): Promise<
   OchchControversialAdminItem[]
 > {
   return loadOchchControversialAdminByTrashed(true);
+}
+
+/** Counts every stored row, including trashed. Hard-deleted rows are already gone. */
+export async function loadOchchControversialLeaders(): Promise<
+  OchchControversialLeader[]
+> {
+  const grouped = await db.ochchControversial.groupBy({
+    by: ["teamChgkId"],
+    where: { eventId: OCHCH_EVENT_ID },
+    _count: { id: true },
+  });
+  return grouped
+    .map((row) => ({
+      teamNumber: ochchSlotNumber(row.teamChgkId),
+      count: row._count.id,
+    }))
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return (
+        (a.teamNumber ?? Number.MAX_SAFE_INTEGER) -
+        (b.teamNumber ?? Number.MAX_SAFE_INTEGER)
+      );
+    });
 }
 
 export function parseQuestionNumber(value: unknown): number | null {

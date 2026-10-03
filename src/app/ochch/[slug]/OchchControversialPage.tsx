@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import {
   loadOchchControversialAdmin,
   loadOchchControversialGraveyard,
+  loadOchchControversialLeaders,
   loadOchchControversialMine,
   loadOchchControversialMineByPlayer,
   resolveOchchControversialPageAccess,
@@ -105,7 +106,7 @@ export async function OchchControversialPage() {
     );
   }
 
-  const [adminRows, graveyardRows, mineItems] = await Promise.all([
+  const [adminRows, graveyardRows, mineItems, leaders] = await Promise.all([
     access.isPageAdmin ? loadOchchControversialAdmin() : Promise.resolve(null),
     access.isPageAdmin ? loadOchchControversialGraveyard() : Promise.resolve(null),
     access.teamChgkId
@@ -113,6 +114,7 @@ export async function OchchControversialPage() {
       : access.isPageAdmin
         ? loadOchchControversialMineByPlayer(access.chgkId)
         : Promise.resolve(null),
+    access.canGraveyard ? loadOchchControversialLeaders() : Promise.resolve(null),
   ]);
 
   return (
@@ -124,6 +126,7 @@ export async function OchchControversialPage() {
           initialRows={adminRows}
           initialGraveyard={graveyardRows ?? []}
           canGraveyard={access.canGraveyard}
+          leaders={leaders}
         />
       ) : null}
       {mineItems ? <MineList items={mineItems} /> : null}

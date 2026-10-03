@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { listOchchAmateurTeamIds } from "@/lib/ochch-amateur";
 import { applyOchchBoardTeams } from "@/lib/ochch-board";
+import { withOchchTrueDlCoeffs } from "@/lib/ochch-truedl-coeffs";
 import {
   OCHCH_CHGK_SHEET_ID,
   OCHCH_CHGK_TOURS,
@@ -36,7 +37,8 @@ async function enrichOchchLivePayload(payload: ChgkLivePayload) {
     /* seed list is enough for name matching */
   }
   const amateurIds = await listOchchAmateurTeamIds();
-  return applyOchchBoardTeams(payload, participants, amateurIds);
+  const board = applyOchchBoardTeams(payload, participants, amateurIds);
+  return withOchchTrueDlCoeffs(board);
 }
 
 export async function GET() {

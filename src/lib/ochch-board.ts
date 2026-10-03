@@ -143,6 +143,7 @@ export function applyOchchBoardTeams(
       ...row,
       team: hit.name,
       href: ochchParticipantHref(hit.teamChgkId),
+      teamChgkId: hit.teamChgkId,
       czech: invite.czech,
       amateur: amateurIds.has(hit.teamChgkId),
     });

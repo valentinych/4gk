@@ -65,7 +65,7 @@ export interface ChgkColumnStats {
 }
 
 export function hazaColumnStats(
-  teams: ReadonlyArray<{ answers: string; score: number; coeff?: number }>,
+  teams: ReadonlyArray<{ answers: string; score: number; coeff?: number | null }>,
   tours: ReadonlyArray<{ q: number }>,
   lastQuestion: number,
 ): ChgkColumnStats {
@@ -81,17 +81,21 @@ export function hazaColumnStats(
   for (const team of teams) {
     sums.push(team.score);
     const sc = tourScoresFromAnswers(team.answers, tours);
+    // null: rating was required and missing — omit from trueDL only.
+    // omitted: OCHP / no lookup — documented C = 1.
+    const includeTrueDl = team.coeff !== null;
     const coeff = team.coeff ?? TRUEDL_COEFF_BASELINE;
     let startedScore = 0;
     for (let ti = 0; ti < tours.length; ti++) {
       if (!started[ti]) continue;
       const q = sc[ti] ?? 0;
       tourValues[ti]!.push(q);
+      if (!includeTrueDl) continue;
       startedScore += q;
       const dl = teamTrueDl(q, tours[ti]!.q, coeff);
       if (dl != null) tourTrueDls[ti]!.push(dl);
     }
-    if (startedN > 0) {
+    if (includeTrueDl && startedN > 0) {
       const dl = teamTrueDl(startedScore, startedN, coeff);
       if (dl != null) sumTrueDls.push(dl);
     }
@@ -138,8 +142,9 @@ function lastQuestionFromAnswers(answersList: readonly string[]): number {
 
 /**
  * Sheet rows on the live board, scored like a haza answer string.
- * Taken mark → "1"; miss or not yet entered → "0". No coeff → C = 1,
- * same as OCHP `/api/ochp/haza` when a team has no MAK band.
+ * Taken mark → "1"; miss or not yet entered → "0".
+ * `coeff` omitted → C = 1, same as OCHP when a team has no MAK band.
+ * `coeff` null → the team stays in median/mean and is left out of trueDL.
  * `progressTeams` decides which tours have started (full field). Scores
  * still come from `teams` (the filtered table).
  */
@@ -152,6 +157,7 @@ export function pragueColumnStats(
   const hazaTeams = teams.map((team) => ({
     answers: answersOf(team, tours),
     score: team.total,
+    ...(team.coeff !== undefined ? { coeff: team.coeff } : {}),
   }));
   const progressAnswers =
     progressTeams === teams

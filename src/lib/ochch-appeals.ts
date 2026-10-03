@@ -85,12 +85,18 @@ export type OchchAppealMineItem = {
   argumentation: string;
   status: OchchAppealVerdict;
   adminRationale: string | null;
+  trashed: boolean;
 };
 
-export type OchchAppealAdminItem = OchchAppealMineItem & {
+export type OchchAppealAdminItem = Omit<OchchAppealMineItem, "trashed"> & {
   locked: boolean;
   teamNumber: number | null;
   decidedByName: string | null;
+};
+
+export type OchchAppealLeader = {
+  teamNumber: number | null;
+  count: number;
 };
 
 /** Server-side: linked rating ID first, then player on a submitted ochch-2026 roster. */
@@ -205,6 +211,7 @@ function mapAppealMine(
     status: OchchAppealVerdict;
     adminRationale: string | null;
     locked: boolean;
+    trashed: boolean;
   }[],
 ): OchchAppealMineItem[] {
   return rows.map((r) => ({
@@ -213,6 +220,7 @@ function mapAppealMine(
     questionNumber: r.questionNumber,
     answerText: r.answerText,
     argumentation: r.argumentation,
+    trashed: r.trashed,
     ...serializeAppealMineVerdict(r.locked, r.status, r.adminRationale),
   }));
 }
@@ -221,7 +229,7 @@ export async function loadOchchAppealMine(
   teamChgkId: number,
 ): Promise<OchchAppealMineItem[]> {
   const rows = await db.ochchAppeal.findMany({
-    where: { eventId: OCHCH_EVENT_ID, teamChgkId, trashed: false },
+    where: { eventId: OCHCH_EVENT_ID, teamChgkId },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
       id: true,
@@ -232,6 +240,7 @@ export async function loadOchchAppealMine(
       status: true,
       adminRationale: true,
       locked: true,
+      trashed: true,
     },
   });
   return mapAppealMine(rows);
@@ -245,7 +254,6 @@ export async function loadOchchAppealMineByPlayer(
       eventId: OCHCH_EVENT_ID,
       playerChgkId,
       teamChgkId: OCHCH_ADMIN_TEAM_CHGK_ID,
-      trashed: false,
     },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
     select: {
@@ -257,6 +265,7 @@ export async function loadOchchAppealMineByPlayer(
       status: true,
       adminRationale: true,
       locked: true,
+      trashed: true,
     },
   });
   return mapAppealMine(rows);
@@ -295,6 +304,27 @@ export async function loadOchchAppealAdmin(): Promise<OchchAppealAdminItem[]> {
 
 export async function loadOchchAppealGraveyard(): Promise<OchchAppealAdminItem[]> {
   return loadOchchAppealAdminByTrashed(true);
+}
+
+/** Counts every stored row, including trashed. Hard-deleted rows are already gone. */
+export async function loadOchchAppealLeaders(): Promise<OchchAppealLeader[]> {
+  const grouped = await db.ochchAppeal.groupBy({
+    by: ["teamChgkId"],
+    where: { eventId: OCHCH_EVENT_ID },
+    _count: { id: true },
+  });
+  return grouped
+    .map((row) => ({
+      teamNumber: ochchSlotNumber(row.teamChgkId),
+      count: row._count.id,
+    }))
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return (
+        (a.teamNumber ?? Number.MAX_SAFE_INTEGER) -
+        (b.teamNumber ?? Number.MAX_SAFE_INTEGER)
+      );
+    });
 }
 
 export function parseQuestionNumber(value: unknown): number | null {

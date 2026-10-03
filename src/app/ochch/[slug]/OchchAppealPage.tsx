@@ -7,6 +7,7 @@ import {
   OCHCH_APPEAL_KIND_LABELS,
   loadOchchAppealAdmin,
   loadOchchAppealGraveyard,
+  loadOchchAppealLeaders,
   loadOchchAppealMine,
   loadOchchAppealMineByPlayer,
   resolveOchchAppealPageAccess,
@@ -60,7 +61,7 @@ function MineList({
           {items.map((item) => (
             <li
               key={item.id}
-              className="space-y-3 overflow-hidden rounded-xl border border-border bg-surface px-4 py-3 text-sm"
+              className={`space-y-3 overflow-hidden rounded-xl border border-border px-4 py-3 text-sm ${item.trashed ? "bg-surface-hover text-muted" : "bg-surface"}`}
             >
               <div className="flex gap-3">
                 <OchchAppealVerdictMark status={item.status} />
@@ -72,6 +73,11 @@ function MineList({
                     {item.questionNumber}.
                   </span>{" "}
                   {item.answerText}
+                  {item.trashed ? (
+                    <span className="ml-2 text-xs font-medium text-muted">
+                      На кладбище
+                    </span>
+                  ) : null}
                 </p>
               </div>
               <div className="w-full">
@@ -122,7 +128,7 @@ export async function OchchAppealPage() {
     );
   }
 
-  const [adminRows, graveyardRows, mineItems] = await Promise.all([
+  const [adminRows, graveyardRows, mineItems, leaders] = await Promise.all([
     access.isPageAdmin ? loadOchchAppealAdmin() : Promise.resolve(null),
     access.isPageAdmin ? loadOchchAppealGraveyard() : Promise.resolve(null),
     access.teamChgkId
@@ -130,6 +136,7 @@ export async function OchchAppealPage() {
       : access.isPageAdmin
         ? loadOchchAppealMineByPlayer(access.chgkId)
         : Promise.resolve(null),
+    access.canGraveyard ? loadOchchAppealLeaders() : Promise.resolve(null),
   ]);
 
   return (
@@ -140,6 +147,7 @@ export async function OchchAppealPage() {
           initialRows={adminRows}
           initialGraveyard={graveyardRows ?? []}
           canGraveyard={access.canGraveyard}
+          leaders={leaders}
         />
       ) : null}
       {mineItems ? <MineList items={mineItems} /> : null}

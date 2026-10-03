@@ -481,6 +481,7 @@ export function OchchAppealAdminTable({
                   <th className="px-3 py-2.5 text-left font-medium">Вид</th>
                   <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
                   <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
+                  <th className="px-3 py-2.5 text-left font-medium">№ команды</th>
                   <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
                   {canGraveyard ? (
                     <th className="px-3 py-2.5 text-left font-medium">
@@ -501,6 +502,12 @@ export function OchchAppealAdminTable({
                         {row.questionNumber}
                       </td>
                       <td className="px-3 py-2.5">{row.answerText}</td>
+                      <td
+                        className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                        title={row.teamNumber === 0 ? "Админы" : undefined}
+                      >
+                        {row.teamNumber ?? "—"}
+                      </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1">
                           <OchchAppealVerdictMark status={row.status} />

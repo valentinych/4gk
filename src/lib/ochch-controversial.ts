@@ -80,6 +80,8 @@ export type OchchControversialAdminItem = Omit<
 export type OchchControversialLeader = {
   teamNumber: number | null;
   count: number;
+  acceptedLocked: number;
+  rejectedLocked: number;
 };
 
 /** Server-side: linked rating ID first, then player on a submitted ochch-2026 roster. */
@@ -286,19 +288,40 @@ export async function loadOchchControversialGraveyard(): Promise<
   return loadOchchControversialAdminByTrashed(true);
 }
 
-/** Counts every stored row, including trashed. Hard-deleted rows are already gone. */
+/**
+ * `count` is every stored row, including trashed and unlocked.
+ * `acceptedLocked` / `rejectedLocked` count only locked rows of that verdict,
+ * including trashed. Unlocked and PENDING rows do not increment them.
+ * Hard-deleted rows are already gone.
+ */
 export async function loadOchchControversialLeaders(): Promise<
   OchchControversialLeader[]
 > {
   const grouped = await db.ochchControversial.groupBy({
-    by: ["teamChgkId"],
+    by: ["teamChgkId", "status", "locked"],
     where: { eventId: OCHCH_EVENT_ID },
     _count: { id: true },
   });
-  return grouped
-    .map((row) => ({
-      teamNumber: ochchSlotNumber(row.teamChgkId),
-      count: row._count.id,
+  const byTeam = new Map<
+    number,
+    Pick<OchchControversialLeader, "count" | "acceptedLocked" | "rejectedLocked">
+  >();
+  for (const row of grouped) {
+    const current = byTeam.get(row.teamChgkId) ?? {
+      count: 0,
+      acceptedLocked: 0,
+      rejectedLocked: 0,
+    };
+    const n = row._count.id;
+    current.count += n;
+    if (row.locked && row.status === "ACCEPTED") current.acceptedLocked += n;
+    else if (row.locked && row.status === "REJECTED") current.rejectedLocked += n;
+    byTeam.set(row.teamChgkId, current);
+  }
+  return [...byTeam.entries()]
+    .map(([teamChgkId, counts]) => ({
+      teamNumber: ochchSlotNumber(teamChgkId),
+      ...counts,
     }))
     .sort((a, b) => {
       if (b.count !== a.count) return b.count - a.count;

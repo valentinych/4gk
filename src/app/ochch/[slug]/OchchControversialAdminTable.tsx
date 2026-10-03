@@ -70,7 +70,12 @@ export function OchchControversialAdminTable({
   initialRows: ControversialAdminRow[];
   initialGraveyard: ControversialAdminRow[];
   canGraveyard: boolean;
-  leaders: { teamNumber: number | null; count: number }[] | null;
+  leaders: {
+    teamNumber: number | null;
+    count: number;
+    acceptedLocked: number;
+    rejectedLocked: number;
+  }[] | null;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -368,6 +373,18 @@ export function OchchControversialAdminTable({
                   <tr className="text-xs uppercase tracking-wider text-muted">
                     <th className="px-3 py-2.5 text-left font-medium">№ команды</th>
                     <th className="px-3 py-2.5 text-left font-medium">Подано</th>
+                    <th className="px-3 py-2.5 text-left font-medium">
+                      <span className="inline-flex text-emerald-600" title="принят">
+                        <Check className="h-5 w-5" aria-hidden />
+                        <span className="sr-only">принят</span>
+                      </span>
+                    </th>
+                    <th className="px-3 py-2.5 text-left font-medium">
+                      <span className="inline-flex text-red-600" title="отклонён">
+                        <X className="h-5 w-5" aria-hidden />
+                        <span className="sr-only">отклонён</span>
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -377,6 +394,12 @@ export function OchchControversialAdminTable({
                         {row.teamNumber ?? "—"}
                       </td>
                       <td className="px-3 py-2.5 font-mono tabular-nums">{row.count}</td>
+                      <td className="px-3 py-2.5 font-mono tabular-nums">
+                        {row.acceptedLocked}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono tabular-nums">
+                        {row.rejectedLocked}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -23,8 +23,10 @@ import {
 } from "@/lib/chgk-column-stats";
 import {
   globalQuestionNumber,
+  placeMovesThroughLastQuestion,
   playedMark,
   tourIndexForQuestion,
+  type PlaceMove,
 } from "@/lib/chgk-rasplyusovka";
 import {
   lastQuestionWithAnyPlus,
@@ -198,6 +200,15 @@ export function ChgkLiveBoard({
     if (!showQuestionStats || !data || displayedTeams.length === 0) return null;
     return pragueColumnStats(displayedTeams, data.tours, data.teams);
   }, [showQuestionStats, data, displayedTeams]);
+
+  const placeMoves = useMemo(() => {
+    if (!standingsToggles || !data) return [];
+    return placeMovesThroughLastQuestion(
+      displayedTeams,
+      data.tours,
+      lastQuestionEntered,
+    );
+  }, [standingsToggles, data, displayedTeams, lastQuestionEntered]);
 
   const rasOn = showRasplyusovka && rasplyusovka;
   const lastAnswered = lastQuestionEntered;
@@ -626,7 +637,7 @@ export function ChgkLiveBoard({
                     <thead className="sticky top-0 z-10">
                       <tr className="bg-gray-100 text-left text-xs uppercase tracking-wider text-gray-700 dark:bg-gray-800 dark:text-gray-200">
                         <th
-                          className={`font-semibold w-12 ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}
+                          className={`font-semibold ${standingsToggles ? "min-w-16" : "w-12"} ${fullscreen ? "px-1 py-0.5 text-center" : "px-3 py-3"}`}
                         >
                           М
                         </th>
@@ -688,6 +699,7 @@ export function ChgkLiveBoard({
                             showMarks={standingsToggles}
                             ratingSum={ratingByTeamKey.get(teamKey) ?? 0}
                             ordinalPlace={rowIdx + 1}
+                            placeMove={placeMoves[rowIdx] ?? null}
                           />
                         );
                       })}
@@ -814,6 +826,7 @@ interface RowFragmentProps {
   showMarks?: boolean;
   ratingSum: number;
   ordinalPlace: number;
+  placeMove?: PlaceMove | null;
 }
 
 function RowFragment({
@@ -828,6 +841,7 @@ function RowFragment({
   showMarks = false,
   ratingSum,
   ordinalPlace,
+  placeMove = null,
 }: RowFragmentProps) {
   const tourOffsets: number[] = [];
   {
@@ -854,7 +868,30 @@ function RowFragment({
         <td
           className={`font-extrabold whitespace-nowrap ${compact ? "px-1 py-0.5 text-center text-sm tabular-nums" : "px-3 py-2.5"}`}
         >
-          {showRating ? ordinalPlace : team.place}
+          {placeMove == null ? (
+            showRating ? ordinalPlace : team.place
+          ) : (
+            <span className="inline-flex items-baseline gap-0.5">
+              {showRating ? ordinalPlace : team.place}
+              {placeMove === "up" ? (
+                <span
+                  className="text-[0.7em] font-bold leading-none text-green-600 dark:text-green-400"
+                  title="Место улучшилось"
+                  aria-label="место улучшилось"
+                >
+                  ▲
+                </span>
+              ) : (
+                <span
+                  className="text-[0.7em] font-bold leading-none text-red-600 dark:text-red-400"
+                  title="Место ухудшилось"
+                  aria-label="место ухудшилось"
+                >
+                  ▼
+                </span>
+              )}
+            </span>
+          )}
         </td>
         <td
           className={`font-semibold ${compact ? "px-1 py-0.5 text-center text-[17px] leading-snug whitespace-nowrap" : "px-3 py-2.5"}`}

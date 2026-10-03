@@ -70,6 +70,57 @@ export function ochchParticipantHref(teamChgkId: number): string {
   return `/ochch/participants#ochch-team-${teamChgkId}`;
 }
 
+/** Slot 2 on the OCHCH roster. Off the tablo and out of question ratings. */
+const OCHCH_HIDDEN_CHGK_TEAM_ID = 105474;
+const OCHCH_HIDDEN_CHGK_SLOT = 2;
+
+/** «Short & Sweet» / «Short and Sweet», after ё→е, trim, and a leading slot number. */
+function isShortAndSweetName(raw: string): boolean {
+  const name = normalizeOchchTeamName(raw)
+    .replace(/^\d+\s*[.)-]?\s*/u, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\u0400-\u04ff]+/giu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return name === "short and sweet";
+}
+
+function sheetTeamSlot(number: string): number | null {
+  const m = number.trim().match(/^0*(\d+)$/);
+  if (!m) return null;
+  return Number(m[1]);
+}
+
+function isOchchHiddenChgkRow(
+  row: PragueTeamRow,
+  hit: OchchNameMatch | null,
+): boolean {
+  if (
+    isShortAndSweetName(row.team) ||
+    (hit != null && isShortAndSweetName(hit.name))
+  ) {
+    return true;
+  }
+  if (hit?.teamChgkId !== OCHCH_HIDDEN_CHGK_TEAM_ID) return false;
+  return (
+    hit.number === OCHCH_HIDDEN_CHGK_SLOT ||
+    sheetTeamSlot(row.number) === OCHCH_HIDDEN_CHGK_SLOT
+  );
+}
+
+/** Same tie labels as the live sheet, on the teams that remain. */
+function assignCompetitionPlaces(teams: PragueTeamRow[]): PragueTeamRow[] {
+  const out: PragueTeamRow[] = [];
+  for (let i = 0; i < teams.length; ) {
+    let j = i + 1;
+    while (j < teams.length && teams[j].total === teams[i].total) j++;
+    const label = j > i + 1 ? `${i + 1}-${j}` : `${i + 1}`;
+    for (let k = i; k < j; k++) out.push({ ...teams[k], place: label });
+    i = j;
+  }
+  return out;
+}
+
 /** Replace matched sheet names with official OCHCH display names; mark Czech / amateur. */
 export function applyOchchBoardTeams(
   payload: PraguePayload,
@@ -77,17 +128,24 @@ export function applyOchchBoardTeams(
   amateurIds: ReadonlySet<number>,
 ): PraguePayload {
   const index = buildOchchNameIndex(participants);
-  const teams: PragueTeamRow[] = payload.teams.map((row) => {
+  const teams: PragueTeamRow[] = [];
+  for (const row of payload.teams) {
     const hit = matchOchchSheetTeamName(row.team, index);
-    if (!hit) return row;
+    // Question rating is (minuses + 1) over every row. Dropping the team
+    // keeps its minuses out of that sum and off every standings view.
+    if (isOchchHiddenChgkRow(row, hit)) continue;
+    if (!hit) {
+      teams.push(row);
+      continue;
+    }
     const invite = ochchInviteFor(hit);
-    return {
+    teams.push({
       ...row,
       team: hit.name,
       href: ochchParticipantHref(hit.teamChgkId),
       czech: invite.czech,
       amateur: amateurIds.has(hit.teamChgkId),
-    };
-  });
-  return { ...payload, teams };
+    });
+  }
+  return { ...payload, teams: assignCompetitionPlaces(teams) };
 }

@@ -61,6 +61,7 @@ export default async function OchchSlugPage({ params }: Props) {
         pageId="ochch-results"
         standingsToggles
         showQuestionStats
+        showRasplyusovka
       />
     );
   }

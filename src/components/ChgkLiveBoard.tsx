@@ -13,6 +13,7 @@ import {
   Maximize2,
   Minimize2,
   RefreshCw,
+  X,
 } from "lucide-react";
 
 import {
@@ -21,10 +22,18 @@ import {
   type ChgkColumnStats,
 } from "@/lib/chgk-column-stats";
 import {
+  globalQuestionNumber,
+  placeChangeArrows,
+  playedMark,
+  tourIndexForQuestion,
+  type PlaceArrow,
+} from "@/lib/chgk-rasplyusovka";
+import {
   lastQuestionWithAnyPlus,
   teamRatingSum,
   type PraguePayload,
   type PragueTeamRow,
+  type PragueTourMeta,
 } from "@/lib/prague-stats";
 import { formatTrueDlHundredths } from "@/lib/truedl";
 
@@ -124,6 +133,8 @@ export interface ChgkLiveBoardProps {
   standingsToggles?: boolean;
   /** OCHCH only: median, mean, and trueDL under Σ and each tour. */
   showQuestionStats?: boolean;
+  /** OCHCH only: per-tour +/− matrix («Расплюсовка»). */
+  showRasplyusovka?: boolean;
 }
 
 export function ChgkLiveBoard({
@@ -136,6 +147,7 @@ export function ChgkLiveBoard({
   adminCsvHref,
   standingsToggles = false,
   showQuestionStats = false,
+  showRasplyusovka = false,
 }: ChgkLiveBoardProps) {
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -149,6 +161,10 @@ export function ChgkLiveBoard({
   const [fitScale, setFitScale] = useState(1);
   const [showRating, setShowRating] = useState(false);
   const [standings, setStandings] = useState<StandingsKind>("all");
+  const [rasplyusovka, setRasplyusovka] = useState(false);
+  const [rasTour, setRasTour] = useState<number | null>(null);
+  const [questionQi, setQuestionQi] = useState<number | null>(null);
+  const questionPopupRef = useRef(false);
   const [fsPage, setFsPage] = useState(0);
   const flipSec = standingsToggles
     ? OCHCH_FULLSCREEN_FLIP_SEC
@@ -184,6 +200,21 @@ export function ChgkLiveBoard({
     return pragueColumnStats(displayedTeams, data.tours, data.teams);
   }, [showQuestionStats, data, displayedTeams]);
 
+  const rasOn = showRasplyusovka && rasplyusovka;
+  const lastAnswered = lastQuestionEntered;
+  const previousAnswered = lastAnswered >= 2 ? lastAnswered - 1 : null;
+  const rasTourIdx =
+    data && data.tours.length > 0
+      ? Math.min(
+          Math.max(0, rasTour ?? tourIndexForQuestion(data.tours, lastAnswered)),
+          data.tours.length - 1,
+        )
+      : 0;
+  questionPopupRef.current =
+    rasOn &&
+    questionQi != null &&
+    (data?.tours[rasTourIdx]?.questionCount ?? 0) > questionQi;
+
   const fsPageCount = Math.max(
     1,
     Math.ceil(displayedTeams.length / FULLSCREEN_PAGE_SIZE),
@@ -198,7 +229,10 @@ export function ChgkLiveBoard({
   useEffect(() => {
     if (!fullscreen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFullscreen(false);
+      if (e.key === "Escape") {
+        if (questionPopupRef.current) return;
+        setFullscreen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
@@ -221,7 +255,7 @@ export function ChgkLiveBoard({
   }, [fsPageCount, standings]);
 
   useEffect(() => {
-    if (!fullscreen || fsPageCount < 2) return;
+    if (!fullscreen || fsPageCount < 2 || rasOn) return;
     let left = flipSec;
     setFsSecondsLeft(left);
     const id = setInterval(() => {
@@ -234,10 +268,19 @@ export function ChgkLiveBoard({
       setFsSecondsLeft(left);
     }, 1_000);
     return () => clearInterval(id);
-  }, [fullscreen, fsPageCount, fsPage, flipSec]);
+  }, [fullscreen, fsPageCount, fsPage, flipSec, rasOn]);
 
   useEffect(() => {
-    if (!fullscreen) {
+    if (!rasOn || questionQi == null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setQuestionQi(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [questionQi, rasOn]);
+
+  useEffect(() => {
+    if (!fullscreen || rasOn) {
       setFitScale(1);
       return;
     }
@@ -265,7 +308,7 @@ export function ChgkLiveBoard({
       ro.disconnect();
       window.removeEventListener("resize", recalc);
     };
-  }, [fullscreen, data, expanded, showRating, standings, fsPage]);
+  }, [fullscreen, data, expanded, showRating, standings, fsPage, rasOn]);
 
   useEffect(() => {
     let cancelled = false;
@@ -395,7 +438,7 @@ export function ChgkLiveBoard({
                   После {lastQuestionEntered} вопроса
                 </span>
               )}
-              {fullscreen && fsPageCount > 1 && (
+              {fullscreen && !rasOn && fsPageCount > 1 && (
                 <span className="text-xs tabular-nums text-muted">
                   {fsPage * FULLSCREEN_PAGE_SIZE + 1}–
                   {Math.min(
@@ -444,6 +487,23 @@ export function ChgkLiveBoard({
                   </button>
                 </>
               ) : null}
+              {showRasplyusovka ? (
+                <button
+                  type="button"
+                  aria-pressed={rasOn}
+                  onClick={() => {
+                    setRasplyusovka((v) => !v);
+                    setQuestionQi(null);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    rasOn
+                      ? "border-gray-400 bg-gray-200 dark:border-gray-500 dark:bg-gray-700"
+                      : "border-border bg-surface"
+                  }`}
+                >
+                  Расплюсовка
+                </button>
+              ) : null}
             </div>
             <button
               type="button"
@@ -464,6 +524,30 @@ export function ChgkLiveBoard({
               )}
             </button>
           </div>
+          {rasOn && data ? (
+            <div className="mb-2 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-semibold text-muted">Тур</span>
+              {data.tours.map((tour, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  aria-pressed={i === rasTourIdx}
+                  aria-label={tour.name}
+                  onClick={() => {
+                    setRasTour(i);
+                    setQuestionQi(null);
+                  }}
+                  className={`inline-flex min-w-8 items-center justify-center rounded-md border px-2.5 py-1 text-xs font-semibold tabular-nums transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                    i === rasTourIdx
+                      ? "border-gray-400 bg-gray-200 dark:border-gray-500 dark:bg-gray-700"
+                      : "border-border bg-surface"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {displayedTeams.length === 0 ? (
             <div
               className={`rounded-xl border border-border bg-surface p-6 text-sm text-muted ${
@@ -474,6 +558,16 @@ export function ChgkLiveBoard({
                 ? "Нет любительских команд"
                 : "Нет чешских команд"}
             </div>
+          ) : rasOn && data ? (
+            <OchchRasplyusovka
+              teams={displayedTeams}
+              tours={data.tours}
+              tourIdx={rasTourIdx}
+              lastQuestion={lastAnswered}
+              previousQuestion={previousAnswered}
+              fill={fullscreen}
+              onQuestion={(qi) => setQuestionQi(qi)}
+            />
           ) : (
             <div
               className={
@@ -610,6 +704,19 @@ export function ChgkLiveBoard({
           )}
         </div>
       )}
+      {rasOn &&
+      data &&
+      questionQi != null &&
+      questionQi < (data.tours[rasTourIdx]?.questionCount ?? 0) ? (
+        <QuestionTakenPopup
+          teams={displayedTeams}
+          tours={data.tours}
+          tourIdx={rasTourIdx}
+          questionIdx={questionQi}
+          lastQuestion={lastAnswered}
+          onClose={() => setQuestionQi(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -834,5 +941,320 @@ function RowFragment({
         );
       })}
     </>
+  );
+}
+
+function PlaceArrowMark({ arrow }: { arrow: PlaceArrow }) {
+  if (arrow === "up") {
+    return (
+      <span
+        className="text-[10px] leading-none text-emerald-600 dark:text-emerald-400"
+        aria-label="место выше"
+      >
+        ▲
+      </span>
+    );
+  }
+  if (arrow === "down") {
+    return (
+      <span
+        className="text-[10px] leading-none text-rose-600 dark:text-rose-400"
+        aria-label="место ниже"
+      >
+        ▼
+      </span>
+    );
+  }
+  return null;
+}
+
+function slotSortKey(team: PragueTeamRow): number {
+  const n = Number.parseInt(team.number, 10);
+  return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+}
+
+function slotLabel(team: PragueTeamRow): string {
+  const n = Number.parseInt(team.number, 10);
+  return Number.isFinite(n) ? String(n) : "—";
+}
+
+function OchchRasplyusovka({
+  teams,
+  tours,
+  tourIdx,
+  lastQuestion,
+  previousQuestion,
+  fill,
+  onQuestion,
+}: {
+  teams: PragueTeamRow[];
+  tours: PragueTourMeta[];
+  tourIdx: number;
+  lastQuestion: number;
+  previousQuestion: number | null;
+  fill: boolean;
+  onQuestion: (questionIdx: number) => void;
+}) {
+  const qCount = tours[tourIdx]?.questionCount ?? 0;
+  const arrows = useMemo(
+    () => placeChangeArrows(teams, tours, lastQuestion, previousQuestion),
+    [teams, tours, lastQuestion, previousQuestion],
+  );
+  const title =
+    lastQuestion > 0
+      ? `Места команд (после вопроса ${lastQuestion})`
+      : "Места команд";
+  const pad = "px-2 py-1.5";
+
+  return (
+    <div
+      className={`rounded-xl border border-border bg-surface shadow-sm ${
+        fill ? "flex min-h-0 flex-1 flex-col overflow-hidden" : ""
+      }`}
+    >
+      <div className="shrink-0 border-b border-border bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+        {title}
+      </div>
+      <div className={fill ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto"}>
+        <table className="w-max min-w-full text-sm">
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-gray-100 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              <th className={`${pad} w-16 text-center font-semibold`}>М</th>
+              <th className={`${pad} min-w-[10rem] text-left font-semibold`}>
+                Команда
+              </th>
+              <th className={`${pad} min-w-[7rem] text-left font-semibold`}>
+                Представляет
+              </th>
+              <th className={`${pad} w-12 text-right font-semibold`}>О</th>
+              {tours.map((tour, i) => (
+                <th
+                  key={`sum-${i}`}
+                  title={tour.name}
+                  className={`${pad} w-10 text-right font-semibold tabular-nums`}
+                >
+                  T{i + 1}
+                </th>
+              ))}
+              {Array.from({ length: qCount }, (_, qi) => (
+                <th key={`q-${qi}`} className="p-0 text-center font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => onQuestion(qi)}
+                    title={`Вопрос ${qi + 1}`}
+                    className="w-full min-w-7 px-1 py-2 text-xs font-semibold tabular-nums hover:bg-gray-200 dark:hover:bg-gray-700"
+                  >
+                    {qi + 1}
+                  </button>
+                </th>
+              ))}
+              <th
+                title={tours[tourIdx]?.name}
+                className={`${pad} w-10 text-right font-semibold tabular-nums`}
+              >
+                T{tourIdx + 1}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {teams.map((team, rowIdx) => {
+              const marks = team.tours[tourIdx]?.marks ?? [];
+              const stripe =
+                rowIdx % 2 === 0
+                  ? "bg-white dark:bg-gray-900"
+                  : "bg-gray-50 dark:bg-gray-800/50";
+              return (
+                <tr
+                  key={`${team.number}|${team.team}|${team.city}`}
+                  className={`${stripe} border-b border-border`}
+                >
+                  <td
+                    className={`${pad} whitespace-nowrap text-center font-extrabold tabular-nums`}
+                  >
+                    <span className="inline-flex items-center justify-center gap-0.5">
+                      {team.place}
+                      <PlaceArrowMark arrow={arrows[rowIdx] ?? null} />
+                    </span>
+                  </td>
+                  <td className={`${pad} text-left font-semibold`}>
+                    <BoardTeamName team={team} compact={false} />
+                  </td>
+                  <td className={`${pad} text-left font-semibold`}>{team.city}</td>
+                  <td
+                    className={`${pad} text-right font-mono font-extrabold tabular-nums`}
+                  >
+                    {team.total}
+                  </td>
+                  {tours.map((_, ti) => (
+                    <td
+                      key={ti}
+                      className={`${pad} text-right font-mono font-bold tabular-nums`}
+                    >
+                      {team.tours[ti]?.total ?? 0}
+                    </td>
+                  ))}
+                  {Array.from({ length: qCount }, (_, qi) => {
+                    const mark = playedMark(
+                      qi < marks.length ? marks[qi] : null,
+                      globalQuestionNumber(tours, tourIdx, qi),
+                      lastQuestion,
+                    );
+                    return (
+                      <td
+                        key={qi}
+                        className={`px-0.5 py-1 text-center font-mono text-xs font-bold ${
+                          mark === true
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200"
+                            : mark === false
+                              ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-200"
+                              : ""
+                        }`}
+                      >
+                        {mark === true ? "+" : mark === false ? "−" : ""}
+                      </td>
+                    );
+                  })}
+                  <td
+                    className={`${pad} text-right font-mono font-bold tabular-nums`}
+                  >
+                    {team.tours[tourIdx]?.total ?? 0}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function QuestionTakenPopup({
+  teams,
+  tours,
+  tourIdx,
+  questionIdx,
+  lastQuestion,
+  onClose,
+}: {
+  teams: PragueTeamRow[];
+  tours: PragueTourMeta[];
+  tourIdx: number;
+  questionIdx: number;
+  lastQuestion: number;
+  onClose: () => void;
+}) {
+  const [label, setLabel] = useState<"number" | "name">("number");
+  const panelRef = useRef<HTMLDivElement>(null);
+  const ordered = useMemo(
+    () =>
+      [...teams].sort(
+        (a, b) =>
+          slotSortKey(a) - slotSortKey(b) || a.team.localeCompare(b.team, "ru"),
+      ),
+    [teams],
+  );
+
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, []);
+
+  const pressed =
+    "bg-gray-200 dark:bg-gray-700";
+  const idle = "bg-surface hover:bg-gray-100 dark:hover:bg-gray-800";
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4"
+      onMouseDown={onClose}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Вопрос ${questionIdx + 1}`}
+        tabIndex={-1}
+        onMouseDown={(e) => e.stopPropagation()}
+        className={`flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg outline-none ${
+          label === "name"
+            ? "w-[min(56rem,calc(100vw-2rem))]"
+            : "w-[min(36rem,calc(100vw-2rem))]"
+        }`}
+      >
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+          <h2 className="text-sm font-semibold">Вопрос {questionIdx + 1}</h2>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex overflow-hidden rounded-md border border-border">
+              <button
+                type="button"
+                aria-pressed={label === "number"}
+                onClick={() => setLabel("number")}
+                className={`px-2.5 py-1 text-xs font-semibold ${
+                  label === "number" ? pressed : idle
+                }`}
+              >
+                номер
+              </button>
+              <button
+                type="button"
+                aria-pressed={label === "name"}
+                onClick={() => setLabel("name")}
+                className={`border-l border-border px-2.5 py-1 text-xs font-semibold ${
+                  label === "name" ? pressed : idle
+                }`}
+              >
+                название
+              </button>
+            </div>
+            <button
+              type="button"
+              aria-label="Закрыть"
+              onClick={onClose}
+              className="rounded-md p-1 text-muted hover:bg-gray-100 hover:text-foreground dark:hover:bg-gray-800"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto overscroll-contain p-3">
+          <div
+            className={
+              label === "name"
+                ? "grid grid-cols-[repeat(auto-fill,minmax(min(100%,8.5rem),1fr))] gap-1"
+                : "grid grid-cols-[repeat(auto-fill,minmax(min(100%,2.75rem),1fr))] gap-1"
+            }
+          >
+            {ordered.map((team) => {
+              const mark = playedMark(
+                team.tours[tourIdx]?.marks[questionIdx],
+                globalQuestionNumber(tours, tourIdx, questionIdx),
+                lastQuestion,
+              );
+              const tone =
+                mark === true
+                  ? "bg-emerald-600 text-white"
+                  : mark === false
+                    ? "bg-rose-600 text-white"
+                    : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400";
+              const result =
+                mark === true ? "взят" : mark === false ? "не взят" : "нет результата";
+              return (
+                <div
+                  key={`${team.number}|${team.team}|${team.city}`}
+                  title={`${team.team}: ${result}`}
+                  className={`min-w-0 rounded px-1 py-1 text-center ${tone} ${
+                    label === "name"
+                      ? "text-[11px] leading-tight [overflow-wrap:anywhere]"
+                      : "font-mono text-xs font-semibold tabular-nums"
+                  }`}
+                >
+                  {label === "name" ? team.team : slotLabel(team)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

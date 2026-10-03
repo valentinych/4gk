@@ -25,6 +25,8 @@ import {
 const POLL_INTERVAL_MS = 30_000;
 const FULLSCREEN_PAGE_SIZE = 23;
 const FULLSCREEN_FLIP_SEC = 15;
+/** OCHCH results (`standingsToggles`). Other boards, including Prague, stay at 15s. */
+const OCHCH_FULLSCREEN_FLIP_SEC = 30;
 
 /** Fullscreen table: keep one line, trim long names (prefer break at last space). */
 function truncateTeamNameFullscreen(name: string, maxLen = 36): string {
@@ -139,7 +141,10 @@ export function ChgkLiveBoard({
   const [showRating, setShowRating] = useState(false);
   const [standings, setStandings] = useState<StandingsKind>("all");
   const [fsPage, setFsPage] = useState(0);
-  const [fsSecondsLeft, setFsSecondsLeft] = useState(FULLSCREEN_FLIP_SEC);
+  const flipSec = standingsToggles
+    ? OCHCH_FULLSCREEN_FLIP_SEC
+    : FULLSCREEN_FLIP_SEC;
+  const [fsSecondsLeft, setFsSecondsLeft] = useState(flipSec);
 
   const lastQuestionEntered = useMemo(
     () => (data ? lastQuestionWithAnyPlus(data.teams, data.tours) : 0),
@@ -193,9 +198,9 @@ export function ChgkLiveBoard({
   useEffect(() => {
     if (!fullscreen) {
       setFsPage(0);
-      setFsSecondsLeft(FULLSCREEN_FLIP_SEC);
+      setFsSecondsLeft(flipSec);
     }
-  }, [fullscreen]);
+  }, [fullscreen, flipSec]);
 
   useEffect(() => {
     setFsPage((p) => Math.min(p, fsPageCount - 1));
@@ -203,19 +208,19 @@ export function ChgkLiveBoard({
 
   useEffect(() => {
     if (!fullscreen || fsPageCount < 2) return;
-    let left = FULLSCREEN_FLIP_SEC;
+    let left = flipSec;
     setFsSecondsLeft(left);
     const id = setInterval(() => {
       if (document.hidden) return;
       left -= 1;
       if (left <= 0) {
         setFsPage((p) => (p + 1) % fsPageCount);
-        left = FULLSCREEN_FLIP_SEC;
+        left = flipSec;
       }
       setFsSecondsLeft(left);
     }, 1_000);
     return () => clearInterval(id);
-  }, [fullscreen, fsPageCount, fsPage]);
+  }, [fullscreen, fsPageCount, fsPage, flipSec]);
 
   useEffect(() => {
     if (!fullscreen) {

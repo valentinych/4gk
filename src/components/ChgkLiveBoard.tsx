@@ -23,10 +23,8 @@ import {
 } from "@/lib/chgk-column-stats";
 import {
   globalQuestionNumber,
-  placeChangeArrows,
   playedMark,
   tourIndexForQuestion,
-  type PlaceArrow,
 } from "@/lib/chgk-rasplyusovka";
 import {
   lastQuestionWithAnyPlus,
@@ -203,7 +201,6 @@ export function ChgkLiveBoard({
 
   const rasOn = showRasplyusovka && rasplyusovka;
   const lastAnswered = lastQuestionEntered;
-  const previousAnswered = lastAnswered >= 2 ? lastAnswered - 1 : null;
   const rasTourIdx =
     data && data.tours.length > 0
       ? Math.min(
@@ -580,7 +577,6 @@ export function ChgkLiveBoard({
               tours={data.tours}
               tourIdx={rasTourIdx}
               lastQuestion={lastAnswered}
-              previousQuestion={previousAnswered}
               fill={fullscreen}
               onQuestion={(qi) => setQuestionQi(qi)}
               onTeam={(team) => setTeamPopupKey(teamRowKey(team))}
@@ -967,30 +963,6 @@ function RowFragment({
   );
 }
 
-function PlaceArrowMark({ arrow }: { arrow: PlaceArrow }) {
-  if (arrow === "up") {
-    return (
-      <span
-        className="text-[10px] leading-none text-emerald-600 dark:text-emerald-400"
-        aria-label="место выше"
-      >
-        ▲
-      </span>
-    );
-  }
-  if (arrow === "down") {
-    return (
-      <span
-        className="text-[10px] leading-none text-rose-600 dark:text-rose-400"
-        aria-label="место ниже"
-      >
-        ▼
-      </span>
-    );
-  }
-  return null;
-}
-
 function slotSortKey(team: PragueTeamRow): number {
   const n = Number.parseInt(team.number, 10);
   return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
@@ -1010,7 +982,6 @@ function OchchRasplyusovka({
   tours,
   tourIdx,
   lastQuestion,
-  previousQuestion,
   fill,
   onQuestion,
   onTeam,
@@ -1019,20 +990,20 @@ function OchchRasplyusovka({
   tours: PragueTourMeta[];
   tourIdx: number;
   lastQuestion: number;
-  previousQuestion: number | null;
   fill: boolean;
   onQuestion: (questionIdx: number) => void;
   onTeam: (team: PragueTeamRow) => void;
 }) {
   const qCount = tours[tourIdx]?.questionCount ?? 0;
-  const arrows = useMemo(
-    () => placeChangeArrows(teams, tours, lastQuestion, previousQuestion),
-    [teams, tours, lastQuestion, previousQuestion],
+  const ordered = useMemo(
+    () =>
+      [...teams].sort(
+        (a, b) =>
+          slotSortKey(a) - slotSortKey(b) || a.team.localeCompare(b.team, "ru"),
+      ),
+    [teams],
   );
-  const title =
-    lastQuestion > 0
-      ? `Места команд (после вопроса ${lastQuestion})`
-      : "Места команд";
+  const title = lastQuestion > 0 ? `После вопроса ${lastQuestion}` : null;
   const pad = "px-2 py-1.5";
 
   return (
@@ -1041,14 +1012,16 @@ function OchchRasplyusovka({
         fill ? "flex min-h-0 flex-1 flex-col overflow-hidden" : ""
       }`}
     >
-      <div className="shrink-0 border-b border-border bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-        {title}
-      </div>
+      {title ? (
+        <div className="shrink-0 border-b border-border bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+          {title}
+        </div>
+      ) : null}
       <div className={fill ? "min-h-0 flex-1 overflow-auto" : "overflow-x-auto"}>
         <table className="w-max min-w-full text-sm">
           <thead className="sticky top-0 z-10">
             <tr className="bg-gray-100 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              <th className={`${pad} w-16 text-center font-semibold`}>М</th>
+              <th className={`${pad} w-10 text-center font-semibold`}>№</th>
               <th className={`${pad} min-w-[10rem] text-left font-semibold`}>
                 Команда
               </th>
@@ -1079,7 +1052,7 @@ function OchchRasplyusovka({
             </tr>
           </thead>
           <tbody>
-            {teams.map((team, rowIdx) => {
+            {ordered.map((team, rowIdx) => {
               const marks = team.tours[tourIdx]?.marks ?? [];
               const stripe =
                 rowIdx % 2 === 0
@@ -1091,12 +1064,9 @@ function OchchRasplyusovka({
                   className={`${stripe} border-b border-border`}
                 >
                   <td
-                    className={`${pad} whitespace-nowrap text-center font-extrabold tabular-nums`}
+                    className={`${pad} text-center font-mono font-bold tabular-nums`}
                   >
-                    <span className="inline-flex items-center justify-center gap-0.5">
-                      {team.place}
-                      <PlaceArrowMark arrow={arrows[rowIdx] ?? null} />
-                    </span>
+                    {slotLabel(team)}
                   </td>
                   <td className={`${pad} text-left font-semibold`}>
                     <button

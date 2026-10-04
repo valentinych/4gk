@@ -126,6 +126,7 @@ export async function OchchControversialPage() {
           initialRows={adminRows}
           initialGraveyard={graveyardRows ?? []}
           canGraveyard={access.canGraveyard}
+          canUnlock={access.canUnlock}
           leaders={leaders}
         />
       ) : null}

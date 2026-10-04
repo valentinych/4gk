@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { OCHCH_EVENT_ID, resolveOchchSubmitTeamChgkId } from "@/lib/ochch";
+import { canUnlockOchchDecision } from "@/lib/ochch-decision-unlock";
 import {
   OCHCH_APPEAL_ADMIN_RATIONALE_REQUIRED,
   OCHCH_APPEAL_ARGUMENTATION_REQUIRED,
@@ -108,7 +109,7 @@ export async function POST(req: Request) {
 }
 
 async function requirePageAdmin(): Promise<
-  | { ok: true; chgkId: number; role: string }
+  | { ok: true; chgkId: number; role: string; email: string | null }
   | { ok: false; response: NextResponse }
 > {
   const session = await getServerSession(authOptions);
@@ -121,7 +122,7 @@ async function requirePageAdmin(): Promise<
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { chgkId: true, role: true },
+    select: { chgkId: true, role: true, email: true },
   });
   if (!user?.chgkId) {
     return {
@@ -136,7 +137,7 @@ async function requirePageAdmin(): Promise<
       response: NextResponse.json({ error: "Недостаточно прав" }, { status: 403 }),
     };
   }
-  return { ok: true, chgkId: user.chgkId, role: user.role };
+  return { ok: true, chgkId: user.chgkId, role: user.role, email: user.email };
 }
 
 async function requireGraveyardMember(
@@ -193,10 +194,39 @@ export async function PATCH(req: Request) {
 
   const action = typeof raw.action === "string" ? raw.action : null;
   if (action === "unlock" || raw.locked === false) {
-    return NextResponse.json(
-      { error: OCHCH_APPEAL_UNLOCK_FORBIDDEN },
-      { status: 409 },
-    );
+    if (!canUnlockOchchDecision(admin.email)) {
+      return NextResponse.json(
+        { error: OCHCH_APPEAL_UNLOCK_FORBIDDEN },
+        { status: 403 },
+      );
+    }
+    const existing = await db.ochchAppeal.findFirst({
+      where: { id, eventId: OCHCH_EVENT_ID },
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    const row = await db.ochchAppeal.update({
+      where: { id: existing.id },
+      data: {
+        locked: false,
+        lockedAt: null,
+        lockedByChgkId: null,
+      },
+    });
+    const decidedByName =
+      row.decidedByChgkId != null
+        ? await ratingPlayerDisplayName(row.decidedByChgkId)
+        : null;
+    return NextResponse.json({
+      ok: true,
+      id: row.id,
+      status: row.status,
+      adminRationale: row.adminRationale,
+      locked: false,
+      decidedByName,
+    });
   }
   if (action === "hardDelete") {
     const denied = await requireGraveyardMember(admin.role, user.chgkId);

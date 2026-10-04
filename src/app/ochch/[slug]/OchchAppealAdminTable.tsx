@@ -80,11 +80,13 @@ export function OchchAppealAdminTable({
   initialRows,
   initialGraveyard,
   canGraveyard,
+  canUnlock,
   leaders,
 }: {
   initialRows: AppealAdminRow[];
   initialGraveyard: AppealAdminRow[];
   canGraveyard: boolean;
+  canUnlock: boolean;
   leaders: { teamNumber: number | null; count: number }[] | null;
 }) {
   const router = useRouter();
@@ -115,7 +117,7 @@ export function OchchAppealAdminTable({
     body: {
       status?: AppealVerdict;
       adminRationale?: string;
-      action?: "lock" | "trash" | "hardDelete";
+      action?: "lock" | "trash" | "hardDelete" | "unlock";
     },
     method: "PATCH" | "DELETE" = "PATCH",
   ): Promise<(Partial<AppealAdminRow> & { error?: string }) | null> {
@@ -203,6 +205,17 @@ export function OchchAppealAdminTable({
     router.refresh();
   }
 
+  async function onUnlock(row: AppealAdminRow, where: "rows" | "graveyard") {
+    if (!canUnlock || !row.locked || pendingId) return;
+    const updated = await patch(row.id, { action: "unlock" });
+    if (!updated) return;
+    const apply = (prev: AppealAdminRow[]) =>
+      prev.map((r) => (r.id === row.id ? { ...r, locked: false } : r));
+    if (where === "graveyard") setGraveyard(apply);
+    else setRows(apply);
+    router.refresh();
+  }
+
   async function onTrash(row: AppealAdminRow) {
     if (pendingId) return;
     if (!window.confirm("На кладбище?")) return;
@@ -280,7 +293,10 @@ export function OchchAppealAdminTable({
                   const isSelected = row.id === selectedId;
                   const verdictDisabled = row.locked || busy;
                   const lockNeedsVerdict = !row.locked && row.status === "PENDING";
-                  const lockDisabled = row.locked || busy || lockNeedsVerdict;
+                  const unlockable = canUnlock && row.locked;
+                  const lockDisabled = unlockable
+                    ? busy
+                    : row.locked || busy || lockNeedsVerdict;
                   return (
                     <tr
                       key={row.id}
@@ -324,24 +340,32 @@ export function OchchAppealAdminTable({
                           <button
                             type="button"
                             aria-label={
-                              row.locked
-                                ? "Решение зафиксировано"
-                                : lockNeedsVerdict
-                                  ? "Сначала выберите вердикт"
-                                  : "Заблокировать решение"
+                              unlockable
+                                ? "Снять замок"
+                                : row.locked
+                                  ? "Решение зафиксировано"
+                                  : lockNeedsVerdict
+                                    ? "Сначала выберите вердикт"
+                                    : "Заблокировать решение"
                             }
                             title={
-                              lockNeedsVerdict
-                                ? "Сначала выберите вердикт"
-                                : undefined
+                              unlockable
+                                ? "Снять замок"
+                                : lockNeedsVerdict
+                                  ? "Сначала выберите вердикт"
+                                  : undefined
                             }
                             aria-pressed={row.locked}
                             aria-disabled={lockDisabled}
                             disabled={lockDisabled}
-                            onClick={() => onLock(row)}
+                            onClick={() =>
+                              unlockable ? onUnlock(row, "rows") : onLock(row)
+                            }
                             className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
                               row.locked
-                                ? "cursor-default text-red-600 disabled:opacity-100"
+                                ? unlockable
+                                  ? "text-red-600 hover:bg-red-50 disabled:opacity-60"
+                                  : "cursor-default text-red-600 disabled:opacity-100"
                                 : "text-muted disabled:opacity-60"
                             }`}
                           >
@@ -511,23 +535,36 @@ export function OchchAppealAdminTable({
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1">
                           <OchchAppealVerdictMark status={row.status} />
-                          <span
-                            className={
-                              row.locked ? "text-red-600" : "text-muted/40"
-                            }
-                            title={
-                              row.locked
-                                ? "Решение зафиксировано"
-                                : "Решение не зафиксировано"
-                            }
-                            aria-label={
-                              row.locked
-                                ? "Решение зафиксировано"
-                                : "Решение не зафиксировано"
-                            }
-                          >
-                            <Lock className="h-5 w-5" aria-hidden />
-                          </span>
+                          {canUnlock && row.locked ? (
+                            <button
+                              type="button"
+                              aria-label="Снять замок"
+                              title="Снять замок"
+                              disabled={busy}
+                              onClick={() => onUnlock(row, "graveyard")}
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-red-600 hover:bg-red-50 disabled:opacity-60"
+                            >
+                              <Lock className="h-5 w-5" aria-hidden />
+                            </button>
+                          ) : (
+                            <span
+                              className={
+                                row.locked ? "text-red-600" : "text-muted/40"
+                              }
+                              title={
+                                row.locked
+                                  ? "Решение зафиксировано"
+                                  : "Решение не зафиксировано"
+                              }
+                              aria-label={
+                                row.locked
+                                  ? "Решение зафиксировано"
+                                  : "Решение не зафиксировано"
+                              }
+                            >
+                              <Lock className="h-5 w-5" aria-hidden />
+                            </span>
+                          )}
                         </div>
                       </td>
                       {canGraveyard ? (

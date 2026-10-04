@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { OCHCH_ADMIN_TEAM_CHGK_ID, OCHCH_EVENT_ID } from "./ochch";
+import { canUnlockOchchDecision } from "./ochch-decision-unlock";
 import {
   getOchchStaffIds,
   isOchchSiteAdmin,
@@ -57,6 +58,7 @@ export type OchchControversialPageAccess =
       chgkId: number;
       isPageAdmin: boolean;
       canGraveyard: boolean;
+      canUnlock: boolean;
       canSubmit: boolean;
       teamChgkId: number | null;
     };
@@ -121,7 +123,7 @@ export async function resolveOchchControversialPageAccess(
 ): Promise<OchchControversialPageAccess> {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { chgkId: true, role: true },
+    select: { chgkId: true, role: true, email: true },
   });
   if (!user?.chgkId) return { gate: "no-id" };
 
@@ -145,6 +147,7 @@ export async function resolveOchchControversialPageAccess(
       user.role,
       user.chgkId,
     ),
+    canUnlock: canUnlockOchchDecision(user.email),
     canSubmit: isPageAdmin || teamChgkId != null,
     teamChgkId,
   };

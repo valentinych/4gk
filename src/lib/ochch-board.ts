@@ -108,6 +108,23 @@ function isOchchHiddenChgkRow(
   );
 }
 
+/** Same rows the CHGK tablo drops (Short & Sweet, slot 2, team id 105474). */
+export function filterOchchChgkBoardTeams(
+  teams: PragueTeamRow[],
+): PragueTeamRow[] {
+  const index = buildOchchNameIndex(OCHCH_TEAMS);
+  return teams.filter((row) => {
+    const byId =
+      row.teamChgkId != null
+        ? (Array.from(index.values()).find(
+            (h) => h.teamChgkId === row.teamChgkId,
+          ) ?? null)
+        : null;
+    const hit = byId ?? matchOchchSheetTeamName(row.team, index);
+    return !isOchchHiddenChgkRow(row, hit);
+  });
+}
+
 /** Same tie labels as the live sheet, on the teams that remain. */
 function assignCompetitionPlaces(teams: PragueTeamRow[]): PragueTeamRow[] {
   const out: PragueTeamRow[] = [];

@@ -176,10 +176,18 @@ export function applyOchchDisplayName(teamChgkId: number, name: string): string 
   return OCHCH_DISPLAY_NAMES[teamChgkId] ?? name;
 }
 
-/** Same table №, different rating team. Official name/city from rating.chgk.info. */
+/**
+ * Same table №, different rating team. Official name/city from rating.chgk.info.
+ * Slot 18 keeps the display name «Весло»; only the rating id differs from Pražma.
+ */
 const OCHCH_SLOT_REPLACEMENTS: Readonly<
   Record<number, Pick<OchchImportedTeam, "name" | "city" | "teamChgkId">>
 > = {
+  18: {
+    name: "Весло",
+    city: "Вена",
+    teamChgkId: 63470,
+  },
   26: {
     name: "✕ ⚠️ Имангулов Амаль Бахтиёрович",
     city: "Сборная",
@@ -297,20 +305,59 @@ async function seedOchchTeams(teams: readonly OchchImportedTeam[]) {
   );
 }
 
-/** Point EventTeam at the replacement ID; leave TeamRoster on the old ID. */
+/**
+ * Point EventTeam at the replacement id.
+ * A different team (slot 26) leaves rosters and submissions on the old id.
+ * The same display name (slot 18 «Весло») is an id correction, so those rows move too.
+ */
 async function syncOchchSlotReplacements() {
   for (const seed of PRAZMA_TEAMS) {
     const slot = OCHCH_SLOT_REPLACEMENTS[seed.number];
     if (!slot || slot.teamChgkId === seed.teamChgkId) continue;
-    await db.eventTeam.updateMany({
-      where: { eventId: OCHCH_EVENT_ID, teamChgkId: seed.teamChgkId },
-      data: {
-        teamChgkId: slot.teamChgkId,
-        teamName: slot.name,
-        displayName: applyOchchDisplayName(slot.teamChgkId, slot.name),
-        city: slot.city,
-      },
+    const from = { eventId: OCHCH_EVENT_ID, teamChgkId: seed.teamChgkId };
+    const taken = await db.eventTeam.findFirst({
+      where: { eventId: OCHCH_EVENT_ID, teamChgkId: slot.teamChgkId },
+      select: { id: true },
     });
+    if (!taken) {
+      await db.eventTeam.updateMany({
+        where: from,
+        data: {
+          teamChgkId: slot.teamChgkId,
+          teamName: slot.name,
+          displayName: applyOchchDisplayName(slot.teamChgkId, slot.name),
+          city: slot.city,
+        },
+      });
+    }
+    if (slot.name !== seed.name) continue;
+    await db.teamRoster.updateMany({
+      where: from,
+      data: { teamChgkId: slot.teamChgkId },
+    });
+    await db.ochchControversial.updateMany({
+      where: from,
+      data: { teamChgkId: slot.teamChgkId },
+    });
+    await db.ochchAppeal.updateMany({
+      where: from,
+      data: { teamChgkId: slot.teamChgkId },
+    });
+    const amateurTaken = await db.ochchAmateurTeam.findUnique({
+      where: {
+        eventId_teamChgkId: {
+          eventId: OCHCH_EVENT_ID,
+          teamChgkId: slot.teamChgkId,
+        },
+      },
+      select: { teamChgkId: true },
+    });
+    if (!amateurTaken) {
+      await db.ochchAmateurTeam.updateMany({
+        where: from,
+        data: { teamChgkId: slot.teamChgkId },
+      });
+    }
   }
 }
 

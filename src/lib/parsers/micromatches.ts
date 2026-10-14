@@ -54,6 +54,8 @@ interface ApiTournament {
   generated_at?: string;
   standings?: {
     divisions?: ApiDivisionStanding[];
+    /** Full round-robin. Division rows only list opponents inside that division. */
+    overall?: ApiStandingRow[];
   };
 }
 
@@ -99,7 +101,10 @@ export interface ParsedTour {
 
 export interface MicroMatchesData {
   leagues: ParsedLeague[];
-  /** Every team, league order then place. Cells include cross-league micromatches. */
+  /**
+   * Every team, league order then division place.
+   * Cells and О/В/Н/П come from `standings.overall` (cross-league included).
+   */
   overall: {
     teams: OverallTeam[];
     teamOrder: number[];
@@ -170,6 +175,13 @@ function adaptTournament(data: ApiTournament): MicroMatchesData {
   }
 
   const rowById = new Map<number, ApiStandingRow>();
+  const overallById = new Map<number, ApiStandingRow>();
+  const overallRows = data.standings?.overall;
+  if (Array.isArray(overallRows)) {
+    for (const row of overallRows) {
+      if (isStandingRow(row)) overallById.set(row.team_id, row);
+    }
+  }
   const leagues: ParsedLeague[] = [];
   for (const division of divisions) {
     const rows = (standingByDiv.get(division.id) ?? [])
@@ -202,10 +214,12 @@ function adaptTournament(data: ApiTournament): MicroMatchesData {
   const overallOrder = leagues.flatMap((league) => league.teamOrder);
   const overallTeams: OverallTeam[] = leagues.flatMap((league) =>
     league.teamOrder.map((id) => {
-      const row = rowById.get(id)!;
+      const divisionRow = rowById.get(id)!;
+      // Division micromatches omit other leagues. The combined row has every pair.
+      const row = overallById.get(id) ?? divisionRow;
       return {
-        id: row.team_id,
-        name: row.team_name,
+        id: divisionRow.team_id,
+        name: divisionRow.team_name,
         league: league.name,
         pts: row.points,
         w: row.wins,

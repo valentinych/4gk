@@ -1,17 +1,60 @@
 const BASE = "https://micromatches.com";
 
-interface RawStage {
-  stage_name: string;
-  stage_number: number;
-  team1_points: number;
-  team2_points: number;
-  result: string;
+interface ApiStageResult {
+  team_id: number;
+  points: number;
+  place: number;
 }
 
-interface RawMatchDetail {
-  team1_name: string;
-  team2_name: string;
-  stages: RawStage[];
+interface ApiStage {
+  name: string;
+  results?: ApiStageResult[];
+  stage_number: number;
+  results_released?: boolean;
+}
+
+interface ApiDivision {
+  id: number;
+  name: string;
+  order: number;
+}
+
+interface ApiMicromatch {
+  wins: number;
+  draws: number;
+  losses: number;
+}
+
+interface ApiStandingRow {
+  micromatches?: Record<string, ApiMicromatch>;
+  wins: number;
+  team_id: number;
+  team_name: string;
+  draws: number;
+  losses: number;
+  stages_points?: number[];
+  points: number;
+  place: number;
+}
+
+interface ApiDivisionStanding {
+  division_id: number;
+  standings?: ApiStandingRow[];
+}
+
+interface ApiTeam {
+  id: number;
+  name: string;
+}
+
+interface ApiTournament {
+  stages?: ApiStage[];
+  teams?: ApiTeam[];
+  divisions?: ApiDivision[];
+  generated_at?: string;
+  standings?: {
+    divisions?: ApiDivisionStanding[];
+  };
 }
 
 export interface MatchStage {
@@ -53,144 +96,188 @@ export interface MicroMatchesData {
   leagues: ParsedLeague[];
   tours: ParsedTour[];
   matchDetails: Record<string, MatchDetail>;
+  generatedAt?: string;
 }
 
-export async function parseMicromatches(slug: string): Promise<MicroMatchesData> {
-  const html = await fetch(`${BASE}/${slug}`).then((r) => r.text());
+export async function fetchMicromatchesTournament(slug: string, password?: string): Promise<unknown> {
+  const url = new URL(`/api/tournaments/${encodeURIComponent(slug)}`, BASE);
+  if (password) url.searchParams.set("password", password);
+  const resp = await fetch(url, { cache: "no-store" });
+  if (!resp.ok) {
+    throw new Error(`micromatches ${slug}: ${resp.status}`);
+  }
+  return resp.json();
+}
 
-  const leagues = parseLeagues(html);
-  const tours = parseTours(html);
+/** Tournament JSON, ignoring `generated_at` (it changes between fetches). */
+export function micromatchesPayloadsDiffer(left: unknown, right: unknown): boolean {
+  return canonicalTournament(left) !== canonicalTournament(right);
+}
+
+export function adaptMicromatchesPayload(data: unknown, slug = "tournament"): MicroMatchesData {
+  if (!data || typeof data !== "object") {
+    throw new Error(`micromatches ${slug}: unexpected payload`);
+  }
+  const tournament = data as ApiTournament;
+  if (!tournament.standings?.divisions || !Array.isArray(tournament.divisions)) {
+    throw new Error(`micromatches ${slug}: unexpected payload`);
+  }
+  return adaptTournament(tournament);
+}
+
+export async function parseMicromatches(slug: string, password?: string): Promise<MicroMatchesData> {
+  const data = await fetchMicromatchesTournament(slug, password);
+  return adaptMicromatchesPayload(data, slug);
+}
+
+function canonicalTournament(value: unknown): string {
+  return JSON.stringify(normalizeTournament(value));
+}
+
+function normalizeTournament(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(normalizeTournament);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      if (key === "generated_at") continue;
+      out[key] = normalizeTournament((value as Record<string, unknown>)[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
+function adaptTournament(data: ApiTournament): MicroMatchesData {
+  const divisions = [...(data.divisions ?? [])].sort((a, b) => a.order - b.order);
+  const standingByDiv = new Map(
+    (data.standings?.divisions ?? []).map((d) => [d.division_id, d.standings ?? []]),
+  );
+  // stages_points follows this array, so keep payload order.
+  const stages = data.stages ?? [];
+  const teamNames = new Map<number, string>();
+  for (const team of data.teams ?? []) {
+    if (typeof team.id === "number" && typeof team.name === "string") teamNames.set(team.id, team.name);
+  }
+
+  const leagues: ParsedLeague[] = [];
+  for (const division of divisions) {
+    const rows = (standingByDiv.get(division.id) ?? [])
+      .filter(isStandingRow)
+      .sort((a, b) => a.place - b.place || a.team_id - b.team_id);
+    if (rows.length === 0) continue;
+
+    const teamOrder = rows.map((row) => row.team_id);
+    const teams: ParsedTeam[] = rows.map((row) => {
+      if (!teamNames.has(row.team_id)) teamNames.set(row.team_id, row.team_name);
+      return {
+        id: row.team_id,
+        name: row.team_name,
+        pts: row.points,
+        w: row.wins,
+        d: row.draws,
+        l: row.losses,
+        results: teamOrder.map((opponentId) => cellScore(row, opponentId)),
+      };
+    });
+
+    leagues.push({
+      name: leagueTitle(division.name),
+      teams,
+      teamOrder,
+    });
+  }
+
+  const tours: ParsedTour[] = [];
+  for (const stage of stages) {
+    if (stage.results_released === false) continue;
+    const winners = (stage.results ?? []).filter(
+      (row) => row.place === 1 && typeof row.points === "number" && typeof row.team_id === "number",
+    );
+    if (winners.length === 0) continue;
+    tours.push({
+      name: stage.name,
+      winners: winners.map((row) => teamNames.get(row.team_id) ?? String(row.team_id)).join(", "),
+      score: winners[0].points,
+    });
+  }
+
+  const pointsByTeam = new Map<number, number[]>();
+  for (const rows of standingByDiv.values()) {
+    for (const row of rows) {
+      if (Array.isArray(row.stages_points)) pointsByTeam.set(row.team_id, row.stages_points);
+    }
+  }
 
   const matchDetails: Record<string, MatchDetail> = {};
   for (const league of leagues) {
     const ids = league.teamOrder;
     for (let i = 0; i < ids.length; i++) {
       for (let j = 0; j < ids.length; j++) {
-        if (i === j) continue;
-        if (league.teams[i].results[j] === null) continue;
-        const key = `${ids[i]}-${ids[j]}`;
-        if (matchDetails[key]) continue;
-        try {
-          const resp = await fetch(`${BASE}/api/micromatches/${slug}/${ids[i]}/${ids[j]}`);
-          if (resp.ok) {
-            const raw: RawMatchDetail = await resp.json();
-            matchDetails[key] = {
-              team1Name: raw.team1_name,
-              team2Name: raw.team2_name,
-              stages: raw.stages.map((s) => ({
-                name: s.stage_name,
-                team1Score: s.team1_points,
-                team2Score: s.team2_points,
-                winner: s.result === "team1_win" ? "team1" : s.result === "team2_win" ? "team2" : "draw",
-              })),
-            };
-          }
-        } catch { /* skip failed requests */ }
+        if (i === j || league.teams[i].results[j] == null) continue;
+        const stagesForPair = pairStages(stages, pointsByTeam.get(ids[i]), pointsByTeam.get(ids[j]));
+        if (!stagesForPair) continue;
+        matchDetails[`${ids[i]}-${ids[j]}`] = {
+          team1Name: league.teams[i].name,
+          team2Name: league.teams[j].name,
+          stages: stagesForPair,
+        };
       }
     }
   }
 
-  return { leagues, tours, matchDetails };
+  return {
+    leagues,
+    tours,
+    matchDetails,
+    ...(typeof data.generated_at === "string" ? { generatedAt: data.generated_at } : {}),
+  };
 }
 
-function parseLeagues(html: string): ParsedLeague[] {
-  const leagues: ParsedLeague[] = [];
-
-  const leaguePattern = /<h2[^>]*>(.*?)<\/h2>\s*<div[^>]*>\s*<table[^>]*>([\s\S]*?)<\/table>/g;
-  let leagueMatch;
-
-  while ((leagueMatch = leaguePattern.exec(html)) !== null) {
-    const leagueName = leagueMatch[1].replace(/<[^>]*>/g, "").trim();
-    const tableHtml = leagueMatch[2];
-
-    const teamOrder: number[] = [];
-    const teams: ParsedTeam[] = [];
-
-    const headerPattern = /data-team-name="([^"]*)"[^>]*data-team-index="(\d+)"/g;
-    const headerIds: number[] = [];
-    let headerMatch;
-    while ((headerMatch = headerPattern.exec(tableHtml)) !== null) {
-      headerIds.push(parseInt(headerMatch[2]));
-    }
-
-    const rowPattern = /<tr\s+data-team-id="(\d+)">([\s\S]*?)<\/tr>/g;
-    let rowMatch;
-
-    while ((rowMatch = rowPattern.exec(tableHtml)) !== null) {
-      const teamId = parseInt(rowMatch[1]);
-      const rowHtml = rowMatch[2];
-      teamOrder.push(teamId);
-
-      const nameMatch = rowHtml.match(/team-name-cell[^>]*>([^<]*)</);
-      const name = nameMatch?.[1]?.trim() ?? "";
-
-      const tdPattern = /<td\s+class="text-center"[^>]*>([\s\S]*?)<\/td>/g;
-      const cells: string[] = [];
-      let tdMatch;
-      while ((tdMatch = tdPattern.exec(rowHtml)) !== null) {
-        cells.push(tdMatch[1].replace(/<[^>]*>/g, "").trim());
-      }
-
-      const pos = parseInt(cells[0] ?? "0");
-      const pts = parseInt(cells[1] ?? "0");
-      const w = parseInt(cells[2] ?? "0");
-      const d = parseInt(cells[3] ?? "0");
-      const l = parseInt(cells[4] ?? "0");
-      void pos;
-
-      const mmPattern = /micromatch-cell[^>]*>([\s\S]*?)<\/td>/g;
-      const diagPattern = /bg-gray-300[^>]*>[^<]*<\/td>/g;
-      const allCellsPattern = /(<td[^>]*micromatch-cell[^>]*>[\s\S]*?<\/td>|<td[^>]*bg-gray-300[^>]*>[^<]*<\/td>)/g;
-
-      void mmPattern;
-      void diagPattern;
-
-      const results: (string | null)[] = [];
-      let cellMatch;
-      while ((cellMatch = allCellsPattern.exec(rowHtml)) !== null) {
-        const cellHtml = cellMatch[1];
-        if (cellHtml.includes("bg-gray-300")) {
-          results.push(null);
-        } else {
-          const scoreMatch = cellHtml.replace(/<[^>]*>/g, "").trim().replace(/\s+/g, "");
-          results.push(scoreMatch || null);
-        }
-      }
-
-      teams.push({ id: teamId, name, pts, w, d, l, results });
-    }
-
-    if (teams.length > 0) {
-      leagues.push({ name: leagueName, teams, teamOrder });
-    }
-  }
-
-  return leagues;
+function isStandingRow(row: ApiStandingRow): boolean {
+  return (
+    typeof row?.team_id === "number" &&
+    typeof row.team_name === "string" &&
+    typeof row.points === "number" &&
+    typeof row.wins === "number" &&
+    typeof row.draws === "number" &&
+    typeof row.losses === "number" &&
+    typeof row.place === "number"
+  );
 }
 
-function parseTours(html: string): ParsedTour[] {
-  const tours: ParsedTour[] = [];
+/** Cell text on micromatches is wins:losses. Question-draws stay in the Н column only. */
+function cellScore(row: ApiStandingRow, opponentId: number): string | null {
+  if (opponentId === row.team_id) return null;
+  const mm = row.micromatches?.[String(opponentId)];
+  if (!mm || typeof mm.wins !== "number" || typeof mm.losses !== "number") return null;
+  return `${mm.wins}:${mm.losses}`;
+}
 
-  const rowPattern = /stage-name-link[^>]*data-stage-id="(\d+)"[^>]*>([\s\S]*?)<\/button>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>\s*<td[^>]*>([\s\S]*?)<\/td>\s*<\/tr>/g;
-
-  let m;
-  while ((m = rowPattern.exec(html)) !== null) {
-    const name = m[2].replace(/<[^>]*>/g, "").trim();
-    const winnersHtml = m[3];
-    const scoreHtml = m[4];
-
-    const winners = winnersHtml
-      .replace(/<[^>]*>/g, "\n")
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(", ");
-
-    const scoreMatch = scoreHtml.replace(/<[^>]*>/g, "").trim();
-    const score = parseInt(scoreMatch) || 0;
-
-    if (name) tours.push({ name, winners, score });
+function pairStages(
+  stages: ApiStage[],
+  left: number[] | undefined,
+  right: number[] | undefined,
+): MatchStage[] | null {
+  if (!left || !right) return null;
+  const n = Math.min(stages.length, left.length, right.length);
+  const rows: MatchStage[] = [];
+  for (let i = 0; i < n; i++) {
+    if (stages[i].results_released === false) continue;
+    const team1Score = left[i];
+    const team2Score = right[i];
+    if (typeof team1Score !== "number" || typeof team2Score !== "number") continue;
+    rows.push({
+      name: stages[i].name,
+      team1Score,
+      team2Score,
+      winner: team1Score > team2Score ? "team1" : team2Score > team1Score ? "team2" : "draw",
+    });
   }
+  return rows;
+}
 
-  return tours;
+function leagueTitle(name: string): string {
+  const trimmed = name.trim();
+  if (/^лига\b/i.test(trimmed)) return trimmed;
+  return `Лига ${trimmed}`;
 }

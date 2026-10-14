@@ -13,11 +13,14 @@ import {
   type KsiTeam,
 } from "@/data/warsaw";
 import {
+  WARSAW_CHGK_2627_SLUG,
   WARSAW_CURRENT_SEASON_START,
+  WARSAW_KSI_2627_SHEET_ID,
   WARSAW_SEASON_STARTS,
   formatWarsawSeason,
   isWarsawCurrentSeason,
   parseWarsawSeasonStart,
+  warsawKsiSheetUrl,
   type WarsawSeasonStart,
 } from "@/lib/warsaw-seasons";
 import { IsiLiveResults } from "./IsiLiveResults";
@@ -122,45 +125,111 @@ export default function WarsawPage() {
     setTab(t);
   }
 
-  const [leagueA, setLeagueA] = useState<CrossTableTeam[]>(fallbackA);
-  const [leagueB, setLeagueB] = useState<CrossTableTeam[]>(fallbackB);
-  const [tours, setTours] = useState<Tour[]>(fallbackTours);
+  const [leagueA, setLeagueA] = useState<CrossTableTeam[]>([]);
+  const [leagueB, setLeagueB] = useState<CrossTableTeam[]>([]);
+  const [tours, setTours] = useState<Tour[]>([]);
   const [matchDetails, setMatchDetails] = useState<Record<string, MatchDetail>>({});
   const [leagueAOrder, setLeagueAOrder] = useState<number[]>([]);
   const [leagueBOrder, setLeagueBOrder] = useState<number[]>([]);
-  const [ksiA, setKsiA] = useState<KsiTeam[]>(fallbackKsiA);
-  const [ksiB, setKsiB] = useState<KsiTeam[]>(fallbackKsiB);
+  const [ksiA, setKsiA] = useState<KsiTeam[]>([]);
+  const [ksiB, setKsiB] = useState<KsiTeam[]>([]);
+  const [chgkNeedsPassword, setChgkNeedsPassword] = useState(false);
   const [isiData, setIsiData] = useState<IsiData | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<"ok" | "error" | null>(null);
 
-  useEffect(() => {
-    fetch("/api/warsaw/data")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.chgk) {
-          const chgk = data.chgk;
-          if (chgk.leagues?.[0]) {
-            setLeagueA(chgk.leagues[0].teams);
-            setLeagueAOrder(chgk.leagues[0].teamOrder);
-          }
-          if (chgk.leagues?.[1]) {
-            setLeagueB(chgk.leagues[1].teams);
-            setLeagueBOrder(chgk.leagues[1].teamOrder);
-          }
-          if (chgk.tours?.length) setTours(chgk.tours);
-          if (chgk.matchDetails) setMatchDetails(chgk.matchDetails);
-        }
-        if (data.ksi) {
-          if (data.ksi.groupA?.length) setKsiA(data.ksi.groupA);
-          if (data.ksi.groupB?.length) setKsiB(data.ksi.groupB);
-        }
-        if (data.isi) setIsiData(data.isi);
-        if (data.updatedAt) setUpdatedAt(data.updatedAt);
-      })
-      .catch(() => {});
+  const applyData = useCallback((data: {
+    chgk?: {
+      leagues?: ParsedLeague[];
+      tours?: Tour[];
+      matchDetails?: Record<string, MatchDetail>;
+    } | null;
+    ksi?: { groupA?: KsiTeam[]; groupB?: KsiTeam[] } | null;
+    isi?: IsiData | null;
+    updatedAt?: string | null;
+    chgkNeedsPassword?: boolean;
+  }, forCurrent: boolean) => {
+    if (data.chgk) {
+      const chgk = data.chgk;
+      if (chgk.leagues?.[0]) {
+        setLeagueA(chgk.leagues[0].teams);
+        setLeagueAOrder(chgk.leagues[0].teamOrder);
+      } else if (forCurrent) {
+        setLeagueA([]);
+        setLeagueAOrder([]);
+      }
+      if (chgk.leagues?.[1]) {
+        setLeagueB(chgk.leagues[1].teams);
+        setLeagueBOrder(chgk.leagues[1].teamOrder);
+      } else if (forCurrent) {
+        setLeagueB([]);
+        setLeagueBOrder([]);
+      }
+      if (chgk.tours?.length) setTours(chgk.tours);
+      else if (forCurrent) setTours([]);
+      if (chgk.matchDetails) setMatchDetails(chgk.matchDetails);
+      else if (forCurrent) setMatchDetails({});
+    } else if (forCurrent) {
+      setLeagueA([]);
+      setLeagueB([]);
+      setTours([]);
+      setMatchDetails({});
+      setLeagueAOrder([]);
+      setLeagueBOrder([]);
+    }
+    if (data.ksi) {
+      if (forCurrent) {
+        setKsiA(data.ksi.groupA ?? []);
+        setKsiB(data.ksi.groupB ?? []);
+      } else {
+        if (data.ksi.groupA?.length) setKsiA(data.ksi.groupA);
+        if (data.ksi.groupB?.length) setKsiB(data.ksi.groupB);
+      }
+    } else if (forCurrent) {
+      setKsiA([]);
+      setKsiB([]);
+    }
+    if (data.isi) setIsiData(data.isi);
+    if (data.updatedAt) setUpdatedAt(data.updatedAt);
+    else if (forCurrent) setUpdatedAt(null);
+    setChgkNeedsPassword(forCurrent && data.chgkNeedsPassword === true);
   }, []);
+
+  const loadSeason = useCallback(async (start: WarsawSeasonStart, signal?: AbortSignal) => {
+    const forCurrent = isWarsawCurrentSeason(start);
+    if (!forCurrent) {
+      setLeagueA(fallbackA);
+      setLeagueB(fallbackB);
+      setTours(fallbackTours);
+      setKsiA(fallbackKsiA);
+      setKsiB(fallbackKsiB);
+      setChgkNeedsPassword(false);
+    }
+    const url = forCurrent ? "/api/warsaw/data?season=2026" : "/api/warsaw/data";
+    const res = await fetch(url, { cache: "no-store", signal, credentials: "same-origin" });
+    const data = await res.json();
+    if (signal?.aborted) return;
+    applyData(data, forCurrent);
+  }, [applyData]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    if (isWarsawCurrentSeason(season)) {
+      setLeagueA([]);
+      setLeagueB([]);
+      setTours([]);
+      setMatchDetails({});
+      setLeagueAOrder([]);
+      setLeagueBOrder([]);
+      setKsiA([]);
+      setKsiB([]);
+      setChgkNeedsPassword(false);
+      setUpdatedAt(null);
+    }
+    loadSeason(season, ac.signal).catch(() => {});
+    return () => ac.abort();
+  }, [season, loadSeason]);
 
   async function handleUpdate() {
     setUpdating(true);
@@ -169,22 +238,7 @@ export default function WarsawPage() {
       const res = await fetch("/api/admin/warsaw/update", { method: "POST" });
       if (res.ok || res.status === 207) {
         setUpdateStatus("ok");
-        const dataRes = await fetch("/api/warsaw/data");
-        const data = await dataRes.json();
-        if (data.chgk?.leagues?.[0]) {
-          setLeagueA(data.chgk.leagues[0].teams);
-          setLeagueAOrder(data.chgk.leagues[0].teamOrder);
-        }
-        if (data.chgk?.leagues?.[1]) {
-          setLeagueB(data.chgk.leagues[1].teams);
-          setLeagueBOrder(data.chgk.leagues[1].teamOrder);
-        }
-        if (data.chgk?.tours?.length) setTours(data.chgk.tours);
-        if (data.chgk?.matchDetails) setMatchDetails(data.chgk.matchDetails);
-        if (data.ksi?.groupA?.length) setKsiA(data.ksi.groupA);
-        if (data.ksi?.groupB?.length) setKsiB(data.ksi.groupB);
-        if (data.isi) setIsiData(data.isi);
-        if (data.updatedAt) setUpdatedAt(data.updatedAt);
+        await loadSeason(season);
       } else {
         setUpdateStatus("error");
       }
@@ -238,7 +292,7 @@ export default function WarsawPage() {
           icon={<Users className="h-4 w-4 text-muted" />}
           label="Обновлено"
           value={
-            !currentSeason && updatedAt
+            updatedAt
               ? new Date(updatedAt).toLocaleString("ru-RU", { timeZone: "Europe/Warsaw", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
               : "—"
           }
@@ -252,17 +306,29 @@ export default function WarsawPage() {
       </div>
 
       {tab === "chgk" ? (
-        currentSeason ? (
-          <ChgkSoon />
-        ) : (
-          <ChgkTab leagueA={leagueA} leagueB={leagueB} tours={tours} matchDetails={matchDetails} leagueAOrder={leagueAOrder} leagueBOrder={leagueBOrder} />
-        )
+        <ChgkTab
+          leagueA={leagueA}
+          leagueB={leagueB}
+          tours={tours}
+          matchDetails={matchDetails}
+          leagueAOrder={leagueAOrder}
+          leagueBOrder={leagueBOrder}
+          sourceHref={currentSeason ? `https://micromatches.com/${WARSAW_CHGK_2627_SLUG}` : "https://micromatches.com/waw-26"}
+          needsPassword={currentSeason && chgkNeedsPassword}
+          onUnlocked={() => {
+            loadSeason(season).catch(() => {});
+          }}
+        />
       ) : tab === "ksi" ? (
-        currentSeason ? (
-          <KsiSoon />
-        ) : (
-          <KsiTab groupA={ksiA} groupB={ksiB} />
-        )
+        <KsiTab
+          groupA={ksiA}
+          groupB={ksiB}
+          sheetHref={
+            currentSeason
+              ? warsawKsiSheetUrl(WARSAW_KSI_2627_SHEET_ID)
+              : "https://docs.google.com/spreadsheets/d/1qFeswBW7vho7U8h9GvGGe8ZAXIqN4Tn0oZHeH5vzo4A"
+          }
+        />
       ) : currentSeason ? (
         <IsiLiveResults />
       ) : (
@@ -353,42 +419,6 @@ function SeasonCard({
   );
 }
 
-function SoonSection({ title }: { title: string }) {
-  return (
-    <div>
-      <h3 className="mb-3 text-sm font-bold">{title}</h3>
-      <div className="rounded-xl border border-border bg-surface px-4 py-14 text-center">
-        <p className="text-sm font-medium text-muted">Скоро</p>
-      </div>
-    </div>
-  );
-}
-
-function ChgkSoon() {
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">Микроматчи ЧГК</h2>
-      </div>
-      <SoonSection title="Лига А" />
-      <SoonSection title="Лига Б" />
-      <SoonSection title="Туры" />
-    </div>
-  );
-}
-
-function KsiSoon() {
-  return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold">КСИ</h2>
-      </div>
-      <SoonSection title="Лига А" />
-      <SoonSection title="Лига Б" />
-    </div>
-  );
-}
-
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
@@ -411,17 +441,22 @@ interface ChgkTabProps {
   matchDetails: Record<string, MatchDetail>;
   leagueAOrder: number[];
   leagueBOrder: number[];
+  sourceHref: string;
+  needsPassword: boolean;
+  onUnlocked: () => void;
 }
 
-function ChgkTab({ leagueA, leagueB, tours, matchDetails, leagueAOrder, leagueBOrder }: ChgkTabProps) {
+function ChgkTab({ leagueA, leagueB, tours, matchDetails, leagueAOrder, leagueBOrder, sourceHref, needsPassword, onUnlocked }: ChgkTabProps) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">Микроматчи ЧГК</h2>
-        <a href="https://micromatches.com/waw-26" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-accent hover:underline">
+        <a href={sourceHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-accent hover:underline">
           micromatches.com <ExternalLink className="h-3 w-3" />
         </a>
       </div>
+
+      {needsPassword && <ChgkPasswordField onUnlocked={onUnlocked} />}
 
       <CrossTableSection title="Лига А" teams={leagueA} matchDetails={matchDetails} teamOrder={leagueAOrder} />
       <CrossTableSection title="Лига Б" teams={leagueB} matchDetails={matchDetails} teamOrder={leagueBOrder} />
@@ -625,12 +660,74 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
 
 /* ───────────────────────── КСИ ───────────────────────── */
 
-function KsiTab({ groupA, groupB }: { groupA: KsiTeam[]; groupB: KsiTeam[] }) {
+function ChgkPasswordField({ onUnlocked }: { onUnlocked: () => void }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+  const [pending, setPending] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true);
+    setError(false);
+    try {
+      const res = await fetch("/api/warsaw/chgk-unlock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) {
+        setError(true);
+        return;
+      }
+      setPassword("");
+      onUnlocked();
+    } catch {
+      setError(true);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="rounded-xl border border-border bg-surface p-4">
+      <label htmlFor="waw27-chgk-password" className="text-sm font-medium">
+        Пароль для полных результатов
+      </label>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <input
+          id="waw27-chgk-password"
+          type="password"
+          name="password"
+          autoComplete="off"
+          spellCheck={false}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError(false);
+          }}
+          aria-invalid={error}
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:max-w-xs"
+        />
+        <button
+          type="submit"
+          disabled={pending || password.length === 0}
+          className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium transition-colors hover:bg-surface disabled:opacity-50"
+        >
+          {pending ? "Проверка…" : "Показать"}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600">Неверный пароль</p>}
+    </form>
+  );
+}
+
+function KsiTab({ groupA, groupB, sheetHref }: { groupA: KsiTeam[]; groupB: KsiTeam[]; sheetHref: string }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">КСИ</h2>
-        <a href="https://docs.google.com/spreadsheets/d/1qFeswBW7vho7U8h9GvGGe8ZAXIqN4Tn0oZHeH5vzo4A" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-accent hover:underline">
+        <a href={sheetHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-accent hover:underline">
           Google Sheets <ExternalLink className="h-3 w-3" />
         </a>
       </div>

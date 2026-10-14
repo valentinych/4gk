@@ -2,6 +2,15 @@
 
 export const WARSAW_CURRENT_SEASON_START = 2026;
 
+/** Micromatches slug for the current season. 2025/26 stays on waw-26. */
+export const WARSAW_CHGK_2627_SLUG = "waw-27";
+
+export const WARSAW_KSI_2627_SHEET_ID = "13XbHRvcy1CmtLcXgOM4mMTvWN81b3YAutAjYsEjJZPo";
+
+export function warsawKsiSheetUrl(sheetId: string): string {
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/edit?gid=0#gid=0`;
+}
+
 export const WARSAW_SEASON_STARTS = [2026, 2025] as const;
 
 export type WarsawSeasonStart = (typeof WARSAW_SEASON_STARTS)[number];

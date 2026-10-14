@@ -1,4 +1,4 @@
-const SHEET_ID = "1qFeswBW7vho7U8h9GvGGe8ZAXIqN4Tn0oZHeH5vzo4A";
+const SHEET_2526 = "1qFeswBW7vho7U8h9GvGGe8ZAXIqN4Tn0oZHeH5vzo4A";
 
 export interface KsiTeam {
   pos: string;
@@ -14,9 +14,13 @@ export interface KsiData {
   groupB: KsiTeam[];
 }
 
-export async function parseKsiSheets(): Promise<KsiData> {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`;
-  const text = await fetch(url).then((r) => r.text());
+export async function parseKsiSheets(sheetId: string = SHEET_2526): Promise<KsiData> {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
+  const resp = await fetch(url, { cache: "no-store" });
+  if (!resp.ok) {
+    throw new Error(`ksi sheets: ${resp.status}`);
+  }
+  const text = await resp.text();
   const rows = parseCSV(text);
 
   const groupA: KsiTeam[] = [];

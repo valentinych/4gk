@@ -86,6 +86,11 @@ export interface ParsedLeague {
   teamOrder: number[];
 }
 
+/** One row of the season-wide cross-table. `results` lines up with `overall.teamOrder`. */
+export interface OverallTeam extends ParsedTeam {
+  league: string;
+}
+
 export interface ParsedTour {
   name: string;
   winners: string;
@@ -94,6 +99,11 @@ export interface ParsedTour {
 
 export interface MicroMatchesData {
   leagues: ParsedLeague[];
+  /** Every team, league order then place. Cells include cross-league micromatches. */
+  overall: {
+    teams: OverallTeam[];
+    teamOrder: number[];
+  };
   tours: ParsedTour[];
   matchDetails: Record<string, MatchDetail>;
   generatedAt?: string;
@@ -159,6 +169,7 @@ function adaptTournament(data: ApiTournament): MicroMatchesData {
     if (typeof team.id === "number" && typeof team.name === "string") teamNames.set(team.id, team.name);
   }
 
+  const rowById = new Map<number, ApiStandingRow>();
   const leagues: ParsedLeague[] = [];
   for (const division of divisions) {
     const rows = (standingByDiv.get(division.id) ?? [])
@@ -168,6 +179,7 @@ function adaptTournament(data: ApiTournament): MicroMatchesData {
 
     const teamOrder = rows.map((row) => row.team_id);
     const teams: ParsedTeam[] = rows.map((row) => {
+      rowById.set(row.team_id, row);
       if (!teamNames.has(row.team_id)) teamNames.set(row.team_id, row.team_name);
       return {
         id: row.team_id,
@@ -186,6 +198,23 @@ function adaptTournament(data: ApiTournament): MicroMatchesData {
       teamOrder,
     });
   }
+
+  const overallOrder = leagues.flatMap((league) => league.teamOrder);
+  const overallTeams: OverallTeam[] = leagues.flatMap((league) =>
+    league.teamOrder.map((id) => {
+      const row = rowById.get(id)!;
+      return {
+        id: row.team_id,
+        name: row.team_name,
+        league: league.name,
+        pts: row.points,
+        w: row.wins,
+        d: row.draws,
+        l: row.losses,
+        results: overallOrder.map((opponentId) => cellScore(row, opponentId)),
+      };
+    }),
+  );
 
   const tours: ParsedTour[] = [];
   for (const stage of stages) {
@@ -209,24 +238,26 @@ function adaptTournament(data: ApiTournament): MicroMatchesData {
   }
 
   const matchDetails: Record<string, MatchDetail> = {};
-  for (const league of leagues) {
-    const ids = league.teamOrder;
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = 0; j < ids.length; j++) {
-        if (i === j || league.teams[i].results[j] == null) continue;
-        const stagesForPair = pairStages(stages, pointsByTeam.get(ids[i]), pointsByTeam.get(ids[j]));
-        if (!stagesForPair) continue;
-        matchDetails[`${ids[i]}-${ids[j]}`] = {
-          team1Name: league.teams[i].name,
-          team2Name: league.teams[j].name,
-          stages: stagesForPair,
-        };
-      }
+  for (let i = 0; i < overallTeams.length; i++) {
+    for (let j = 0; j < overallTeams.length; j++) {
+      if (i === j || overallTeams[i].results[j] == null) continue;
+      const stagesForPair = pairStages(
+        stages,
+        pointsByTeam.get(overallOrder[i]),
+        pointsByTeam.get(overallOrder[j]),
+      );
+      if (!stagesForPair) continue;
+      matchDetails[`${overallOrder[i]}-${overallOrder[j]}`] = {
+        team1Name: overallTeams[i].name,
+        team2Name: overallTeams[j].name,
+        stages: stagesForPair,
+      };
     }
   }
 
   return {
     leagues,
+    overall: { teams: overallTeams, teamOrder: overallOrder },
     tours,
     matchDetails,
     ...(typeof data.generated_at === "string" ? { generatedAt: data.generated_at } : {}),

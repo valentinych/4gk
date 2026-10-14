@@ -74,8 +74,51 @@ interface MatchDetail {
 
 interface ParsedLeague {
   name: string;
-  teams: { id: number; name: string; pts: number; w: number; d: number; l: number; results: (string | null)[] }[];
+  teams: { id: number; name: string; league?: string; pts: number; w: number; d: number; l: number; results: (string | null)[] }[];
   teamOrder: number[];
+}
+
+interface ChgkLeagueView {
+  name: string;
+  teams: CrossTableTeam[];
+  teamOrder: number[];
+}
+
+interface OverallView {
+  teams: CrossTableTeam[];
+  teamOrder: number[];
+  leagueNames: string[];
+}
+
+function emptyOverall(): OverallView {
+  return { teams: [], teamOrder: [], leagueNames: [] };
+}
+
+/** Within-league scores only. Used when a payload has no `overall` (static fallback, old cache). */
+function deriveOverall(leagues: ChgkLeagueView[]): OverallView {
+  return {
+    leagueNames: leagues.flatMap((league) => league.teams.map(() => league.name)),
+    teamOrder: leagues.flatMap((league) => league.teams.map((_, index) => league.teamOrder[index] ?? -1)),
+    teams: leagues.flatMap((league, leagueIndex) =>
+      league.teams.map((team) => ({
+        name: team.name,
+        pts: team.pts,
+        w: team.w,
+        d: team.d,
+        l: team.l,
+        results: leagues.flatMap((other, otherIndex) =>
+          other.teams.map((_, col) => (otherIndex === leagueIndex ? (team.results[col] ?? null) : null)),
+        ),
+      })),
+    ),
+  };
+}
+
+function fallbackLeagues(): ChgkLeagueView[] {
+  return [
+    { name: "Лига А", teams: fallbackA, teamOrder: [] },
+    { name: "Лига Б", teams: fallbackB, teamOrder: [] },
+  ];
 }
 
 interface Tour {
@@ -125,12 +168,10 @@ export default function WarsawPage() {
     setTab(t);
   }
 
-  const [leagueA, setLeagueA] = useState<CrossTableTeam[]>([]);
-  const [leagueB, setLeagueB] = useState<CrossTableTeam[]>([]);
+  const [leagues, setLeagues] = useState<ChgkLeagueView[]>([]);
+  const [overall, setOverall] = useState<OverallView>(emptyOverall());
   const [tours, setTours] = useState<Tour[]>([]);
   const [matchDetails, setMatchDetails] = useState<Record<string, MatchDetail>>({});
-  const [leagueAOrder, setLeagueAOrder] = useState<number[]>([]);
-  const [leagueBOrder, setLeagueBOrder] = useState<number[]>([]);
   const [ksiA, setKsiA] = useState<KsiTeam[]>([]);
   const [ksiB, setKsiB] = useState<KsiTeam[]>([]);
   const [chgkNeedsPassword, setChgkNeedsPassword] = useState(false);
@@ -142,6 +183,7 @@ export default function WarsawPage() {
   const applyData = useCallback((data: {
     chgk?: {
       leagues?: ParsedLeague[];
+      overall?: { teams?: ParsedLeague["teams"]; teamOrder?: number[] };
       tours?: Tour[];
       matchDetails?: Record<string, MatchDetail>;
     } | null;
@@ -152,31 +194,42 @@ export default function WarsawPage() {
   }, forCurrent: boolean) => {
     if (data.chgk) {
       const chgk = data.chgk;
-      if (chgk.leagues?.[0]) {
-        setLeagueA(chgk.leagues[0].teams);
-        setLeagueAOrder(chgk.leagues[0].teamOrder);
+      const nextLeagues: ChgkLeagueView[] = (chgk.leagues ?? [])
+        .filter((league) => league.teams?.length)
+        .map((league) => ({
+          name: league.name,
+          teams: league.teams,
+          teamOrder: league.teamOrder ?? [],
+        }));
+      if (nextLeagues.length || forCurrent) setLeagues(nextLeagues);
+
+      const apiTeams = chgk.overall?.teams ?? [];
+      const apiOrder = chgk.overall?.teamOrder ?? [];
+      const apiOverallReady =
+        apiTeams.length > 0 &&
+        apiOrder.length === apiTeams.length &&
+        apiTeams.every((team) => typeof team.league === "string" && team.results.length === apiTeams.length);
+      if (apiOverallReady) {
+        setOverall({
+          teams: apiTeams,
+          teamOrder: apiOrder,
+          leagueNames: apiTeams.map((team) => team.league!),
+        });
+      } else if (nextLeagues.length) {
+        setOverall(deriveOverall(nextLeagues));
       } else if (forCurrent) {
-        setLeagueA([]);
-        setLeagueAOrder([]);
+        setOverall(emptyOverall());
       }
-      if (chgk.leagues?.[1]) {
-        setLeagueB(chgk.leagues[1].teams);
-        setLeagueBOrder(chgk.leagues[1].teamOrder);
-      } else if (forCurrent) {
-        setLeagueB([]);
-        setLeagueBOrder([]);
-      }
+
       if (chgk.tours?.length) setTours(chgk.tours);
       else if (forCurrent) setTours([]);
       if (chgk.matchDetails) setMatchDetails(chgk.matchDetails);
       else if (forCurrent) setMatchDetails({});
     } else if (forCurrent) {
-      setLeagueA([]);
-      setLeagueB([]);
+      setLeagues([]);
+      setOverall(emptyOverall());
       setTours([]);
       setMatchDetails({});
-      setLeagueAOrder([]);
-      setLeagueBOrder([]);
     }
     if (data.ksi) {
       if (forCurrent) {
@@ -199,8 +252,9 @@ export default function WarsawPage() {
   const loadSeason = useCallback(async (start: WarsawSeasonStart, signal?: AbortSignal) => {
     const forCurrent = isWarsawCurrentSeason(start);
     if (!forCurrent) {
-      setLeagueA(fallbackA);
-      setLeagueB(fallbackB);
+      const seeded = fallbackLeagues();
+      setLeagues(seeded);
+      setOverall(deriveOverall(seeded));
       setTours(fallbackTours);
       setKsiA(fallbackKsiA);
       setKsiB(fallbackKsiB);
@@ -216,12 +270,10 @@ export default function WarsawPage() {
   useEffect(() => {
     const ac = new AbortController();
     if (isWarsawCurrentSeason(season)) {
-      setLeagueA([]);
-      setLeagueB([]);
+      setLeagues([]);
+      setOverall(emptyOverall());
       setTours([]);
       setMatchDetails({});
-      setLeagueAOrder([]);
-      setLeagueBOrder([]);
       setKsiA([]);
       setKsiB([]);
       setChgkNeedsPassword(false);
@@ -307,12 +359,10 @@ export default function WarsawPage() {
 
       {tab === "chgk" ? (
         <ChgkTab
-          leagueA={leagueA}
-          leagueB={leagueB}
+          leagues={leagues}
+          overall={overall}
           tours={tours}
           matchDetails={matchDetails}
-          leagueAOrder={leagueAOrder}
-          leagueBOrder={leagueBOrder}
           sourceHref={currentSeason ? `https://micromatches.com/${WARSAW_CHGK_2627_SLUG}` : "https://micromatches.com/waw-26"}
           needsPassword={currentSeason && chgkNeedsPassword}
           onUnlocked={() => {
@@ -435,18 +485,16 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 /* ───────────────────────── ЧГК ───────────────────────── */
 
 interface ChgkTabProps {
-  leagueA: CrossTableTeam[];
-  leagueB: CrossTableTeam[];
+  leagues: ChgkLeagueView[];
+  overall: OverallView;
   tours: Tour[];
   matchDetails: Record<string, MatchDetail>;
-  leagueAOrder: number[];
-  leagueBOrder: number[];
   sourceHref: string;
   needsPassword: boolean;
   onUnlocked: () => void;
 }
 
-function ChgkTab({ leagueA, leagueB, tours, matchDetails, leagueAOrder, leagueBOrder, sourceHref, needsPassword, onUnlocked }: ChgkTabProps) {
+function ChgkTab({ leagues, overall, tours, matchDetails, sourceHref, needsPassword, onUnlocked }: ChgkTabProps) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -458,8 +506,24 @@ function ChgkTab({ leagueA, leagueB, tours, matchDetails, leagueAOrder, leagueBO
 
       {needsPassword && <ChgkPasswordField onUnlocked={onUnlocked} />}
 
-      <CrossTableSection title="Лига А" teams={leagueA} matchDetails={matchDetails} teamOrder={leagueAOrder} />
-      <CrossTableSection title="Лига Б" teams={leagueB} matchDetails={matchDetails} teamOrder={leagueBOrder} />
+      {leagues.map((league, index) => (
+        <CrossTableSection
+          key={`${league.name}-${index}`}
+          title={league.name}
+          teams={league.teams}
+          matchDetails={matchDetails}
+          teamOrder={league.teamOrder}
+        />
+      ))}
+      {overall.teams.length > 0 && (
+        <CrossTableSection
+          title="Все лиги"
+          teams={overall.teams}
+          matchDetails={matchDetails}
+          teamOrder={overall.teamOrder}
+          leagueNames={overall.leagueNames}
+        />
+      )}
 
       {tours.length > 0 && (
         <div>
@@ -490,14 +554,43 @@ function ChgkTab({ leagueA, leagueB, tours, matchDetails, leagueAOrder, leagueBO
   );
 }
 
+/** Light tints with dark text. Dark mode remaps these 100-backgrounds, so the text flips with it. */
+const LEAGUE_TONES = [
+  { cell: "bg-sky-100 text-sky-950 dark:text-sky-100", swatch: "bg-sky-400" },
+  { cell: "bg-amber-100 text-amber-950 dark:text-amber-100", swatch: "bg-amber-400" },
+  { cell: "bg-violet-100 text-violet-950 dark:text-violet-100", swatch: "bg-violet-400" },
+  { cell: "bg-rose-100 text-rose-950 dark:text-rose-100", swatch: "bg-rose-400" },
+  { cell: "bg-cyan-100 text-cyan-950 dark:text-cyan-100", swatch: "bg-cyan-400" },
+  { cell: "bg-orange-100 text-orange-950 dark:text-orange-100", swatch: "bg-orange-400" },
+] as const;
+
+function leagueMark(name: string): string {
+  const short = name.replace(/^лига\s+/i, "").trim();
+  return short || name;
+}
+
 interface CrossTableProps {
   title: string;
   teams: CrossTableTeam[];
   matchDetails: Record<string, MatchDetail>;
   teamOrder: number[];
+  /** Parallel to `teams`. Set only on the season-wide table. */
+  leagueNames?: string[];
 }
 
-function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTableProps) {
+function CrossTableSection({ title, teams, matchDetails, teamOrder, leagueNames }: CrossTableProps) {
+  const colored = !!leagueNames && leagueNames.length === teams.length;
+  const toneByLeague = new Map<string, number>();
+  if (colored && leagueNames) {
+    for (const name of leagueNames) {
+      if (!toneByLeague.has(name)) toneByLeague.set(name, toneByLeague.size);
+    }
+  }
+  function toneAt(index: number) {
+    if (!colored || !leagueNames) return null;
+    const slot = toneByLeague.get(leagueNames[index]) ?? 0;
+    return LEAGUE_TONES[slot % LEAGUE_TONES.length];
+  }
   const [popup, setPopup] = useState<{ row: number; col: number; x: number; y: number } | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -555,9 +648,24 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
     el.style.transform = "none";
   }, [popup, detail]);
 
+  const legend = colored ? [...toneByLeague.keys()] : [];
+
   return (
     <div>
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
+      {legend.length > 0 && (
+        <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
+          {legend.map((name) => {
+            const tone = LEAGUE_TONES[(toneByLeague.get(name) ?? 0) % LEAGUE_TONES.length];
+            return (
+              <li key={name} className="inline-flex items-center gap-1.5">
+                <span className={`inline-block h-2.5 w-2.5 rounded-sm ${tone.swatch}`} aria-hidden="true" />
+                {name}
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <div className="overflow-x-auto rounded-xl border border-border bg-surface" ref={tableRef}>
         <table className="w-full text-xs">
           <thead>
@@ -568,16 +676,38 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
               <th className="px-1.5 py-2 text-center font-medium text-muted w-7">В</th>
               <th className="px-1.5 py-2 text-center font-medium text-muted w-7">Н</th>
               <th className="px-1.5 py-2 text-center font-medium text-muted w-7">П</th>
-              {teams.map((_, i) => (
-                <th key={i} className="px-1 py-2 text-center font-medium text-muted w-10">{i + 1}</th>
-              ))}
+              {teams.map((team, i) => {
+                const tone = toneAt(i);
+                const league = leagueNames?.[i];
+                return (
+                  <th
+                    key={i}
+                    title={tone && league ? `${league}: ${team.name}` : undefined}
+                    className={`px-1 py-2 text-center font-medium w-10 ${tone ? tone.cell : "text-muted"}`}
+                  >
+                    {tone && league ? (
+                      <span className="block text-[9px] font-bold leading-tight">{leagueMark(league)}</span>
+                    ) : null}
+                    {i + 1}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {teams.map((team, row) => (
+            {teams.map((team, row) => {
+              const tone = toneAt(row);
+              const league = leagueNames?.[row];
+              return (
               <tr key={row} className="hover:bg-surface/30">
                 <td className="sticky left-0 z-10 bg-surface px-2 py-1.5 font-bold text-muted">{row + 1}</td>
-                <td className="sticky left-8 z-10 bg-surface px-2 py-1.5 font-medium whitespace-nowrap max-w-[180px] truncate" title={team.name}>{team.name}</td>
+                <td
+                  className={`sticky left-8 z-10 px-2 py-1.5 font-medium whitespace-nowrap truncate ${tone ? `max-w-[200px] ${tone.cell}` : "max-w-[180px] bg-surface"}`}
+                  title={tone && league ? `${league}: ${team.name}` : team.name}
+                >
+                  {tone && league ? <span className="mr-1 text-[10px] font-bold">{leagueMark(league)}</span> : null}
+                  {team.name}
+                </td>
                 <td className="px-1.5 py-1.5 text-center font-bold">{team.pts}</td>
                 <td className="px-1.5 py-1.5 text-center text-muted">{team.w}</td>
                 <td className="px-1.5 py-1.5 text-center text-muted">{team.d}</td>
@@ -599,7 +729,8 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
                   </td>
                 ))}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

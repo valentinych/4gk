@@ -54,19 +54,13 @@ async function season2026() {
 
   let chgk: MicroMatchesData | null = null;
   let chgkNeedsPassword = false;
-  try {
-    if (unlocked) {
-      chgk = await parseMicromatches(WARSAW_CHGK_2627_SLUG, password);
-    } else {
-      const [publicPayload, fullPayload] = await Promise.all([
-        fetchMicromatchesTournament(WARSAW_CHGK_2627_SLUG),
-        fetchMicromatchesTournament(WARSAW_CHGK_2627_SLUG, password),
-      ]);
-      chgkNeedsPassword = micromatchesPayloadsDiffer(publicPayload, fullPayload);
-      chgk = adaptMicromatchesPayload(publicPayload, WARSAW_CHGK_2627_SLUG);
-    }
-  } catch {
-    chgk = null;
+
+  if (unlocked) {
+    chgk = await parseMicromatches(WARSAW_CHGK_2627_SLUG, password).catch(() => null);
+  } else {
+    const viewed = await loadLockedChgk(password);
+    chgk = viewed.chgk;
+    chgkNeedsPassword = viewed.needsPassword;
   }
 
   const ksi = await parseKsiSheets(WARSAW_KSI_2627_SHEET_ID).catch(() => null);
@@ -78,6 +72,39 @@ async function season2026() {
     updatedAt: chgk?.generatedAt ?? null,
     chgkNeedsPassword,
   });
+}
+
+/**
+ * Locked view of 2026/27 CHGK. Show the password field unless both payloads
+ * were fetched and match. A failed public fetch (micromatches 500s without
+ * the password while the other URL returns access:full) is not a match.
+ */
+async function loadLockedChgk(password: string): Promise<{
+  chgk: MicroMatchesData | null;
+  needsPassword: boolean;
+}> {
+  const [publicResult, fullResult] = await Promise.allSettled([
+    fetchMicromatchesTournament(WARSAW_CHGK_2627_SLUG),
+    fetchMicromatchesTournament(WARSAW_CHGK_2627_SLUG, password),
+  ]);
+
+  const publicOk = publicResult.status === "fulfilled";
+  const fullOk = fullResult.status === "fulfilled";
+  const needsPassword =
+    publicOk && fullOk
+      ? micromatchesPayloadsDiffer(publicResult.value, fullResult.value)
+      : true;
+
+  let chgk: MicroMatchesData | null = null;
+  if (publicOk) {
+    try {
+      chgk = adaptMicromatchesPayload(publicResult.value, WARSAW_CHGK_2627_SLUG);
+    } catch {
+      chgk = null;
+    }
+  }
+
+  return { chgk, needsPassword };
 }
 
 async function loadCache() {

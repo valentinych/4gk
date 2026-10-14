@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Calendar, ChevronDown, MapPin, Users, Trophy, ExternalLink, RefreshCw, Loader2, Check, X as XIcon } from "lucide-react";
 import {
@@ -539,6 +539,22 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
   const detail = popup ? (getDetailKey(popup.row, popup.col) ? matchDetails[getDetailKey(popup.row, popup.col)!] : null) : null;
   const homeResult = popup ? teams[popup.row].results[popup.col] : null;
 
+  useLayoutEffect(() => {
+    const el = popupRef.current;
+    if (!el || !popup) return;
+    const margin = 8;
+    const height = el.offsetHeight;
+    const width = el.offsetWidth;
+    let top = popup.y - height - margin;
+    const maxTop = window.innerHeight - height - margin;
+    if (top > maxTop) top = maxTop;
+    if (top < margin) top = margin;
+    const left = Math.max(margin, Math.min(popup.x - width / 2, window.innerWidth - width - margin));
+    el.style.top = `${top}px`;
+    el.style.left = `${left}px`;
+    el.style.transform = "none";
+  }, [popup, detail]);
+
   return (
     <div>
       <h3 className="mb-3 text-sm font-bold">{title}</h3>
@@ -593,53 +609,36 @@ function CrossTableSection({ title, teams, matchDetails, teamOrder }: CrossTable
         <div className="fixed inset-0 z-[100]" onClick={() => setPopup(null)}>
           <div
             ref={popupRef}
-            className="absolute w-80 rounded-xl border border-border bg-surface shadow-xl"
-            style={{
-              left: Math.max(8, Math.min(popup.x - 160, window.innerWidth - 328)),
-              top: Math.max(8, popup.y - 8),
-              transform: "translateY(-100%)",
-            }}
+            className="absolute w-96 rounded-xl border border-border bg-background shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted">Микроматч</span>
-              <button onClick={() => setPopup(null)} className="rounded p-0.5 text-muted hover:text-foreground"><XIcon className="h-3.5 w-3.5" /></button>
+            <div className="relative flex items-center justify-center border-b border-border px-4 py-2.5">
+              <span className="text-sm text-muted">Микроматч</span>
+              <button onClick={() => setPopup(null)} className="absolute right-3 rounded p-0.5 text-muted hover:text-foreground"><XIcon className="h-4 w-4" /></button>
             </div>
 
-            <div className="px-4 py-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="flex-1 text-xs font-bold text-right leading-tight">{teams[popup.row].name}</p>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-2xl font-bold">{homeResult.split(":")[0]}</span>
-                  <span className="text-lg text-muted">:</span>
-                  <span className="text-2xl font-bold">{homeResult.split(":")[1]}</span>
-                </div>
-                <p className="flex-1 text-xs font-bold leading-tight">{teams[popup.col].name}</p>
+            <div className="px-4 py-4">
+              <div className="flex items-center gap-3">
+                <p className="flex-1 text-center text-base font-bold leading-tight">{teams[popup.row].name}</p>
+                <p className="shrink-0 text-4xl font-bold tabular-nums tracking-tight">{homeResult.replace(":", " : ")}</p>
+                <p className="flex-1 text-center text-base font-bold leading-tight">{teams[popup.col].name}</p>
               </div>
             </div>
 
             {detail && detail.stages.length > 0 && (
-              <div className="border-t border-border divide-y divide-border">
+              <div className="max-h-[50vh] space-y-2 overflow-y-auto px-3 pb-3">
                 {detail.stages.map((stage, i) => (
-                  <div key={i} className="flex items-center px-4 py-2 text-xs">
-                    <div className="flex items-center gap-1.5 w-16 justify-end">
-                      {stage.winner === "team1" ? (
-                        <span className="text-green-600 font-bold">&#10003;</span>
-                      ) : (
-                        <span className="text-red-500 font-bold">&#10007;</span>
-                      )}
-                      <span className="font-mono font-semibold">{stage.team1Score}</span>
+                  <div key={i} className="flex items-center gap-2 rounded-lg bg-surface px-3 py-2.5">
+                    <div className="flex w-16 shrink-0 items-center justify-end gap-1.5">
+                      {stage.winner === "team1" && <span className="font-bold text-green-600">&#10003;</span>}
+                      {stage.winner === "team2" && <span className="font-bold text-red-500">&#10007;</span>}
+                      <span className="font-semibold tabular-nums">{stage.team1Score}</span>
                     </div>
-                    <div className="flex-1 text-center px-2">
-                      <span className="font-medium text-muted">{stage.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 w-16">
-                      <span className="font-mono font-semibold">{stage.team2Score}</span>
-                      {stage.winner === "team2" ? (
-                        <span className="text-green-600 font-bold">&#10003;</span>
-                      ) : (
-                        <span className="text-red-500 font-bold">&#10007;</span>
-                      )}
+                    <p className="flex-1 text-center text-sm font-medium leading-snug">{stage.name}</p>
+                    <div className="flex w-16 shrink-0 items-center gap-1.5">
+                      <span className="font-semibold tabular-nums">{stage.team2Score}</span>
+                      {stage.winner === "team2" && <span className="font-bold text-green-600">&#10003;</span>}
+                      {stage.winner === "team1" && <span className="font-bold text-red-500">&#10007;</span>}
                     </div>
                   </div>
                 ))}

@@ -253,6 +253,13 @@ function cellScore(row: ApiStandingRow, opponentId: number): string | null {
   return `${mm.wins}:${mm.losses}`;
 }
 
+/**
+ * Stage i is `stages[i].name` plus both teams' `stages_points[i]`
+ * (same as `stages[i].results[].points`, or 0 if that team has no result row).
+ * Equal points are a draw: the payload has no per-stage winner.
+ * Points stay even when `results_released` is still false — the password
+ * payload fills them before that flag flips, and they already count in the cell.
+ */
 function pairStages(
   stages: ApiStage[],
   left: number[] | undefined,
@@ -262,18 +269,17 @@ function pairStages(
   const n = Math.min(stages.length, left.length, right.length);
   const rows: MatchStage[] = [];
   for (let i = 0; i < n; i++) {
-    if (stages[i].results_released === false) continue;
     const team1Score = left[i];
     const team2Score = right[i];
     if (typeof team1Score !== "number" || typeof team2Score !== "number") continue;
     rows.push({
-      name: stages[i].name,
+      name: typeof stages[i].name === "string" ? stages[i].name : "",
       team1Score,
       team2Score,
       winner: team1Score > team2Score ? "team1" : team2Score > team1Score ? "team2" : "draw",
     });
   }
-  return rows;
+  return rows.length > 0 ? rows : null;
 }
 
 function leagueTitle(name: string): string {

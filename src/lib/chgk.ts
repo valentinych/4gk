@@ -19,6 +19,7 @@ export interface ChgkSeasonEntry {
   idseason: number;
   idteam: number;
   dateAdded: string;
+  dateRemoved?: string | null;
 }
 
 export interface ChgkTournamentEntry {
@@ -47,9 +48,13 @@ export async function fetchTeam(id: number): Promise<ChgkTeam | null> {
   }
 }
 
-export async function fetchPlayerSeasons(playerId: number): Promise<ChgkSeasonEntry[]> {
+export async function fetchPlayerSeasons(
+  playerId: number,
+  seasonId?: number,
+): Promise<ChgkSeasonEntry[]> {
   try {
-    const res = await fetch(`${BASE}/players/${playerId}/seasons.json?limit=500`, { cache: "no-store" });
+    const qs = seasonId ? `?idseason=${seasonId}` : "?limit=500";
+    const res = await fetch(`${BASE}/players/${playerId}/seasons.json${qs}`, { cache: "no-store" });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : (data.items ?? []);
@@ -212,4 +217,25 @@ export async function fetchPlayerCurrentTeam(
     city: team.town?.name,
     currentSeasonId: sorted[0].idseason,
   };
+}
+
+/**
+ * Team the player is on in the rating season that contains today.
+ * Past seasons are ignored. A row with `dateRemoved` is not a current team.
+ * If several teams are still active, the latest `dateAdded` wins.
+ */
+export async function fetchPlayerCurrentSeasonTeam(
+  playerId: number,
+): Promise<{ teamId: number; teamName: string; currentSeasonId: number } | null> {
+  const seasonId = await fetchCurrentSeasonId();
+  if (!seasonId) return null;
+  const entries = await fetchPlayerSeasons(playerId, seasonId);
+  const active = entries.filter(
+    (e) => e.idseason === seasonId && e.dateRemoved == null && typeof e.idteam === "number",
+  );
+  if (!active.length) return null;
+  active.sort((a, b) => (b.dateAdded ?? "").localeCompare(a.dateAdded ?? ""));
+  const team = await fetchTeam(active[0].idteam);
+  if (!team) return null;
+  return { teamId: team.id, teamName: team.name, currentSeasonId: seasonId };
 }

@@ -18,10 +18,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts       Account[]
-  sessions       Session[]
-  rosters        TeamRoster[]
-  eventTeams     EventTeam[]
+  accounts              Account[]
+  sessions              Session[]
+  rosters               TeamRoster[]
+  eventTeams            EventTeam[]
+  ochp2027Applications  Ochp2027Application[]
 }
 
 model Account {
@@ -228,11 +229,44 @@ model CalendarTemplate {
   createdAt        DateTime @default(now())
 }
 
+/// When registration for ОЧП 2027 opens. No row, or opensAt null, means not opened.
+/// Apply on production with `npx prisma db push --schema=src/prisma/schema.prisma`
+/// (never `--accept-data-loss`). deploy.sh does not run it.
+model Ochp2027Settings {
+  id        String    @id @default("default")
+  opensAt   DateTime?
+  updatedAt DateTime  @updatedAt
+}
+
+model Ochp2027Application {
+  id            String          @id @default(cuid())
+  teamChgkId    Int?
+  teamName      String
+  displayName   String?
+  notInRating   Boolean         @default(false)
+  contactKind   OchpContactKind
+  contactValue  String
+  isTest        Boolean         @default(false)
+  submittedById String?
+  createdAt     DateTime        @default(now())
+
+  submittedBy User? @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+
+  @@index([isTest, createdAt])
+  @@index([teamChgkId])
+}
+
 enum Role {
   PLAYER
   MODERATOR
   ORGANIZER
   ADMIN
+}
+
+enum OchpContactKind {
+  EMAIL
+  TELEGRAM
+  OTHER
 }
 
 enum OchchControversialStatus {

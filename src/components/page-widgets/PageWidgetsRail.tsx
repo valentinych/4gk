@@ -61,7 +61,10 @@ export function PageWidgetsRail() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const archiveLanding = isArchiveLanding(pathname, searchParams);
-  const skipRail = archiveLanding || isPageWidgetUtilityPath(pathname);
+  const skipRail =
+    pathname === OCHP_WIDGET_PATH ||
+    archiveLanding ||
+    isPageWidgetUtilityPath(pathname);
   const { data: session, status } = useSession();
   const { toast } = useToast();
   const isAdmin = session?.user?.role === "ADMIN";

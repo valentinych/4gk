@@ -838,7 +838,9 @@ export default async function OchpSubPage({
     ? "/ochp/results-brain"
     : seasonForNav != null
       ? `/ochp?season=${seasonForNav}`
-      : "/ochp";
+      : slug === "stats"
+        ? "/ochp"
+        : `/ochp?season=${OCHP_SEASON_START_MAX}`;
 
   return (
     <div id="page-ochp-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">

@@ -6,7 +6,11 @@ import { formatWarsawDateTime, isoToWarsawInputValue } from "@/lib/time";
 
 type ContactKind = "EMAIL" | "TELEGRAM" | "OTHER";
 type Preview = "off" | "linked" | "noid" | "guest";
+type PreviewPhase = "before" | "after";
 type TeamSource = "own" | "rating" | "free";
+
+const PREVIEW_TEAM_ID = "preview-example";
+const PREVIEW_TEAM_NAME = "Пример команды";
 
 type PublicTeam = { id: string; name: string; createdAt: string };
 type ContactRow = { id: string; contactKind: ContactKind; contactValue: string };
@@ -38,6 +42,7 @@ export function Ochp2027Client() {
   const [state, setState] = useState<OchpState | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview>("off");
+  const [previewPhase, setPreviewPhase] = useState<PreviewPhase>("before");
   const [opensInput, setOpensInput] = useState("");
   const [savingOpens, setSavingOpens] = useState(false);
 
@@ -149,6 +154,9 @@ export function Ochp2027Client() {
   const showAccountEmail =
     preview !== "guest" && Boolean(state?.viewer.loggedIn && state.viewer.email);
   const testSubmit = isAdmin && preview !== "off";
+  const inPersonaPreview = testSubmit;
+  const registrationOpen = inPersonaPreview || state?.open === true;
+  const showAppliedPreview = inPersonaPreview && previewPhase === "after";
 
   function fail(message: string, field: string | null) {
     setNotice(null);
@@ -280,10 +288,16 @@ export function Ochp2027Client() {
   }
 
   const contacts = new Map((state?.contacts ?? []).map((c) => [c.id, c]));
+  const listedTeams: PublicTeam[] =
+    state == null
+      ? []
+      : showAppliedPreview
+        ? [...state.teams, { id: PREVIEW_TEAM_ID, name: PREVIEW_TEAM_NAME, createdAt: "" }]
+        : state.teams;
   const closedText =
     state == null
       ? null
-      : state.open
+      : registrationOpen
         ? "Приём заявок открыт."
         : state.opensAt
           ? `Приём заявок откроется ${formatWarsawDateTime(state.opensAt)} (по варшавскому времени).`
@@ -378,14 +392,58 @@ export function Ochp2027Client() {
                 ))}
               </div>
               {preview !== "off" && (
+                <fieldset className="mt-4">
+                  <legend className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    Состояние заявки
+                  </legend>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["before", "До заявки"],
+                        ["after", "После заявки"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <label
+                        key={value}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-accent/40 ${
+                          previewPhase === value ? "border-accent bg-accent/10 font-semibold" : "border-border"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`${baseId}-preview-phase`}
+                          checked={previewPhase === value}
+                          onChange={() => {
+                            setPreviewPhase(value);
+                            setError(null);
+                            setInvalidField(null);
+                          }}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
+              {preview !== "off" && (
                 <p className="mt-3 text-xs text-muted">
                   Заявки из этого просмотра сохраняются как тестовые и не видны в публичном списке.
+                  {previewPhase === "after"
+                    ? " «Пример команды» только в этом просмотре и в базу не записывается."
+                    : ""}
                 </p>
               )}
             </fieldset>
           )}
 
-          {state.open && (
+          {showAppliedPreview && (
+            <p className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Заявка принята: «{PREVIEW_TEAM_NAME}».
+            </p>
+          )}
+
+          {registrationOpen && !showAppliedPreview && (
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-border bg-surface p-5" noValidate>
               <h2 className="text-sm font-bold">Приём заявок</h2>
 
@@ -640,12 +698,13 @@ export function Ochp2027Client() {
             <h2 id={`${baseId}-list`} className="text-sm font-bold">
               Заявившиеся команды
             </h2>
-            {state.teams.length === 0 ? (
+            {listedTeams.length === 0 ? (
               <p className="mt-2 text-sm text-muted">Пока никто не заявился.</p>
             ) : (
               <ol className="mt-3 divide-y divide-border rounded-xl border border-border bg-surface">
-                {state.teams.map((team) => {
-                  const contact = isAdmin ? contacts.get(team.id) : undefined;
+                {listedTeams.map((team) => {
+                  const contact =
+                    team.id === PREVIEW_TEAM_ID ? undefined : isAdmin ? contacts.get(team.id) : undefined;
                   return (
                     <li key={team.id} className="px-4 py-3">
                       <div className="flex items-baseline justify-between gap-3">
@@ -653,9 +712,11 @@ export function Ochp2027Client() {
                           <span className="font-medium">{team.name}</span>{" "}
                           <span className="text-muted">заявилась</span>
                         </p>
-                        <time dateTime={team.createdAt} className="shrink-0 text-xs text-muted tabular-nums">
-                          {formatWarsawDateTime(team.createdAt)}
-                        </time>
+                        {team.createdAt ? (
+                          <time dateTime={team.createdAt} className="shrink-0 text-xs text-muted tabular-nums">
+                            {formatWarsawDateTime(team.createdAt)}
+                          </time>
+                        ) : null}
                       </div>
                       {contact && (
                         <p className="mt-1 text-xs text-muted">

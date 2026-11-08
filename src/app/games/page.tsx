@@ -43,7 +43,8 @@ export default function GamesPage() {
           {
             href: "/others",
             title: "Другие турниры",
-            description: "ОЧЧ-2026 — открытый чемпионат Чехии, 3–4 октября 2026, Прага",
+            description:
+              "ОЧЧ-2026 — открытый чемпионат Чехии, 3–4 октября 2026, Прага. ОЧБ-2026 — I Открытый Чемпионат Барселоны, 20–22 ноября 2026",
             badge: "Прага",
             badgeColor: "bg-sky-50 text-sky-800 border-sky-100",
           },

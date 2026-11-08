@@ -31,6 +31,7 @@ export const cityColors: Record<string, { bg: string; text: string; border: stri
   Познань:  { bg: "bg-cyan-50",    text: "text-cyan-700",    border: "border-cyan-200",    dot: "bg-cyan-500" },
   Катовице: { bg: "bg-orange-50",  text: "text-orange-700",  border: "border-orange-200",  dot: "bg-orange-500" },
   Прага:    { bg: "bg-sky-50",     text: "text-sky-800",     border: "border-sky-200",     dot: "bg-sky-600" },
+  Барселона: { bg: "bg-red-50",   text: "text-red-700",    border: "border-red-200",     dot: "bg-red-500" },
 };
 
 export const defaultCityColor = {
@@ -51,5 +52,5 @@ export const EVENT_TYPES = [
 ] as const;
 
 export const CITY_OPTIONS = [
-  "Варшава", "Краков", "Вроцлав", "Гданьск", "Сопот", "Познань", "Катовице", "Прага",
+  "Варшава", "Краков", "Вроцлав", "Гданьск", "Сопот", "Познань", "Катовице", "Прага", "Барселона",
 ] as const;

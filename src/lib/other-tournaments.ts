@@ -23,6 +23,16 @@ export const OTHER_TOURNAMENTS: OtherTournament[] = [
     status: "upcoming",
   },
   {
+    href: "/ochb",
+    emoji: "🇪🇸",
+    title: "ОЧБ-2026",
+    description: "I Открытый Чемпионат Барселоны.",
+    cities: ["Барселона"],
+    dateLabel: "20–22 ноября 2026",
+    startDate: "2026-11-20",
+    status: "upcoming",
+  },
+  {
     href: "/prazma",
     emoji: "🏃",
     title: "Pražma 2026",

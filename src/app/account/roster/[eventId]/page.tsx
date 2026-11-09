@@ -8,6 +8,7 @@ import {
   fetchPlayerCurrentTeam,
   fetchTeamRosterInfo,
 } from "@/lib/chgk";
+import { isOchbEvent } from "@/lib/ochb";
 import { isOchchEvent } from "@/lib/ochch";
 import RosterForm, { type SuggestedTeamData } from "./RosterForm";
 
@@ -17,6 +18,7 @@ export default async function RosterPage({ params }: Props) {
   const { eventId } = await params;
 
   if (isOchchEvent(eventId)) redirect("/ochch/roster");
+  if (isOchbEvent(eventId)) redirect("/ochb/roster");
 
   // Explicitly read cookies before getServerSession — required in Next.js 15+
   // where cookies() is async and getServerSession may otherwise see an empty jar.

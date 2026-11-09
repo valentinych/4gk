@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { isOchbEvent } from "@/lib/ochb";
 import { isOchchEvent } from "@/lib/ochch";
 import { withBaseFlags } from "@/lib/roster-flags";
 
@@ -69,27 +70,33 @@ export async function POST(req: Request, { params }: Params) {
   }
 
   const teamChgkId = body.teamChgkId ?? null;
+  const presetLabel = isOchchEvent(eventId) ? "ОЧЧ" : isOchbEvent(eventId) ? "ОЧБ" : null;
 
-  if (isOchchEvent(eventId)) {
+  if (presetLabel) {
     if (!session.user.chgkId) {
       return NextResponse.json(
         { error: "Привяжите ID игрока rating.chgk.info в профиле" },
         { status: 403 },
       );
     }
-    if (!teamChgkId || teamChgkId <= 0) {
+    // ОЧБ teams without a rating id are stored as a negative teamChgkId.
+    const missingTeam =
+      teamChgkId == null ||
+      teamChgkId === 0 ||
+      (presetLabel === "ОЧЧ" && teamChgkId < 0);
+    if (missingTeam) {
       return NextResponse.json(
-        { error: "Выберите команду из списка ОЧЧ" },
+        { error: `Выберите команду из списка ${presetLabel}` },
         { status: 400 },
       );
     }
-    const ochchTeam = await db.eventTeam.findFirst({
+    const presetTeam = await db.eventTeam.findFirst({
       where: { eventId, teamChgkId, withdrawnAt: null },
       select: { id: true },
     });
-    if (!ochchTeam) {
+    if (!presetTeam) {
       return NextResponse.json(
-        { error: "Выберите команду из списка ОЧЧ" },
+        { error: `Выберите команду из списка ${presetLabel}` },
         { status: 400 },
       );
     }
@@ -107,9 +114,8 @@ export async function POST(req: Request, { params }: Params) {
   }));
 
   const roster = await db.$transaction(async (tx) => {
-    // OCHCH: one roster per team — last write replaces another user's row (same as
-    // DS attaching players to an existing EventTeam: no confirm, no merge).
-    if (isOchchEvent(eventId) && teamChgkId) {
+    // One roster per team — last write replaces another user's row.
+    if (presetLabel && teamChgkId) {
       await tx.teamRoster.deleteMany({
         where: { eventId, teamChgkId, userId: { not: userId } },
       });

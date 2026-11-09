@@ -6,16 +6,21 @@ export const OCHB_PATH = "/ochb";
 export const OCHB_RATING_TOURNAMENT_ID = 14496;
 export const OCHB_CHANNEL_URL = "https://t.me/nvrmr_bcn";
 export const OCHB_DATE_LABEL = "20–22 ноября 2026";
+export const OCHB_REGISTRATION_URL = "https://forms.gle/64ZLtBEfer1JxJWw7";
 
-/** From https://t.me/nvrmr_bcn/60. The form preview uses the same URL. */
+/**
+ * «Витрина» tab of the current team list (t.me/nvrmr_bcn/60).
+ * The share link has no gid; export?format=csv&gid=0 returns HTTP 400.
+ * gid 582300771 is the only tab and is the export that returns teams.
+ */
+export const OCHB_TEAMS_SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1R1gdkozkB5mXLardOftR6KlNhheWMdjDS2F-7q8yfOs/edit?gid=582300771";
+
+/** From https://t.me/nvrmr_bcn/60. The team list itself is /ochb/participants. */
 export const OCHB_LINKS = [
   {
     label: "Форма регистрации",
-    href: "https://forms.gle/64ZLtBEfer1JxJWw7",
-  },
-  {
-    label: "Актуальный список команд",
-    href: "https://docs.google.com/spreadsheets/d/1R1gdkozkB5mXLardOftR6KlNhheWMdjDS2F-7q8yfOs/edit?usp=sharing",
+    href: OCHB_REGISTRATION_URL,
   },
   {
     label: "Пост для поиска легионеров и команд",
@@ -134,15 +139,39 @@ export const OCHB_TILES: OchbLandingTile[] = [
   },
   {
     slug: "results",
-    emoji: "🏆",
-    title: "Результаты рейтинга",
+    emoji: "❓",
+    title: "Результаты Что? Где? Когда?",
     href: "/ochb/results",
+  },
+  {
+    slug: "results-quiz",
+    emoji: "🎲",
+    title: "Квиз «Вопроситос»",
+    href: "/ochb/results-quiz",
+  },
+  {
+    slug: "results-si",
+    emoji: "🎯",
+    title: "Результаты Своей игры",
+    href: "/ochb/results-si",
+  },
+  {
+    slug: "results-black",
+    emoji: "😈",
+    title: "Чёрное ЧГК",
+    href: "/ochb/results-black",
+  },
+  {
+    slug: "roster",
+    emoji: "📋",
+    title: "Подать состав",
+    href: "/ochb/roster",
   },
   {
     slug: "registration",
     emoji: "📝",
-    title: OCHB_LINKS[0].label,
-    href: OCHB_LINKS[0].href,
+    title: "Форма регистрации",
+    href: OCHB_REGISTRATION_URL,
     external: true,
   },
 ];
@@ -151,6 +180,10 @@ export function ochbRatingPublicUrl(
   tournamentId: number = OCHB_RATING_TOURNAMENT_ID,
 ): string {
   return `https://rating.chgk.info/tournament/${tournamentId}`;
+}
+
+export function isOchbEvent(eventId: string): boolean {
+  return eventId === OCHB_EVENT_ID;
 }
 
 export const OCHB = {
@@ -165,27 +198,188 @@ export const OCHB = {
   ratingUrl: ochbRatingPublicUrl(),
 } as const;
 
-/** Create the calendar row only when it is missing. Does not seed teams. */
+export interface OchbTeam {
+  number: number;
+  name: string;
+  city: string;
+  /** rating.chgk.info id. Null when there is no unique exact-name match. */
+  teamChgkId: number | null;
+}
+
+/**
+ * Numbered list from the «Витрина» tab, fetched 2026-11-09.
+ * Source: OCHB_TEAMS_SHEET_URL (t.me/nvrmr_bcn/60).
+ * The older registration sheet
+ * https://docs.google.com/spreadsheets/d/1b288ua8AvE9QPjK1sH7V3SMi4chJlBprWi-QA1DJkFs
+ * opens, but it is the form dump, not this list.
+ * Rating ids are the sheet cell when it is a real team id.
+ * Пляжники: sheet cell 86177 is «Сфинкс Света»; exact name is 107727.
+ * Византийский консенсус: cell was not an id; exact name is 79497.
+ * Левый глаз Дэвида Боуи: cell 99296 is «Щи loves you»; no exact-name team.
+ * Manychat, Lorem Ipsum and Тыквенные латы have no unique exact-name id.
+ */
+export const OCHB_TEAMS: readonly OchbTeam[] = [
+  { number: 1, name: "Так тоже можно", city: "Барселона", teamChgkId: 102282 },
+  { number: 2, name: "Кавалуния", city: "Барселона", teamChgkId: 95523 },
+  { number: 3, name: "Слон разума", city: "Барселона", teamChgkId: 72693 },
+  { number: 4, name: "Горизонт планирования", city: "Валенсия", teamChgkId: 108159 },
+  { number: 5, name: "Jamon everybody", city: "Валенсия", teamChgkId: 108098 },
+  { number: 6, name: "Manychat", city: "Барселона", teamChgkId: null },
+  { number: 7, name: "ЖЗЛ", city: "Барселона", teamChgkId: 99902 },
+  { number: 8, name: "Испанский стыд", city: "Gijon", teamChgkId: 107866 },
+  { number: 9, name: "Белые риэлторы", city: "Валенсия", teamChgkId: 108161 },
+  { number: 10, name: "Кринж без выходных", city: "Варшава", teamChgkId: 85064 },
+  { number: 11, name: "В поисках мема", city: "Цюрих", teamChgkId: 79286 },
+  { number: 12, name: "В гостях у Кафки", city: "Прага", teamChgkId: 65268 },
+  { number: 13, name: "X-promt", city: "Рига", teamChgkId: 4032 },
+  { number: 14, name: "Прыг-Скок", city: "Мюнхен", teamChgkId: 72544 },
+  { number: 15, name: "Олеги Литвы", city: "Сборная", teamChgkId: 80965 },
+  { number: 16, name: "Приматы", city: "Сборная", teamChgkId: 26956 },
+  { number: 17, name: "Пробковый ноктурлабиум", city: "Хельсинки", teamChgkId: 91946 },
+  { number: 18, name: "Карт бланш", city: "Кишинёв", teamChgkId: 6178 },
+  { number: 19, name: "Приемлемо", city: "Варшава", teamChgkId: 91852 },
+  { number: 20, name: "GOL", city: "Одеса", teamChgkId: 67674 },
+  { number: 21, name: "Ř", city: "Прага", teamChgkId: 105175 },
+  { number: 22, name: "Вечер посудного дня", city: "Амстердам", teamChgkId: 106377 },
+  { number: 23, name: "Коммуникативные неудачи", city: "Рига", teamChgkId: 4789 },
+  { number: 24, name: "Левый глаз Дэвида Боуи", city: "сборная", teamChgkId: null },
+  { number: 25, name: "Lorem Ipsum", city: "Одесса", teamChgkId: null },
+  { number: 26, name: "Или Вася", city: "Прага", teamChgkId: 86290 },
+  { number: 27, name: "Одинокие ковбои", city: "Сборная", teamChgkId: 99764 },
+  { number: 28, name: "Византийский консенсус", city: "сборная", teamChgkId: 79497 },
+  { number: 29, name: "PSM", city: "Krakow", teamChgkId: 77174 },
+  { number: 30, name: "Самая большая лягушка", city: "Варшава", teamChgkId: 86769 },
+  { number: 31, name: "Savage", city: "Кишинев", teamChgkId: 42558 },
+  { number: 32, name: "Тыквенные латы", city: "Тель Авив", teamChgkId: null },
+  { number: 33, name: "План Каплан", city: "Франкфурт-на-Майне", teamChgkId: 91497 },
+  { number: 34, name: "РПМ", city: "Кишинев", teamChgkId: 105248 },
+  { number: 35, name: "Всё дело в перце", city: "Хайфа", teamChgkId: 3269 },
+  { number: 36, name: "Мы убили Кенни", city: "Валенсия", teamChgkId: 108716 },
+  { number: 37, name: "Пляжники", city: "Нью-Йорк", teamChgkId: 107727 },
+];
+
+/** EventTeam key. Teams without a rating id use a stable negative number. */
+export function ochbEventTeamChgkId(team: Pick<OchbTeam, "number" | "teamChgkId">): number {
+  return team.teamChgkId != null && team.teamChgkId > 0 ? team.teamChgkId : -team.number;
+}
+
+function normOchbName(s: string): string {
+  return s
+    .replace(/ё/gi, "е")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("ru");
+}
+
+function applyRatingNames(teams: OchbTeam[], rating: OchbParticipant[]): OchbTeam[] {
+  const byName = new Map(rating.map((t) => [normOchbName(t.name), t]));
+  return teams.map((team) => {
+    const hit = byName.get(normOchbName(team.name));
+    if (!hit) return team;
+    return {
+      ...team,
+      name: hit.name,
+      city: hit.city || team.city,
+      teamChgkId: hit.teamChgkId,
+    };
+  });
+}
+
+/**
+ * Static list, with official rating names overlaid when tournament 14496 has teams.
+ * The Google sheet is not fetched here: it also contains representative emails,
+ * and a server render would ship that file in the page payload.
+ */
+export async function loadOchbTeams(): Promise<OchbTeam[]> {
+  const teams: OchbTeam[] = [...OCHB_TEAMS];
+  try {
+    const rating = await fetchOchbParticipants();
+    if (rating.ok && rating.teams.length > 0) {
+      return applyRatingNames(teams, rating.teams);
+    }
+  } catch {
+    /* rating API is optional */
+  }
+  return teams;
+}
+
+async function seedOchbTeams(teams: readonly OchbTeam[]) {
+  await db.$transaction(
+    teams.map((team) => {
+      const teamChgkId = ochbEventTeamChgkId(team);
+      return db.eventTeam.upsert({
+        where: {
+          eventId_teamChgkId: { eventId: OCHB_EVENT_ID, teamChgkId },
+        },
+        create: {
+          eventId: OCHB_EVENT_ID,
+          teamChgkId,
+          teamName: team.name,
+          displayName: team.name,
+          city: team.city,
+        },
+        update: {
+          teamName: team.name,
+          displayName: team.name,
+          city: team.city,
+        },
+      });
+    }),
+  );
+}
+
+/** Calendar row plus EventTeam rows. Same display-name overwrite as Pražma on reseed. */
 export async function ensureOchbEvent() {
   const existing = await db.calendarEvent.findUnique({
     where: { id: OCHB_EVENT_ID },
+    include: { _count: { select: { eventTeams: true } } },
   });
-  if (existing) return existing;
 
-  return db.calendarEvent.create({
-    data: {
-      id: OCHB_EVENT_ID,
-      title: `${OCHB.longTitle} (${OCHB.title})`,
-      type: "multi-day",
-      startDate: OCHB.startDate,
-      endDate: OCHB.endDate,
-      city: OCHB.city,
-      description: OCHB.description,
-      ratingUrl: OCHB.ratingUrl,
-      mediaLink: OCHB_CHANNEL_URL,
-      mediaLinkLabel: "Канал ОЧБ",
-    },
+  const event =
+    existing ??
+    (await db.calendarEvent.create({
+      data: {
+        id: OCHB_EVENT_ID,
+        title: `${OCHB.longTitle} (${OCHB.title})`,
+        type: "multi-day",
+        startDate: OCHB.startDate,
+        endDate: OCHB.endDate,
+        city: OCHB.city,
+        description: OCHB.description,
+        ratingUrl: OCHB.ratingUrl,
+        mediaLink: OCHB_CHANNEL_URL,
+        mediaLinkLabel: "Канал ОЧБ",
+      },
+    }));
+
+  if (!existing || existing._count.eventTeams < OCHB_TEAMS.length) {
+    const teams = await loadOchbTeams();
+    await seedOchbTeams(teams.length > 0 ? teams : OCHB_TEAMS);
+  }
+
+  return event;
+}
+
+function numberForStorageId(storageId: number): number {
+  const known = OCHB_TEAMS.find((t) => ochbEventTeamChgkId(t) === storageId);
+  if (known) return known.number;
+  return storageId < 0 ? -storageId : storageId;
+}
+
+/** Saved teams, including ones with no rating id. Empty when the event has not been seeded. */
+export async function listOchbParticipants(): Promise<OchbTeam[]> {
+  const rows = await db.eventTeam.findMany({
+    where: { eventId: OCHB_EVENT_ID, withdrawnAt: null },
+    select: { teamChgkId: true, teamName: true, displayName: true, city: true },
   });
+  const teams = rows.map((r) => ({
+    number: numberForStorageId(r.teamChgkId),
+    name: (r.displayName || r.teamName).trim(),
+    city: r.city?.trim() || "",
+    teamChgkId: r.teamChgkId > 0 ? r.teamChgkId : null,
+  }));
+  teams.sort((a, b) => a.number - b.number || a.name.localeCompare(b.name, "ru"));
+  return teams;
 }
 
 export interface OchbParticipant {

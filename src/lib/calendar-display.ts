@@ -47,7 +47,7 @@ export function eventUrl(
     return "/prazma";
   }
   if (event.id === "ochb-2026") {
-    return "/ochb";
+    return action ? "/ochb/roster" : "/ochb";
   }
   if (isDzikiSopotEvent(event)) {
     return action ? "/dziki-sopot/participants" : "/dziki-sopot";

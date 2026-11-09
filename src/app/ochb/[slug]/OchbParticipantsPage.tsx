@@ -1,19 +1,33 @@
 import { ExternalLink } from "lucide-react";
-import { fetchOchbParticipants, ochbRatingPublicUrl } from "@/lib/ochb";
+import {
+  OCHB_TEAMS,
+  listOchbParticipants,
+  loadOchbTeams,
+  ochbRatingPublicUrl,
+  type OchbTeam,
+} from "@/lib/ochb";
+
+async function teamsForPage(): Promise<OchbTeam[]> {
+  if (process.env.DATABASE_URL) {
+    try {
+      const fromDb = await listOchbParticipants();
+      if (fromDb.length >= OCHB_TEAMS.length) return fromDb;
+    } catch {
+      /* database down — the static list still renders */
+    }
+  }
+  return loadOchbTeams();
+}
 
 export async function OchbParticipantsPage() {
-  const result = await fetchOchbParticipants();
+  const teams = await teamsForPage();
 
   return (
     <div id="page-ochb-participants" className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        {result.ok ? (
-          <p className="text-sm text-muted">
-            Всего команд: <strong>{result.teams.length}</strong>
-          </p>
-        ) : (
-          <p className="text-sm text-muted">Список с rating.chgk.info</p>
-        )}
+        <p className="text-sm text-muted">
+          Всего команд: <strong>{teams.length}</strong>
+        </p>
         <a
           href={ochbRatingPublicUrl()}
           target="_blank"
@@ -24,16 +38,10 @@ export async function OchbParticipantsPage() {
         </a>
       </div>
 
-      {!result.ok ? (
+      {teams.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
           <p className="text-base font-medium text-muted/60">
-            Список команд не удалось загрузить
-          </p>
-        </div>
-      ) : result.teams.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-border bg-surface/50 p-16 text-center">
-          <p className="text-base font-medium text-muted/60">
-            На rating.chgk.info пока нет заявленных команд
+            Список команд пока пуст
           </p>
         </div>
       ) : (
@@ -48,29 +56,37 @@ export async function OchbParticipantsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {result.teams.map((t) => (
-                <tr key={t.teamChgkId} className="hover:bg-surface/50">
+              {teams.map((t) => (
+                <tr key={t.number} className="hover:bg-surface/50">
                   <td className="px-3 py-2.5 font-mono text-muted">{t.number}</td>
                   <td className="whitespace-nowrap px-3 py-2.5 font-medium">
-                    <a
-                      href={`https://rating.chgk.info/teams/${t.teamChgkId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-accent hover:underline"
-                    >
-                      {t.name}
-                    </a>
+                    {t.teamChgkId ? (
+                      <a
+                        href={`https://rating.chgk.info/teams/${t.teamChgkId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-accent hover:underline"
+                      >
+                        {t.name}
+                      </a>
+                    ) : (
+                      t.name
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-muted">{t.city}</td>
                   <td className="px-3 py-2.5 font-mono text-muted">
-                    <a
-                      href={`https://rating.chgk.info/teams/${t.teamChgkId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent hover:underline"
-                    >
-                      {t.teamChgkId}
-                    </a>
+                    {t.teamChgkId ? (
+                      <a
+                        href={`https://rating.chgk.info/teams/${t.teamChgkId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent hover:underline"
+                      >
+                        {t.teamChgkId}
+                      </a>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 </tr>
               ))}

@@ -21,6 +21,12 @@ function partsInWarsaw(d: Date) {
   return out;
 }
 
+/** "YYYY-MM-DD" calendar date in Europe/Warsaw. */
+export function warsawDateString(d: Date = new Date()): string {
+  const p = partsInWarsaw(d);
+  return `${p.year}-${p.month}-${p.day}`;
+}
+
 /** "DD.MM.YYYY, HH:MM" in Warsaw timezone */
 export function formatWarsawDateTime(iso: string | Date | null | undefined): string {
   if (!iso) return "";

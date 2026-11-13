@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Trophy } from "lucide-react";
-import { OTHER_TOURNAMENTS } from "@/lib/other-tournaments";
+import {
+  splitOtherTournaments,
+  type OtherTournament,
+} from "@/lib/other-tournaments";
 
 export const metadata: Metadata = {
   title: "Другие турниры",
@@ -9,9 +12,12 @@ export const metadata: Metadata = {
     "Турниры вне польских лиг портала — ОЧЧ, ОЧБ и Пражма.",
 };
 
+// Recomputed on each request so a tournament moves the day after it ends.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function OthersPage() {
-  const upcoming = OTHER_TOURNAMENTS.filter((t) => t.status === "upcoming");
-  const past = OTHER_TOURNAMENTS.filter((t) => t.status === "past");
+  const { upcoming, past } = splitOtherTournaments();
 
   return (
     <div id="page-others" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -41,7 +47,7 @@ function Section({
   tournaments,
 }: {
   title: string;
-  tournaments: typeof OTHER_TOURNAMENTS;
+  tournaments: OtherTournament[];
 }) {
   return (
     <section className="mb-10">

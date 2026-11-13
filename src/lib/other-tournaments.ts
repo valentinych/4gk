@@ -1,3 +1,5 @@
+import { warsawDateString } from "@/lib/time";
+
 export interface OtherTournament {
   href: string;
   emoji: string;
@@ -5,8 +7,10 @@ export interface OtherTournament {
   description: string;
   cities: string[];
   dateLabel: string;
+  /** Inclusive YYYY-MM-DD. */
   startDate: string;
-  status: "upcoming" | "past";
+  /** Inclusive YYYY-MM-DD. One-day events use the same day as startDate. */
+  endDate: string;
 }
 
 /** Hub listing for «Другие турниры». */
@@ -20,7 +24,7 @@ export const OTHER_TOURNAMENTS: OtherTournament[] = [
     cities: ["Прага"],
     dateLabel: "3–4 октября 2026",
     startDate: "2026-10-03",
-    status: "upcoming",
+    endDate: "2026-10-04",
   },
   {
     href: "/ochb",
@@ -30,7 +34,7 @@ export const OTHER_TOURNAMENTS: OtherTournament[] = [
     cities: ["Барселона"],
     dateLabel: "20–22 ноября 2026",
     startDate: "2026-11-20",
-    status: "upcoming",
+    endDate: "2026-11-22",
   },
   {
     href: "/prazma",
@@ -40,6 +44,27 @@ export const OTHER_TOURNAMENTS: OtherTournament[] = [
     cities: ["Прага"],
     dateLabel: "2 мая 2026",
     startDate: "2026-05-02",
-    status: "past",
+    endDate: "2026-05-02",
   },
 ];
+
+/** Past only when the Warsaw calendar date is strictly after endDate. */
+export function isOtherTournamentPast(
+  tournament: Pick<OtherTournament, "endDate">,
+  today = warsawDateString(),
+): boolean {
+  return today > tournament.endDate;
+}
+
+export function splitOtherTournaments(
+  tournaments: readonly OtherTournament[] = OTHER_TOURNAMENTS,
+  today = warsawDateString(),
+): { upcoming: OtherTournament[]; past: OtherTournament[] } {
+  const upcoming = tournaments
+    .filter((t) => !isOtherTournamentPast(t, today))
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const past = tournaments
+    .filter((t) => isOtherTournamentPast(t, today))
+    .sort((a, b) => b.endDate.localeCompare(a.endDate));
+  return { upcoming, past };
+}

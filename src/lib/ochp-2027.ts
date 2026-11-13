@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { Session } from "next-auth";
-import { fetchPlayerCurrentSeasonTeam, fetchTeam } from "@/lib/chgk";
+import { fetchPlayerCurrentSeasonTeam, fetchTeam, fetchTeamCity } from "@/lib/chgk";
 import { db } from "@/lib/db";
 import { formatWarsawDateTime, warsawInputValueToIso } from "@/lib/time";
 
@@ -36,6 +36,7 @@ export type OchpPublicTeam = {
   id: string;
   teamChgkId: number | null;
   name: string;
+  city: string;
   createdAt: string;
 };
 
@@ -94,6 +95,28 @@ function registrationOpen(opensAt: Date | null, now: Date): boolean {
   return opensAt != null && now >= opensAt;
 }
 
+async function loadCities(ids: Array<number | null>): Promise<Map<number, string>> {
+  const unique = [
+    ...new Set(ids.filter((id): id is number => typeof id === "number" && Number.isInteger(id) && id > 0)),
+  ];
+  const pairs = await Promise.all(
+    unique.map(async (id) => {
+      try {
+        const city = await fetchTeamCity(id);
+        return [id, city || "—"] as const;
+      } catch {
+        return [id, "—"] as const;
+      }
+    }),
+  );
+  return new Map(pairs);
+}
+
+function cityFor(teamChgkId: number | null, cities: Map<number, string>): string {
+  if (teamChgkId == null) return "—";
+  return cities.get(teamChgkId) ?? "—";
+}
+
 export async function loadOchp2027(session: Session | null): Promise<Ochp2027State> {
   const [user, opensAt, real] = await Promise.all([
     sessionUser(session),
@@ -105,8 +128,18 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
   ]);
   const isAdmin = user?.role === "ADMIN";
   const now = new Date();
+  const tests = isAdmin
+    ? await db.ochp2027Application.findMany({
+        where: { isTest: true },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      })
+    : [];
 
   let ownTeamName: string | null = null;
+  const citiesPromise = loadCities([
+    ...real.map((row) => row.teamChgkId),
+    ...tests.map((row) => row.teamChgkId),
+  ]);
   if (user?.chgkId) {
     try {
       const team = await fetchPlayerCurrentSeasonTeam(user.chgkId);
@@ -115,11 +148,13 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       ownTeamName = null;
     }
   }
+  const cities = await citiesPromise;
 
   const teams: OchpPublicTeam[] = real.map((row) => ({
     id: row.id,
     teamChgkId: row.teamChgkId,
     name: publicName(row.teamName, row.displayName),
+    city: cityFor(row.teamChgkId, cities),
     createdAt: row.createdAt.toISOString(),
   }));
 
@@ -137,11 +172,6 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
 
   if (!isAdmin) return state;
 
-  const tests = await db.ochp2027Application.findMany({
-    where: { isTest: true },
-    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-  });
-
   state.contacts = real.map((row) => ({
     id: row.id,
     contactKind: row.contactKind,
@@ -151,6 +181,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
     id: row.id,
     teamChgkId: row.teamChgkId,
     name: publicName(row.teamName, row.displayName),
+    city: cityFor(row.teamChgkId, cities),
     createdAt: row.createdAt.toISOString(),
     contactKind: row.contactKind,
     contactValue: row.contactValue,

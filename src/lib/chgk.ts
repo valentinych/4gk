@@ -48,6 +48,19 @@ export async function fetchTeam(id: number): Promise<ChgkTeam | null> {
   }
 }
 
+/** Town name for a rating team. Cached so a page view does not refetch every team. */
+export async function fetchTeamCity(id: number): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE}/teams/${id}.json`, { next: { revalidate: 3600 } });
+    if (!res.ok) return null;
+    const data = (await res.json()) as ChgkTeam;
+    const name = data.town?.name?.trim();
+    return name || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchPlayerSeasons(
   playerId: number,
   seasonId?: number,

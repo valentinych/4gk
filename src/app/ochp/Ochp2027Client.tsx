@@ -12,7 +12,13 @@ type TeamSource = "own" | "rating" | "free";
 const PREVIEW_TEAM_ID = "preview-example";
 const PREVIEW_TEAM_NAME = "Пример команды";
 
-type PublicTeam = { id: string; teamChgkId: number | null; name: string; createdAt: string };
+type PublicTeam = {
+  id: string;
+  teamChgkId: number | null;
+  name: string;
+  city: string;
+  createdAt: string;
+};
 type ContactRow = { id: string; contactKind: ContactKind; contactValue: string };
 type TestTeam = PublicTeam & ContactRow;
 
@@ -35,6 +41,65 @@ function contactLabel(kind: ContactKind): string {
   if (kind === "EMAIL") return "Email";
   if (kind === "TELEGRAM") return "Telegram";
   return "Другой способ";
+}
+
+function TeamsTable({
+  teams,
+  contacts,
+}: {
+  teams: PublicTeam[];
+  contacts?: Map<string, ContactRow>;
+}) {
+  return (
+    <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-surface">
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted">
+            <th scope="col" className="px-4 py-2 font-semibold">
+              Команда
+            </th>
+            <th scope="col" className="px-4 py-2 font-semibold">
+              ID
+            </th>
+            <th scope="col" className="px-4 py-2 font-semibold">
+              Город
+            </th>
+            <th scope="col" className="px-4 py-2 text-right font-semibold">
+              Время
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {teams.map((team) => {
+            const contact = contacts?.get(team.id);
+            return (
+              <tr key={team.id}>
+                <td className="px-4 py-3">
+                  <span className="font-medium">{team.name}</span>
+                  {contact && (
+                    <p className="mt-1 text-xs text-muted">
+                      {contactLabel(contact.contactKind)}: {contact.contactValue}
+                    </p>
+                  )}
+                </td>
+                <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
+                <td className="px-4 py-3 text-muted">{team.city?.trim() || "—"}</td>
+                <td className="px-4 py-3 text-right">
+                  {team.createdAt ? (
+                    <time dateTime={team.createdAt} className="text-xs text-muted tabular-nums">
+                      {formatWarsawDateTime(team.createdAt)}
+                    </time>
+                  ) : (
+                    <span className="text-xs text-muted">—</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 export function Ochp2027Client() {
@@ -290,12 +355,25 @@ export function Ochp2027Client() {
   }
 
   const contacts = new Map((state?.contacts ?? []).map((c) => [c.id, c]));
-  const listedTeams: PublicTeam[] =
+  const publicTeams: PublicTeam[] =
     state == null
       ? []
       : showAppliedPreview
-        ? [...state.teams, { id: PREVIEW_TEAM_ID, teamChgkId: null, name: PREVIEW_TEAM_NAME, createdAt: "" }]
+        ? [
+            ...state.teams,
+            { id: PREVIEW_TEAM_ID, teamChgkId: null, name: PREVIEW_TEAM_NAME, city: "—", createdAt: "" },
+          ]
         : state.teams;
+  const testPreview: PublicTeam[] =
+    isAdmin && state
+      ? (state.testTeams ?? []).map((team) => ({
+          id: team.id,
+          teamChgkId: team.teamChgkId,
+          name: team.name,
+          city: team.city || "—",
+          createdAt: team.createdAt,
+        }))
+      : [];
   const closedText =
     state == null
       ? null
@@ -707,35 +785,24 @@ export function Ochp2027Client() {
             <h2 id={`${baseId}-list`} className="text-sm font-bold">
               Заявившиеся команды
             </h2>
-            {listedTeams.length === 0 ? (
+            {publicTeams.length === 0 && testPreview.length === 0 ? (
               <p className="mt-2 text-sm text-muted">Пока никто не заявился.</p>
             ) : (
-              <ol className="mt-3 divide-y divide-border rounded-xl border border-border bg-surface">
-                {listedTeams.map((team) => {
-                  const contact =
-                    team.id === PREVIEW_TEAM_ID ? undefined : isAdmin ? contacts.get(team.id) : undefined;
-                  return (
-                    <li key={team.id} className="px-4 py-3">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <p className="text-sm">
-                          <span className="font-medium">{team.name}</span>{" "}
-                          <span className="text-muted tabular-nums">ID {team.teamChgkId ?? "—"}</span>
-                        </p>
-                        {team.createdAt ? (
-                          <time dateTime={team.createdAt} className="shrink-0 text-xs text-muted tabular-nums">
-                            {formatWarsawDateTime(team.createdAt)}
-                          </time>
-                        ) : null}
-                      </div>
-                      {contact && (
-                        <p className="mt-1 text-xs text-muted">
-                          {contactLabel(contact.contactKind)}: {contact.contactValue}
-                        </p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
+              <>
+                {publicTeams.length > 0 && (
+                  <TeamsTable teams={publicTeams} contacts={isAdmin ? contacts : undefined} />
+                )}
+                {isAdmin && testPreview.length > 0 && (
+                  <div className={publicTeams.length > 0 ? "mt-4" : "mt-2"}>
+                    <p className="text-xs text-muted">
+                      {state.teams.length === 0
+                        ? "Так список увидят все. Сейчас это тестовые заявки, другим пользователям список пуст."
+                        : "Предпросмотр тестовых заявок. В общий список они не попадают."}
+                    </p>
+                    <TeamsTable teams={testPreview} />
+                  </div>
+                )}
+              </>
             )}
           </section>
 

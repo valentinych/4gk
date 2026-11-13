@@ -8,7 +8,7 @@ import { Plus, X } from "lucide-react";
 import { useToast } from "@/components/Toaster";
 import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
 import { DS_UPCOMING_YEAR } from "@/lib/dziki-sopot-seasons";
-import { OCHP_SEASON_START_MAX } from "@/lib/ochp-seasons";
+import { isOchpYearPathname, OCHP_SEASON_START_MAX } from "@/lib/ochp-seasons";
 import {
   DS_HAZA_WIDGET_PATH,
   OCHP_WIDGET_PATH,
@@ -63,6 +63,7 @@ export function PageWidgetsRail() {
   const archiveLanding = isArchiveLanding(pathname, searchParams);
   const skipRail =
     pathname === OCHP_WIDGET_PATH ||
+    isOchpYearPathname(pathname) ||
     archiveLanding ||
     isPageWidgetUtilityPath(pathname);
   const { data: session, status } = useSession();

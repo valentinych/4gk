@@ -2,6 +2,11 @@
 export const OCHP_SEASON_START_MIN = 2017;
 export const OCHP_SEASON_START_MAX = 2025;
 
+/** Календарный год страницы регистрации. Не входит в архив сезонов (`/ochp/2027`). */
+export const OCHP_REGISTRATION_YEAR = 2027;
+export const OCHP_REGISTRATION_DATES = "16–18 апреля 2027";
+export const OCHP_REGISTRATION_PLACE = "ADN Conference Center";
+
 export function parseOchpSeasonStart(raw: string | null | undefined): number {
   const y = parseInt(String(raw ?? ""), 10);
   if (Number.isNaN(y)) return OCHP_SEASON_START_MAX;
@@ -135,6 +140,44 @@ export function ochpSeasonOptions(): number[] {
   return out.reverse();
 }
 
+/** Годы в переключателе: 2027, затем чемпионатские годы сезонов (2026 … 2018). */
+export function ochpChampionshipYearList(): number[] {
+  return [
+    OCHP_REGISTRATION_YEAR,
+    ...ochpSeasonOptions().map((start) => start + 1),
+  ];
+}
+
+export function isKnownOchpChampionshipYear(year: number): boolean {
+  if (!Number.isInteger(year)) return false;
+  if (year === OCHP_REGISTRATION_YEAR) return true;
+  const start = year - 1;
+  return start >= OCHP_SEASON_START_MIN && start <= OCHP_SEASON_START_MAX;
+}
+
+/** Четырёхзначный slug известного года чемпионата, иначе null. */
+export function parseKnownOchpYearSlug(slug: string): number | null {
+  if (!/^\d{4}$/.test(slug)) return null;
+  const year = Number(slug);
+  return isKnownOchpChampionshipYear(year) ? year : null;
+}
+
+export function isOchpYearPathname(pathname: string): boolean {
+  const m = /^\/ochp\/(\d{4})$/.exec(pathname);
+  if (!m) return false;
+  return parseKnownOchpYearSlug(m[1]) != null;
+}
+
+export function ochpYearHref(year: number): string {
+  return `/ochp/${year}`;
+}
+
+/** Дата и место на плитке года, если они уже заданы в данных сезона. */
+export function ochpYearIndexLine(year: number): string | null {
+  if (year !== OCHP_REGISTRATION_YEAR) return null;
+  return `${OCHP_REGISTRATION_DATES} · ${OCHP_REGISTRATION_PLACE}`;
+}
+
 /**
  * Диапазон дат турнира как на странице рейтинга (ru-RU).
  * `dateStart` / `dateEnd` — ISO-строки из api.rating.chgk.info.
@@ -161,7 +204,7 @@ export const OCHP_GLOBAL_TILES: OchpLandingTile[] = [
   { slug: "stats", emoji: "📊", title: "Общая статистика" },
 ];
 
-/** Current-season tiles on /ochp (no ?season=). href omitted → `/ochp/[slug]`. */
+/** Current-season tiles on `/ochp/2026`. href omitted → `/ochp/[slug]`. */
 export function buildOchpCurrentSeasonTiles(): OchpLandingTile[] {
   const y = ochpYearSuffix(OCHP_SEASON_START_MAX);
   return [

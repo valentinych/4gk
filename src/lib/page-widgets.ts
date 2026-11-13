@@ -22,6 +22,7 @@ export const DS_HAZA_WIDGET_PATH = "/dziki-sopot";
 export const DS_HAZA_WIDGET_URL = "https://www.haza.online/broadcast/672";
 export const DS_HAZA_WIDGET_TITLE = "Результаты ХаЗа";
 
+/** Widget rows for the current OCHP season stay on this path; the page is `/ochp/2026`. */
 export const OCHP_WIDGET_PATH = "/ochp";
 export const SYRENY_WIDGET_PATH = "/mazowieckie-syreny-lite";
 export const OCHCH_WIDGET_PATH = OCHCH_PATH;

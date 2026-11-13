@@ -10,25 +10,20 @@ import {
   OCHP_GLOBAL_TILES,
   OCHP_SEASON_START_MAX,
   formatOchpChampionshipYear,
+  ochpChampionshipYearList,
   ochpSeasonHadNoChampionship,
-  ochpSeasonOptions,
+  ochpYearHref,
   ochpYearSuffix,
   type OchpLandingTile,
 } from "@/lib/ochp-seasons";
 
-/** Calendar year of the registration page at `/ochp` (no `?season=`). */
-export const OCHP_REGISTRATION_YEAR = 2027;
-
 type YearLink = { year: number; href: string };
 
 export function ochpYearLinks(): YearLink[] {
-  return [
-    { year: OCHP_REGISTRATION_YEAR, href: "/ochp" },
-    ...ochpSeasonOptions().map((start) => ({
-      year: Number(formatOchpChampionshipYear(start)),
-      href: `/ochp?season=${start}`,
-    })),
-  ];
+  return ochpChampionshipYearList().map((year) => ({
+    year,
+    href: ochpYearHref(year),
+  }));
 }
 
 export function OchpSeasonMenu({ selectedYear }: { selectedYear: number }) {
@@ -94,9 +89,10 @@ export function OchpSeasonMenu({ selectedYear }: { selectedYear: number }) {
             <li key={opt.year}>
               <Link
                 href={opt.href}
-                scroll={false}
                 aria-current={opt.year === selectedYear ? "page" : undefined}
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  if (opt.year === selectedYear) setMenuOpen(false);
+                }}
                 className={`flex w-full items-center px-4 py-2.5 text-left text-sm transition-colors hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent/40 ${
                   opt.year === selectedYear ? "bg-accent/5 font-bold text-accent" : ""
                 }`}
@@ -111,7 +107,14 @@ export function OchpSeasonMenu({ selectedYear }: { selectedYear: number }) {
   );
 }
 
-export function OchpPageClient({ seasonStart }: { seasonStart: number }) {
+export function OchpPageClient({
+  seasonStart,
+  widgetPath,
+}: {
+  seasonStart: number;
+  /** Stored widget path when it differs from the public URL (current season). */
+  widgetPath?: string;
+}) {
   const [tournamentDateLabel, setTournamentDateLabel] = useState<string | null>(null);
 
   const ySuffix = ochpYearSuffix(seasonStart);
@@ -196,7 +199,7 @@ export function OchpPageClient({ seasonStart }: { seasonStart: number }) {
         </p>
       )}
 
-      {useWidgets ? <PageWidgetTiles embedded /> : null}
+      {useWidgets ? <PageWidgetTiles embedded path={widgetPath} /> : null}
 
       {tiles.length > 0 && (
         <div id="page-ochp-tiles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,4 +1,5 @@
 import { ArrowLeft, MapPin, Clock, ExternalLink, Navigation, Users, Pen, Gavel, Scale, Calendar, Hash } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -9,16 +10,19 @@ import { fetchHazaBroadcastData } from "@/lib/ochp-haza";
 import {
   OCHP_SEASON_CHST_ALL_TEAMS,
   OCHP_SEASON_START_MAX,
+  formatOchpChampionshipYear,
   formatOchpTournamentDateRange,
   ochpParticipantsFromRatingApiOnly,
   ochpParticipantsFromRatingSeasons,
   ochpRatingPublicUrl,
   ochpSeasonHadNoChampionship,
   ochpYearSuffix,
+  parseKnownOchpYearSlug,
   parseOchpSeasonStartOptional,
   resolveOchpChgkHazaBroadcastId,
   resolveOchpRatingTournamentId,
 } from "@/lib/ochp-seasons";
+import { OchpYearView, ochpYearMetadata } from "../OchpYearView";
 import TeamsTable from "./TeamsTable";
 import ChgkRatingApiResults from "./ChgkRatingApiResults";
 import ChgkResults from "./ChgkResults";
@@ -811,6 +815,17 @@ function BrainSubTiles() {
   );
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const year = parseKnownOchpYearSlug(slug);
+  if (year == null) return {};
+  return ochpYearMetadata(year);
+}
+
 export default async function OchpSubPage({
   params,
   searchParams,
@@ -819,6 +834,10 @@ export default async function OchpSubPage({
   searchParams: Promise<{ season?: string }>;
 }) {
   const { slug } = await params;
+  const year = parseKnownOchpYearSlug(slug);
+  if (year != null) {
+    return <OchpYearView year={year} />;
+  }
   const sp = await searchParams;
   const seasonForRating = parseOchpSeasonStartOptional(sp.season);
   const noChampionshipSeason = ochpSeasonHadNoChampionship(seasonForRating);
@@ -837,10 +856,10 @@ export default async function OchpSubPage({
   const ochpBackHref = slug.startsWith("results-brain-")
     ? "/ochp/results-brain"
     : seasonForNav != null
-      ? `/ochp?season=${seasonForNav}`
+      ? `/ochp/${formatOchpChampionshipYear(seasonForNav)}`
       : slug === "stats"
         ? "/ochp"
-        : `/ochp?season=${OCHP_SEASON_START_MAX}`;
+        : `/ochp/${formatOchpChampionshipYear(OCHP_SEASON_START_MAX)}`;
 
   return (
     <div id="page-ochp-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">

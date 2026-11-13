@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { GripVertical } from "lucide-react";
 import { useToast } from "@/components/Toaster";
 import { PageWidgetForm } from "@/components/page-widgets/PageWidgetForm";
+import { isOchpYearPathname } from "@/lib/ochp-seasons";
 import {
   PAGE_WIDGET_BRAIN,
   PAGE_WIDGET_EMBEDDED_PATHS,
@@ -54,11 +55,20 @@ function moveId(ids: string[], fromId: string, toId: string): string[] {
   return next;
 }
 
-export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
+export function PageWidgetTiles({
+  embedded = false,
+  path,
+}: {
+  embedded?: boolean;
+  /** Widget storage path when it differs from the public URL. */
+  path?: string;
+}) {
   const pathname = usePathname();
+  const widgetPath = path ?? pathname;
   const skipLayout =
     isPageWidgetUtilityPath(pathname) ||
-    (!embedded && PAGE_WIDGET_EMBEDDED_PATHS.has(pathname));
+    (!embedded &&
+      (PAGE_WIDGET_EMBEDDED_PATHS.has(pathname) || isOchpYearPathname(pathname)));
   const { data: session } = useSession();
   const { toast } = useToast();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -87,15 +97,15 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
     if (skipLayout) return;
     setWidgets(null);
     setEditingId(null);
-    void load(pathname);
-  }, [load, pathname, skipLayout]);
+    void load(widgetPath);
+  }, [load, widgetPath, skipLayout]);
 
   useEffect(() => {
     if (skipLayout) return;
-    const onChange = () => void load(pathname);
+    const onChange = () => void load(widgetPath);
     window.addEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
     return () => window.removeEventListener(PAGE_WIDGETS_CHANGED_EVENT, onChange);
-  }, [load, pathname, skipLayout]);
+  }, [load, widgetPath, skipLayout]);
 
   function notify() {
     window.dispatchEvent(new Event(PAGE_WIDGETS_CHANGED_EVENT));
@@ -126,7 +136,7 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
       setEditingId(null);
       toast("Плитка обновлена", "success");
       notify();
-      await load(pathname);
+      await load(widgetPath);
     } catch {
       toast("Не удалось сохранить", "error");
     } finally {
@@ -149,7 +159,7 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
       if (editingId === id) setEditingId(null);
       toast("Плитка удалена", "success");
       notify();
-      await load(pathname);
+      await load(widgetPath);
     } catch {
       toast("Не удалось удалить", "error");
     } finally {
@@ -172,7 +182,7 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
       }
       toast(w.archived ? "Плитка возвращена" : "Плитка в архиве", "success");
       notify();
-      await load(pathname);
+      await load(widgetPath);
     } catch {
       toast("Не удалось сохранить", "error");
     } finally {
@@ -185,18 +195,18 @@ export function PageWidgetTiles({ embedded = false }: { embedded?: boolean }) {
       const res = await fetch("/api/page-widgets", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: pathname, ids }),
+        body: JSON.stringify({ path: widgetPath, ids }),
       });
       if (!res.ok) {
         const json = (await res.json()) as { error?: string };
         toast(json.error ?? "Не удалось сохранить порядок", "error");
-        await load(pathname);
+        await load(widgetPath);
         return;
       }
       notify();
     } catch {
       toast("Не удалось сохранить порядок", "error");
-      await load(pathname);
+      await load(widgetPath);
     }
   }
 

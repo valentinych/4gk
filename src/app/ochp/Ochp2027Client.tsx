@@ -12,7 +12,7 @@ type TeamSource = "own" | "rating" | "free";
 const PREVIEW_TEAM_ID = "preview-example";
 const PREVIEW_TEAM_NAME = "Пример команды";
 
-type PublicTeam = { id: string; name: string; createdAt: string };
+type PublicTeam = { id: string; teamChgkId: number | null; name: string; createdAt: string };
 type ContactRow = { id: string; contactKind: ContactKind; contactValue: string };
 type TestTeam = PublicTeam & ContactRow;
 
@@ -294,7 +294,7 @@ export function Ochp2027Client() {
     state == null
       ? []
       : showAppliedPreview
-        ? [...state.teams, { id: PREVIEW_TEAM_ID, name: PREVIEW_TEAM_NAME, createdAt: "" }]
+        ? [...state.teams, { id: PREVIEW_TEAM_ID, teamChgkId: null, name: PREVIEW_TEAM_NAME, createdAt: "" }]
         : state.teams;
   const closedText =
     state == null
@@ -719,7 +719,7 @@ export function Ochp2027Client() {
                       <div className="flex items-baseline justify-between gap-3">
                         <p className="text-sm">
                           <span className="font-medium">{team.name}</span>{" "}
-                          <span className="text-muted">заявилась</span>
+                          <span className="text-muted tabular-nums">ID {team.teamChgkId ?? "—"}</span>
                         </p>
                         {team.createdAt ? (
                           <time dateTime={team.createdAt} className="shrink-0 text-xs text-muted tabular-nums">

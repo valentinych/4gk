@@ -34,6 +34,7 @@ type DbUser = {
 
 export type OchpPublicTeam = {
   id: string;
+  teamChgkId: number | null;
   name: string;
   createdAt: string;
 };
@@ -117,6 +118,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
 
   const teams: OchpPublicTeam[] = real.map((row) => ({
     id: row.id,
+    teamChgkId: row.teamChgkId,
     name: publicName(row.teamName, row.displayName),
     createdAt: row.createdAt.toISOString(),
   }));
@@ -147,6 +149,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
   }));
   state.testTeams = tests.map((row) => ({
     id: row.id,
+    teamChgkId: row.teamChgkId,
     name: publicName(row.teamName, row.displayName),
     createdAt: row.createdAt.toISOString(),
     contactKind: row.contactKind,

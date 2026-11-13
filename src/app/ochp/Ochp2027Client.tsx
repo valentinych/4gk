@@ -148,15 +148,17 @@ export function Ochp2027Client() {
   }, [query, selectedTeam, notInRating]);
 
   const isAdmin = state?.isAdmin === true;
+  const officiallyOpen = state?.open === true;
   const showOwn =
     state != null &&
     (preview === "linked" || (preview === "off" && Boolean(state.viewer.ownTeamName)));
   const showAccountEmail =
     preview !== "guest" && Boolean(state?.viewer.loggedIn && state.viewer.email);
-  const testSubmit = isAdmin && preview !== "off";
-  const inPersonaPreview = testSubmit;
-  const registrationOpen = inPersonaPreview || state?.open === true;
+  const inPersonaPreview = isAdmin && preview !== "off";
+  const testSubmit = inPersonaPreview || (isAdmin && !officiallyOpen);
+  const registrationOpen = inPersonaPreview || officiallyOpen;
   const showAppliedPreview = inPersonaPreview && previewPhase === "after";
+  const showApplicationForm = (officiallyOpen || isAdmin) && !showAppliedPreview;
 
   function fail(message: string, field: string | null) {
     setNotice(null);
@@ -443,9 +445,16 @@ export function Ochp2027Client() {
             </p>
           )}
 
-          {registrationOpen && !showAppliedPreview && (
+          {showApplicationForm && (
             <form onSubmit={onSubmit} className="space-y-4 rounded-xl border border-border bg-surface p-5" noValidate>
-              <h2 className="text-sm font-bold">Приём заявок</h2>
+              <div>
+                <h2 className="text-sm font-bold">Приём заявок</h2>
+                {testSubmit && (
+                  <p className="mt-1 text-xs text-muted">
+                    Тестовая заявка. Её видят только администраторы, в общий список она не попадает.
+                  </p>
+                )}
+              </div>
 
               {showOwn && (
                 <button
@@ -732,10 +741,13 @@ export function Ochp2027Client() {
 
           {isAdmin && (
             <section aria-labelledby={`${baseId}-tests`} className="rounded-xl border border-dashed border-border p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h2 id={`${baseId}-tests`} className="text-sm font-bold">
-                  Тестовые заявки
-                </h2>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 id={`${baseId}-tests`} className="text-sm font-bold">
+                    Тестовые заявки
+                  </h2>
+                  <p className="mt-1 text-xs text-muted">Видны только администраторам.</p>
+                </div>
                 {(state.testTeams?.length ?? 0) > 0 && (
                   <button
                     type="button"
@@ -753,7 +765,9 @@ export function Ochp2027Client() {
                   {state.testTeams?.map((team) => (
                     <li key={team.id} className="flex items-start justify-between gap-3 text-sm">
                       <div>
-                        <p className="font-medium">{team.name}</p>
+                        <p className="font-medium">
+                          {team.name} <span className="font-normal text-muted">· тест</span>
+                        </p>
                         <p className="text-xs text-muted">
                           {contactLabel(team.contactKind)}: {team.contactValue}
                         </p>

@@ -186,10 +186,11 @@ async function assertRegistrationOpen(): Promise<void> {
 }
 
 export async function submitOchp2027(session: Session | null, body: SubmitBody): Promise<void> {
-  await assertRegistrationOpen();
   const user = await sessionUser(session);
   const isAdmin = user?.role === "ADMIN";
   const isTest = body.test === true && isAdmin;
+  // Test rows are admin-only and stay out of public reads, so they can be filed before opensAt.
+  if (!isTest) await assertRegistrationOpen();
 
   const source = body.source;
   let teamChgkId: number | null = null;

@@ -61,6 +61,26 @@ export async function fetchTeamCity(id: number): Promise<string | null> {
   }
 }
 
+/**
+ * Current team rating on rating.chgk.info: `rating` of the newest release
+ * (the same number the team's rating history lists first). Not on the team payload.
+ * A miss is null and does not throw. Cached like the city lookup.
+ */
+export async function fetchTeamRating(id: number): Promise<number | null> {
+  try {
+    const res = await fetch(`${BASE}/teams/${id}/releases.json?itemsPerPage=1`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const rows = (Array.isArray(data) ? data : (data.items ?? [])) as Array<{ rating?: unknown }>;
+    const rating = rows[0]?.rating;
+    return typeof rating === "number" && Number.isFinite(rating) ? rating : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchPlayerSeasons(
   playerId: number,
   seasonId?: number,

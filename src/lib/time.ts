@@ -13,6 +13,7 @@ function partsInWarsaw(d: Date) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     hour12: false,
   }).formatToParts(d);
   const out: Record<string, string> = {};
@@ -26,6 +27,14 @@ export function formatWarsawDateTime(iso: string | Date | null | undefined): str
   const d = typeof iso === "string" ? new Date(iso) : iso;
   const p = partsInWarsaw(d);
   return `${p.day}.${p.month}.${p.year}, ${p.hour}:${p.minute}`;
+}
+
+/** "DD.MM.YYYY, HH:MM:SS" in Warsaw timezone */
+export function formatWarsawDateTimeWithSeconds(iso: string | Date | null | undefined): string {
+  if (!iso) return "";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const p = partsInWarsaw(d);
+  return `${p.day}.${p.month}.${p.year}, ${p.hour}:${p.minute}:${p.second}`;
 }
 
 const MONTHS_GEN = [

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Search, X } from "lucide-react";
-import { formatWarsawDateTime, isoToWarsawInputValue } from "@/lib/time";
+import { formatWarsawDateTime, formatWarsawDateTimeWithSeconds, isoToWarsawInputValue } from "@/lib/time";
 
 type ContactKind = "EMAIL" | "TELEGRAM" | "OTHER";
 type Preview = "off" | "linked" | "noid" | "guest";
@@ -18,7 +18,12 @@ type PublicTeam = {
   name: string;
   city: string;
   createdAt: string;
+  rating: number | null;
 };
+
+type SortKey = "time" | "rating";
+type SortDir = "asc" | "desc";
+type SortState = { key: SortKey; dir: SortDir };
 type ContactRow = { id: string; contactKind: ContactKind; contactValue: string };
 type TestTeam = PublicTeam & ContactRow;
 
@@ -43,18 +48,77 @@ function contactLabel(kind: ContactKind): string {
   return "Другой способ";
 }
 
-function TeamsTable({
-  teams,
-  contacts,
+function missingLast(aMissing: boolean, bMissing: boolean, diff: number): number {
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  return diff;
+}
+
+function compareTeams(a: PublicTeam, b: PublicTeam, sort: SortState): number {
+  const sign = sort.dir === "asc" ? 1 : -1;
+  if (sort.key === "time") {
+    const av = a.createdAt ? Date.parse(a.createdAt) : Number.NaN;
+    const bv = b.createdAt ? Date.parse(b.createdAt) : Number.NaN;
+    return missingLast(Number.isNaN(av), Number.isNaN(bv), (av - bv) * sign);
+  }
+  return missingLast(a.rating == null, b.rating == null, ((a.rating ?? 0) - (b.rating ?? 0)) * sign);
+}
+
+function SortableTh({
+  label,
+  column,
+  sort,
+  onSort,
 }: {
-  teams: PublicTeam[];
-  contacts?: Map<string, ContactRow>;
+  label: string;
+  column: SortKey;
+  sort: SortState | null;
+  onSort: (key: SortKey) => void;
 }) {
+  const active = sort?.key === column ? sort : null;
+  return (
+    <th
+      scope="col"
+      aria-sort={active ? (active.dir === "asc" ? "ascending" : "descending") : "none"}
+      className="px-4 py-2 text-right font-semibold"
+    >
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className="inline-flex cursor-pointer items-center gap-1 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+      >
+        {label}
+        <span aria-hidden="true" className="text-[10px] normal-case leading-none">
+          {active ? (active.dir === "asc" ? "▲" : "▼") : "↕"}
+        </span>
+      </button>
+    </th>
+  );
+}
+
+function TeamsTable({ teams }: { teams: PublicTeam[] }) {
+  const [sort, setSort] = useState<SortState | null>(null);
+  const rows = useMemo(() => {
+    if (!sort) return teams;
+    return [...teams].sort((a, b) => compareTeams(a, b, sort));
+  }, [teams, sort]);
+
+  function onSort(key: SortKey) {
+    setSort((prev) => {
+      if (prev?.key !== key) return { key, dir: "desc" };
+      return { key, dir: prev.dir === "desc" ? "asc" : "desc" };
+    });
+  }
+
   return (
     <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-surface">
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted">
+            <th scope="col" className="w-12 px-4 py-2 font-semibold">
+              №
+            </th>
             <th scope="col" className="px-4 py-2 font-semibold">
               Команда
             </th>
@@ -64,38 +128,33 @@ function TeamsTable({
             <th scope="col" className="px-4 py-2 font-semibold">
               Город
             </th>
-            <th scope="col" className="px-4 py-2 text-right font-semibold">
-              Время
-            </th>
+            <SortableTh label="Рейтинг" column="rating" sort={sort} onSort={onSort} />
+            <SortableTh label="Время" column="time" sort={sort} onSort={onSort} />
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {teams.map((team) => {
-            const contact = contacts?.get(team.id);
-            return (
-              <tr key={team.id}>
-                <td className="px-4 py-3">
-                  <span className="font-medium">{team.name}</span>
-                  {contact && (
-                    <p className="mt-1 text-xs text-muted">
-                      {contactLabel(contact.contactKind)}: {contact.contactValue}
-                    </p>
-                  )}
-                </td>
-                <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
-                <td className="px-4 py-3 text-muted">{team.city?.trim() || "—"}</td>
-                <td className="px-4 py-3 text-right">
-                  {team.createdAt ? (
-                    <time dateTime={team.createdAt} className="text-xs text-muted tabular-nums">
-                      {formatWarsawDateTime(team.createdAt)}
-                    </time>
-                  ) : (
-                    <span className="text-xs text-muted">—</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
+          {rows.map((team, index) => (
+            <tr key={team.id}>
+              <td className="px-4 py-3 tabular-nums text-muted">{index + 1}</td>
+              <td className="px-4 py-3">
+                <span className="font-medium">{team.name}</span>
+              </td>
+              <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
+              <td className="px-4 py-3 text-muted">{team.city?.trim() || "—"}</td>
+              <td className="px-4 py-3 text-right tabular-nums text-muted">
+                {team.rating == null ? "—" : team.rating}
+              </td>
+              <td className="px-4 py-3 text-right">
+                {team.createdAt ? (
+                  <time dateTime={team.createdAt} className="text-xs text-muted tabular-nums">
+                    {formatWarsawDateTimeWithSeconds(team.createdAt)}
+                  </time>
+                ) : (
+                  <span className="text-xs text-muted">—</span>
+                )}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
@@ -354,14 +413,20 @@ export function Ochp2027Client() {
     }
   }
 
-  const contacts = new Map((state?.contacts ?? []).map((c) => [c.id, c]));
   const publicTeams: PublicTeam[] =
     state == null
       ? []
       : showAppliedPreview
         ? [
             ...state.teams,
-            { id: PREVIEW_TEAM_ID, teamChgkId: null, name: PREVIEW_TEAM_NAME, city: "—", createdAt: "" },
+            {
+              id: PREVIEW_TEAM_ID,
+              teamChgkId: null,
+              name: PREVIEW_TEAM_NAME,
+              city: "—",
+              createdAt: "",
+              rating: null,
+            },
           ]
         : state.teams;
   const testPreview: PublicTeam[] =
@@ -372,6 +437,7 @@ export function Ochp2027Client() {
           name: team.name,
           city: team.city || "—",
           createdAt: team.createdAt,
+          rating: team.rating ?? null,
         }))
       : [];
   const closedText =
@@ -789,9 +855,7 @@ export function Ochp2027Client() {
               <p className="mt-2 text-sm text-muted">Пока никто не заявился.</p>
             ) : (
               <>
-                {publicTeams.length > 0 && (
-                  <TeamsTable teams={publicTeams} contacts={isAdmin ? contacts : undefined} />
-                )}
+                {publicTeams.length > 0 && <TeamsTable teams={publicTeams} />}
                 {isAdmin && testPreview.length > 0 && (
                   <div className={publicTeams.length > 0 ? "mt-4" : "mt-2"}>
                     <p className="text-xs text-muted">

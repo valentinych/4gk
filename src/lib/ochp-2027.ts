@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { Session } from "next-auth";
-import { fetchPlayerCurrentSeasonTeam, fetchTeam, fetchTeamCity } from "@/lib/chgk";
+import { fetchPlayerCurrentSeasonTeam, fetchTeam, fetchTeamCity, fetchTeamRating } from "@/lib/chgk";
 import { db } from "@/lib/db";
 import { formatWarsawDateTime, warsawInputValueToIso } from "@/lib/time";
 
@@ -38,6 +38,7 @@ export type OchpPublicTeam = {
   name: string;
   city: string;
   createdAt: string;
+  rating: number | null;
 };
 
 export type OchpAdminContact = {
@@ -95,26 +96,28 @@ function registrationOpen(opensAt: Date | null, now: Date): boolean {
   return opensAt != null && now >= opensAt;
 }
 
-async function loadCities(ids: Array<number | null>): Promise<Map<number, string>> {
+type TeamFacts = { city: string; rating: number | null };
+
+async function loadTeamFacts(ids: Array<number | null>): Promise<Map<number, TeamFacts>> {
   const unique = [
     ...new Set(ids.filter((id): id is number => typeof id === "number" && Number.isInteger(id) && id > 0)),
   ];
   const pairs = await Promise.all(
     unique.map(async (id) => {
       try {
-        const city = await fetchTeamCity(id);
-        return [id, city || "—"] as const;
+        const [city, rating] = await Promise.all([fetchTeamCity(id), fetchTeamRating(id)]);
+        return [id, { city: city || "—", rating }] as const;
       } catch {
-        return [id, "—"] as const;
+        return [id, { city: "—", rating: null }] as const;
       }
     }),
   );
   return new Map(pairs);
 }
 
-function cityFor(teamChgkId: number | null, cities: Map<number, string>): string {
-  if (teamChgkId == null) return "—";
-  return cities.get(teamChgkId) ?? "—";
+function factsFor(teamChgkId: number | null, facts: Map<number, TeamFacts>): TeamFacts {
+  if (teamChgkId == null) return { city: "—", rating: null };
+  return facts.get(teamChgkId) ?? { city: "—", rating: null };
 }
 
 export async function loadOchp2027(session: Session | null): Promise<Ochp2027State> {
@@ -136,7 +139,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
     : [];
 
   let ownTeamName: string | null = null;
-  const citiesPromise = loadCities([
+  const factsPromise = loadTeamFacts([
     ...real.map((row) => row.teamChgkId),
     ...tests.map((row) => row.teamChgkId),
   ]);
@@ -148,15 +151,19 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       ownTeamName = null;
     }
   }
-  const cities = await citiesPromise;
+  const facts = await factsPromise;
 
-  const teams: OchpPublicTeam[] = real.map((row) => ({
-    id: row.id,
-    teamChgkId: row.teamChgkId,
-    name: publicName(row.teamName, row.displayName),
-    city: cityFor(row.teamChgkId, cities),
-    createdAt: row.createdAt.toISOString(),
-  }));
+  const teams: OchpPublicTeam[] = real.map((row) => {
+    const meta = factsFor(row.teamChgkId, facts);
+    return {
+      id: row.id,
+      teamChgkId: row.teamChgkId,
+      name: publicName(row.teamName, row.displayName),
+      city: meta.city,
+      rating: meta.rating,
+      createdAt: row.createdAt.toISOString(),
+    };
+  });
 
   const state: Ochp2027State = {
     opensAt: opensAt?.toISOString() ?? null,
@@ -177,15 +184,19 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
     contactKind: row.contactKind,
     contactValue: row.contactValue,
   }));
-  state.testTeams = tests.map((row) => ({
-    id: row.id,
-    teamChgkId: row.teamChgkId,
-    name: publicName(row.teamName, row.displayName),
-    city: cityFor(row.teamChgkId, cities),
-    createdAt: row.createdAt.toISOString(),
-    contactKind: row.contactKind,
-    contactValue: row.contactValue,
-  }));
+  state.testTeams = tests.map((row) => {
+    const meta = factsFor(row.teamChgkId, facts);
+    return {
+      id: row.id,
+      teamChgkId: row.teamChgkId,
+      name: publicName(row.teamName, row.displayName),
+      city: meta.city,
+      rating: meta.rating,
+      createdAt: row.createdAt.toISOString(),
+      contactKind: row.contactKind,
+      contactValue: row.contactValue,
+    };
+  });
   return state;
 }
 

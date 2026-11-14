@@ -204,6 +204,16 @@ export const OCHP_GLOBAL_TILES: OchpLandingTile[] = [
   { slug: "stats", emoji: "📊", title: "Общая статистика" },
 ];
 
+/** Плитки только на `/ochp/2027`. Не сеются в виджеты текущего сезона и не попадают в архив. */
+export const OCHP_2027_TILES: OchpLandingTile[] = [
+  {
+    slug: "about",
+    emoji: "ℹ️",
+    title: "О турнире",
+    href: `/ochp/${OCHP_REGISTRATION_YEAR}/about`,
+  },
+];
+
 /** Current-season tiles on `/ochp/2026`. href omitted → `/ochp/[slug]`. */
 export function buildOchpCurrentSeasonTiles(): OchpLandingTile[] {
   const y = ochpYearSuffix(OCHP_SEASON_START_MAX);

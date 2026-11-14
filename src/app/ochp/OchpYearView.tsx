@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { ExternalLink, Trophy } from "lucide-react";
 import {
+  OCHP_2027_TILES,
   OCHP_REGISTRATION_DATES,
   OCHP_REGISTRATION_PLACE,
   OCHP_REGISTRATION_YEAR,
   OCHP_SEASON_START_MAX,
   formatOchpSeasonRange,
+  ochpLandingTileHref,
 } from "@/lib/ochp-seasons";
 import {
   OCHP_WIDGET_PATH,
@@ -98,6 +101,22 @@ export async function OchpYearView({ year }: { year: number }) {
       </header>
       <div id="page-ochp-controls" className="mb-8 grid gap-4 sm:grid-cols-2">
         <OchpSeasonMenu selectedYear={OCHP_REGISTRATION_YEAR} />
+      </div>
+      <div id="page-ochp-tiles" className="mb-8 grid gap-3 sm:grid-cols-2">
+        {OCHP_2027_TILES.map((tile) => (
+          <Link
+            key={tile.slug}
+            href={ochpLandingTileHref(tile)}
+            className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
+          >
+            <span className="mt-0.5 shrink-0 text-2xl leading-none" aria-hidden="true">
+              {tile.emoji}
+            </span>
+            <span className="text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
+              {tile.title}
+            </span>
+          </Link>
+        ))}
       </div>
       <Ochp2027Client />
     </div>

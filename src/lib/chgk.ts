@@ -48,16 +48,21 @@ export async function fetchTeam(id: number): Promise<ChgkTeam | null> {
   }
 }
 
-/** Town name for a rating team. Cached so a page view does not refetch every team. */
-export async function fetchTeamCity(id: number): Promise<string | null> {
+function isPolishCountry(name: string | null | undefined): boolean {
+  const value = name?.trim().toLowerCase();
+  return value === "польша" || value === "poland";
+}
+
+/** Town name and whether that town's country is Poland. Cached so a page view does not refetch every team. */
+export async function fetchTeamTown(id: number): Promise<{ city: string | null; polish: boolean }> {
   try {
     const res = await fetch(`${BASE}/teams/${id}.json`, { next: { revalidate: 3600 } });
-    if (!res.ok) return null;
+    if (!res.ok) return { city: null, polish: false };
     const data = (await res.json()) as ChgkTeam;
-    const name = data.town?.name?.trim();
-    return name || null;
+    const city = data.town?.name?.trim() || null;
+    return { city, polish: isPolishCountry(data.town?.country?.name) };
   } catch {
-    return null;
+    return { city: null, polish: false };
   }
 }
 

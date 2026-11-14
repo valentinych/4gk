@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { Session } from "next-auth";
-import { fetchPlayerCurrentSeasonTeam, fetchTeam, fetchTeamCity, fetchTeamRating } from "@/lib/chgk";
+import { fetchPlayerCurrentSeasonTeam, fetchTeam, fetchTeamRating, fetchTeamTown } from "@/lib/chgk";
 import { db } from "@/lib/db";
 import { formatWarsawDateTime, warsawInputValueToIso } from "@/lib/time";
 
@@ -39,6 +39,7 @@ export type OchpPublicTeam = {
   city: string;
   createdAt: string;
   rating: number | null;
+  polish: boolean;
 };
 
 export type OchpAdminContact = {
@@ -96,7 +97,7 @@ function registrationOpen(opensAt: Date | null, now: Date): boolean {
   return opensAt != null && now >= opensAt;
 }
 
-type TeamFacts = { city: string; rating: number | null };
+type TeamFacts = { city: string; rating: number | null; polish: boolean };
 
 async function loadTeamFacts(ids: Array<number | null>): Promise<Map<number, TeamFacts>> {
   const unique = [
@@ -105,10 +106,10 @@ async function loadTeamFacts(ids: Array<number | null>): Promise<Map<number, Tea
   const pairs = await Promise.all(
     unique.map(async (id) => {
       try {
-        const [city, rating] = await Promise.all([fetchTeamCity(id), fetchTeamRating(id)]);
-        return [id, { city: city || "—", rating }] as const;
+        const [town, rating] = await Promise.all([fetchTeamTown(id), fetchTeamRating(id)]);
+        return [id, { city: town.city || "—", rating, polish: town.polish }] as const;
       } catch {
-        return [id, { city: "—", rating: null }] as const;
+        return [id, { city: "—", rating: null, polish: false }] as const;
       }
     }),
   );
@@ -116,8 +117,8 @@ async function loadTeamFacts(ids: Array<number | null>): Promise<Map<number, Tea
 }
 
 function factsFor(teamChgkId: number | null, facts: Map<number, TeamFacts>): TeamFacts {
-  if (teamChgkId == null) return { city: "—", rating: null };
-  return facts.get(teamChgkId) ?? { city: "—", rating: null };
+  if (teamChgkId == null) return { city: "—", rating: null, polish: false };
+  return facts.get(teamChgkId) ?? { city: "—", rating: null, polish: false };
 }
 
 export async function loadOchp2027(session: Session | null): Promise<Ochp2027State> {
@@ -161,6 +162,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       name: publicName(row.teamName, row.displayName),
       city: meta.city,
       rating: meta.rating,
+      polish: meta.polish,
       createdAt: row.createdAt.toISOString(),
     };
   });
@@ -192,6 +194,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       name: publicName(row.teamName, row.displayName),
       city: meta.city,
       rating: meta.rating,
+      polish: meta.polish,
       createdAt: row.createdAt.toISOString(),
       contactKind: row.contactKind,
       contactValue: row.contactValue,

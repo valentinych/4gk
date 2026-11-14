@@ -19,6 +19,7 @@ type PublicTeam = {
   city: string;
   createdAt: string;
   rating: number | null;
+  polish?: boolean;
 };
 
 type SortKey = "time" | "rating";
@@ -97,6 +98,20 @@ function SortableTh({
   );
 }
 
+function PolishFlag() {
+  return (
+    <span
+      className="ml-1.5 inline-block h-4 w-4 shrink-0 overflow-hidden rounded-full border border-border align-middle"
+      title="Польша"
+      role="img"
+      aria-label="Польша"
+    >
+      <span className="block h-1/2 w-full bg-[#ffffff]" />
+      <span className="block h-1/2 w-full bg-red-500" />
+    </span>
+  );
+}
+
 function TeamsTable({ teams }: { teams: PublicTeam[] }) {
   const [sort, setSort] = useState<SortState | null>(null);
   const rows = useMemo(() => {
@@ -138,6 +153,7 @@ function TeamsTable({ teams }: { teams: PublicTeam[] }) {
               <td className="px-4 py-3 tabular-nums text-muted">{index + 1}</td>
               <td className="px-4 py-3">
                 <span className="font-medium">{team.name}</span>
+                {team.polish ? <PolishFlag /> : null}
               </td>
               <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
               <td className="px-4 py-3 text-muted">{team.city?.trim() || "—"}</td>
@@ -426,6 +442,7 @@ export function Ochp2027Client() {
               city: "—",
               createdAt: "",
               rating: null,
+              polish: false,
             },
           ]
         : state.teams;
@@ -438,6 +455,7 @@ export function Ochp2027Client() {
           city: team.city || "—",
           createdAt: team.createdAt,
           rating: team.rating ?? null,
+          polish: team.polish === true,
         }))
       : [];
   const closedText =
@@ -897,7 +915,9 @@ export function Ochp2027Client() {
                     <li key={team.id} className="flex items-start justify-between gap-3 text-sm">
                       <div>
                         <p className="font-medium">
-                          {team.name} <span className="font-normal text-muted">· тест</span>
+                          {team.name}
+                          {team.polish ? <PolishFlag /> : null}{" "}
+                          <span className="font-normal text-muted">· тест</span>
                         </p>
                         <p className="text-xs text-muted">
                           {contactLabel(team.contactKind)}: {team.contactValue}

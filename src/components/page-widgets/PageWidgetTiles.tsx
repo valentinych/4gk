@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -58,10 +58,13 @@ function moveId(ids: string[], fromId: string, toId: string): string[] {
 export function PageWidgetTiles({
   embedded = false,
   path,
+  fallback = null,
 }: {
   embedded?: boolean;
   /** Widget storage path when it differs from the public URL. */
   path?: string;
+  /** Shown when the widget API cannot be reached, so the landing is not blank. */
+  fallback?: ReactNode;
 }) {
   const pathname = usePathname();
   const widgetPath = path ?? pathname;
@@ -74,6 +77,7 @@ export function PageWidgetTiles({
   const isAdmin = session?.user?.role === "ADMIN";
 
   const [widgets, setWidgets] = useState<PageWidgetDto[] | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editUrl, setEditUrl] = useState("");
@@ -86,9 +90,12 @@ export function PageWidgetTiles({
     try {
       const res = await fetch(`/api/page-widgets?path=${encodeURIComponent(path)}`);
       if (!res.ok) throw new Error("load failed");
-      const json = (await res.json()) as { widgets?: PageWidgetDto[] };
+      const json = (await res.json()) as { widgets?: PageWidgetDto[]; unavailable?: boolean };
+      if (json.unavailable) throw new Error("load failed");
+      setUnavailable(false);
       setWidgets(json.widgets ?? []);
     } catch {
+      setUnavailable(true);
       setWidgets([]);
     }
   }, []);
@@ -96,6 +103,7 @@ export function PageWidgetTiles({
   useEffect(() => {
     if (skipLayout) return;
     setWidgets(null);
+    setUnavailable(false);
     setEditingId(null);
     void load(widgetPath);
   }, [load, widgetPath, skipLayout]);
@@ -227,6 +235,17 @@ export function PageWidgetTiles({
   }
 
   if (skipLayout) return null;
+  if (fallback && unavailable) {
+    return (
+      <section
+        id="cmp-page-widget-tiles"
+        className={embedded ? undefined : "mx-auto max-w-5xl px-4 pb-12 sm:px-6"}
+        aria-label="Плитки страницы"
+      >
+        {fallback}
+      </section>
+    );
+  }
   if (!widgets || widgets.length === 0) return null;
 
   const activeTiles = widgets.filter((w) => !w.archived);

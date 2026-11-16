@@ -15,7 +15,7 @@ const PAGE_TITLES: Record<string, string> = {
   participants: "Участники ОЧБ-2026",
   schedule: "Расписание ОЧБ-2026",
   links: "Полезные ссылки — ОЧБ-2026",
-  results: "Результаты Что? Где? Когда?",
+  results: "Результаты рейтинга",
   "results-quiz": "Квиз «Вопроситос»",
   "results-si": "Результаты Своей игры",
   "results-black": "Чёрное ЧГК",

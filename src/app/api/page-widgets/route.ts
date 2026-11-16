@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import {
   ensureLandingWidgets,
   isPrismaMissingTable,
+  OCHB_SEED_MARKER_URL,
   isPrismaUniqueConflict,
   normalizePagePath,
   resolveWidgetFields,
@@ -32,10 +33,14 @@ export async function GET(req: Request) {
       where: isAdmin ? { path } : { path, archived: false },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
-    return NextResponse.json({ widgets: rows.map(toPageWidgetDto) });
+    return NextResponse.json({
+      widgets: rows
+        .filter((row) => row.url !== OCHB_SEED_MARKER_URL)
+        .map(toPageWidgetDto),
+    });
   } catch (e) {
     if (isPrismaMissingTable(e)) {
-      return NextResponse.json({ widgets: [] });
+      return NextResponse.json({ widgets: [], unavailable: true });
     }
     console.error("page-widgets list failed", e);
     return NextResponse.json({ error: "database unavailable" }, { status: 503 });

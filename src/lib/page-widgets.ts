@@ -7,6 +7,7 @@ import {
   ochpLandingTileHref,
   OCHP_GLOBAL_TILES,
 } from "@/lib/ochp-seasons";
+import { OCHB_HAZA_BROADCAST_ID, OCHB_PATH, ochbStaticTiles } from "@/lib/ochb";
 import { OCHCH_CURRENT_TILES, OCHCH_PATH } from "@/lib/ochch";
 import { SYRENY_LITE } from "@/lib/syreny-lite";
 import { turnirushkiHazaBroadcastAllowlist } from "@/lib/turnirushki-games";
@@ -26,6 +27,13 @@ export const DS_HAZA_WIDGET_TITLE = "Результаты ХаЗа";
 export const OCHP_WIDGET_PATH = "/ochp";
 export const SYRENY_WIDGET_PATH = "/mazowieckie-syreny-lite";
 export const OCHCH_WIDGET_PATH = OCHCH_PATH;
+export const OCHB_WIDGET_PATH = OCHB_PATH;
+
+/**
+ * Archived row that records a finished /ochb seed.
+ * Hidden from the tile API so an admin delete is not recreated on the next load.
+ */
+export const OCHB_SEED_MARKER_URL = "seed:/ochb";
 
 /** Landings that render PageWidgetTiles in their own tile slot (not the root layout). */
 export const PAGE_WIDGET_EMBEDDED_PATHS = new Set<string>([
@@ -33,6 +41,7 @@ export const PAGE_WIDGET_EMBEDDED_PATHS = new Set<string>([
   OCHP_WIDGET_PATH,
   SYRENY_WIDGET_PATH,
   OCHCH_WIDGET_PATH,
+  OCHB_WIDGET_PATH,
 ]);
 
 /** Dedicated page for a widget with on-site content (Haza / brain / table). */
@@ -168,6 +177,19 @@ export function ochchCurrentWidgetSeeds(): PageWidgetSeed[] {
   return OCHCH_CURRENT_TILES.map((t) => seedLink(t.emoji, t.title, t.href, t.note));
 }
 
+export function ochbCurrentWidgetSeeds(): PageWidgetSeed[] {
+  return ochbStaticTiles().map((tile) => {
+    if (tile.slug === "chgk") {
+      return {
+        type: PAGE_WIDGET_HAZA,
+        title: seedTitle(tile.emoji, tile.title),
+        url: hazaBroadcastUrl(OCHB_HAZA_BROADCAST_ID),
+      };
+    }
+    return seedLink(tile.emoji, tile.title, tile.href);
+  });
+}
+
 export function parseHazaBroadcastId(url: string): number | null {
   try {
     const u = new URL(url.trim());
@@ -192,6 +214,16 @@ export function isPrismaMissingTable(e: unknown): boolean {
     "code" in e &&
     (e as { code: string }).code === "P2021"
   );
+}
+
+/** Missing table, or Postgres cannot be reached. The page can fall back to static tiles. */
+export function isPrismaUnavailable(e: unknown): boolean {
+  if (isPrismaMissingTable(e)) return true;
+  if (typeof e !== "object" || e === null) return false;
+  const name = "name" in e ? String((e as { name?: unknown }).name) : "";
+  if (name === "PrismaClientInitializationError") return true;
+  const code = "code" in e ? String((e as { code?: unknown }).code) : "";
+  return code === "P1001" || code === "P1017";
 }
 
 export function uniqueWidgetConflictMessage(type: string): string {
@@ -356,6 +388,46 @@ export async function ensureDsHazaWidget(): Promise<void> {
   }
 }
 
+/**
+ * Inserts /ochb tiles once. The marker stays after an admin deletes every visible tile,
+ * so those tiles are not created again.
+ */
+async function ensureOchbLandingWidgets(path: string): Promise<void> {
+  const marker = await db.pageWidget.findUnique({
+    where: {
+      path_type_url: {
+        path,
+        type: PAGE_WIDGET_LINK,
+        url: OCHB_SEED_MARKER_URL,
+      },
+    },
+    select: { id: true },
+  });
+  if (marker) return;
+
+  await ensurePageWidgets(path, ochbCurrentWidgetSeeds());
+  const last = await db.pageWidget.findFirst({
+    where: { path },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  try {
+    await db.pageWidget.create({
+      data: {
+        path,
+        type: PAGE_WIDGET_LINK,
+        title: "seed",
+        url: OCHB_SEED_MARKER_URL,
+        sortOrder: (last?.sortOrder ?? -1) + 1,
+        archived: true,
+      },
+    });
+  } catch (e) {
+    if (isPrismaUniqueConflict(e)) return;
+    throw e;
+  }
+}
+
 /** Idempotent seed of current-season landing tiles. Does not update existing rows. */
 export async function ensureLandingWidgets(path: string): Promise<void> {
   if (path === DS_HAZA_WIDGET_PATH) {
@@ -389,6 +461,10 @@ export async function ensureLandingWidgets(path: string): Promise<void> {
   }
   if (path === SYRENY_WIDGET_PATH) {
     await ensurePageWidgets(path, syrenyWidgetSeeds());
+    return;
+  }
+  if (path === OCHB_WIDGET_PATH) {
+    await ensureOchbLandingWidgets(path);
     return;
   }
   if (path === OCHCH_WIDGET_PATH) {

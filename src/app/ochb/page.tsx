@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, ExternalLink, Trophy } from "lucide-react";
-import { isPrismaMissingTable } from "@/lib/page-widgets";
+import { PageWidgetTiles } from "@/components/page-widgets/PageWidgetTiles";
+import {
+  OCHB_WIDGET_PATH,
+  ensureLandingWidgets,
+  isPrismaUnavailable,
+} from "@/lib/page-widgets";
 import {
   OCHB,
   OCHB_CHANNEL_URL,
@@ -9,10 +14,10 @@ import {
   OCHB_EDITORS,
   OCHB_ORG_COMMITTEE,
   OCHB_RATING_TOURNAMENT_ID,
-  OCHB_TILES,
   OCHB_TOURS_LABEL,
   ensureOchbEvent,
   ochbRatingPublicUrl,
+  ochbStaticTiles,
 } from "@/lib/ochb";
 
 export const metadata: Metadata = {
@@ -20,12 +25,49 @@ export const metadata: Metadata = {
   description: `${OCHB.longTitle}. ${OCHB_DATE_LABEL}, ${OCHB.city}.`,
 };
 
+function OchbTileFallback() {
+  const className =
+    "group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md";
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {ochbStaticTiles().map((tile) => {
+        const body = (
+          <>
+            <span className="mt-0.5 shrink-0 text-2xl leading-none" aria-hidden>
+              {tile.emoji}
+            </span>
+            <span className="text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
+              {tile.title}
+            </span>
+          </>
+        );
+        return tile.external ? (
+          <a
+            key={tile.slug}
+            href={tile.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={className}
+          >
+            {body}
+          </a>
+        ) : (
+          <Link key={tile.slug} href={tile.href} className={className}>
+            {body}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export default async function OchbPage() {
   if (process.env.DATABASE_URL) {
     try {
+      await ensureLandingWidgets(OCHB_WIDGET_PATH);
       await ensureOchbEvent();
     } catch (e) {
-      if (!isPrismaMissingTable(e)) throw e;
+      if (!isPrismaUnavailable(e)) throw e;
     }
   }
 
@@ -112,38 +154,8 @@ export default async function OchbPage() {
         </ol>
       </div>
 
-      <div id="page-ochb-tiles" className="mb-8 grid gap-3 sm:grid-cols-2">
-        {OCHB_TILES.map((tile) =>
-          tile.external ? (
-            <a
-              key={tile.slug}
-              href={tile.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
-            >
-              <span className="mt-0.5 shrink-0 text-2xl leading-none" aria-hidden>
-                {tile.emoji}
-              </span>
-              <span className="text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
-                {tile.title}
-              </span>
-            </a>
-          ) : (
-            <Link
-              key={tile.slug}
-              href={tile.href}
-              className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-accent/30 hover:shadow-md"
-            >
-              <span className="mt-0.5 shrink-0 text-2xl leading-none" aria-hidden>
-                {tile.emoji}
-              </span>
-              <span className="text-sm font-semibold leading-snug transition-colors group-hover:text-accent">
-                {tile.title}
-              </span>
-            </Link>
-          ),
-        )}
+      <div id="page-ochb-tiles" className="mb-8">
+        <PageWidgetTiles embedded fallback={<OchbTileFallback />} />
       </div>
 
       <p className="text-center text-xs text-muted">

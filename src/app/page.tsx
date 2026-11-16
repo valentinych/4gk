@@ -51,7 +51,7 @@ const leagues = [
     description: "ОЧЧ-2026, ОЧБ-2026 и фестивали вне польских лиг",
     cities: ["Прага", "Барселона"],
     badgeColor: "bg-sky-50 text-sky-800 border-sky-100",
-    emoji: "🇨🇿",
+    emoji: "🇨🇿🇪🇸",
   },
 ];
 

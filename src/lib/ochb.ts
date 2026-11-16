@@ -8,6 +8,11 @@ export const OCHB_CHANNEL_URL = "https://t.me/nvrmr_bcn";
 export const OCHB_DATE_LABEL = "20–22 ноября 2026";
 export const OCHB_REGISTRATION_URL = "https://forms.gle/64ZLtBEfer1JxJWw7";
 
+/** Haza broadcast for the ЧГК tile on /ochb. */
+export const OCHB_HAZA_BROADCAST_ID = 684;
+export const OCHB_HAZA_BROADCAST_URL = `https://www.haza.online/broadcast/${OCHB_HAZA_BROADCAST_ID}`;
+export const OCHB_CHGK_TILE_TITLE = "Что? Где? Когда?";
+
 /**
  * «Витрина» tab of the current team list (t.me/nvrmr_bcn/60).
  * The share link has no gid; export?format=csv&gid=0 returns HTTP 400.
@@ -27,7 +32,7 @@ export const OCHB_LINKS = [
     href: "https://t.me/nvrmr_bcn/56",
   },
   {
-    label: "Открытый чемпионат Барселоны",
+    label: "Телеграм-канал",
     href: OCHB_CHANNEL_URL,
   },
 ] as const;
@@ -139,8 +144,8 @@ export const OCHB_TILES: OchbLandingTile[] = [
   },
   {
     slug: "results",
-    emoji: "❓",
-    title: "Результаты Что? Где? Когда?",
+    emoji: "📊",
+    title: "Результаты рейтинга",
     href: "/ochb/results",
   },
   {
@@ -175,6 +180,22 @@ export const OCHB_TILES: OchbLandingTile[] = [
     external: true,
   },
 ];
+
+/** Landing tiles, including the Haza ЧГК broadcast. Rating stays a separate tile. */
+export function ochbStaticTiles(): OchbLandingTile[] {
+  const chgk: OchbLandingTile = {
+    slug: "chgk",
+    emoji: "❓",
+    title: OCHB_CHGK_TILE_TITLE,
+    href: OCHB_HAZA_BROADCAST_URL,
+    external: true,
+  };
+  const tiles = OCHB_TILES.map((tile) => ({ ...tile }));
+  const resultsAt = tiles.findIndex((tile) => tile.slug === "results");
+  if (resultsAt < 0) return [...tiles, chgk];
+  tiles.splice(resultsAt, 0, chgk);
+  return tiles;
+}
 
 export function ochbRatingPublicUrl(
   tournamentId: number = OCHB_RATING_TOURNAMENT_ID,

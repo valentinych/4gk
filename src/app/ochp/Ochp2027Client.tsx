@@ -348,9 +348,11 @@ function TeamsTable({ teams }: { teams: PublicTeam[] }) {
                 <td className="px-4 py-3 tabular-nums text-muted">{index + 1}</td>
                 <td className="px-4 py-3">
                   {team.withdrawnAt && <span className="sr-only">Убрана из списка. </span>}
-                  <span className={`font-medium ${struck}`}>{team.name}</span>
-                  <StatusBadge status={team.status} />
-                  {team.polish ? <PolishFlag /> : null}
+                  <span className="inline-flex items-center whitespace-nowrap">
+                    <span className={`font-medium ${struck}`}>{team.name}</span>
+                    <StatusBadge status={team.status} />
+                    {team.polish ? <PolishFlag /> : null}
+                  </span>
                 </td>
                 <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
                 <td className={`px-4 py-3 text-muted ${struck}`}>{team.city?.trim() || "—"}</td>

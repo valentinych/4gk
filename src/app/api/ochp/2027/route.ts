@@ -53,11 +53,12 @@ export async function PATCH(req: Request) {
       id?: unknown;
       polishOverride?: unknown;
       status?: unknown;
+      withdrawn?: unknown;
     };
     if (body == null || typeof body !== "object" || Array.isArray(body)) {
       throw new Ochp2027HttpError(400, "Нечего сохранять");
     }
-    applicationUpdate = "polishOverride" in body || "status" in body;
+    applicationUpdate = "polishOverride" in body || "status" in body || "withdrawn" in body;
     if (applicationUpdate) {
       await updateOchp2027Application(session, body);
     } else if ("opensAt" in body) {

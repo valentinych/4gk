@@ -21,6 +21,7 @@ type PublicTeam = {
   createdAt: string;
   rating: number | null;
   polish?: boolean;
+  withdrawnAt?: string | null;
 };
 
 type SortKey = "time" | "rating";
@@ -40,6 +41,7 @@ type AdminApplication = {
   polish: boolean;
   status: Ochp2027Status | null;
   isTest: boolean;
+  withdrawnAt: string | null;
 };
 
 type OchpState = {
@@ -132,18 +134,31 @@ function ratingPolishNote(row: AdminApplication): string | null {
   return row.ratingPolish ? "в рейтинге: Польша" : "в рейтинге: не Польша";
 }
 
+function committeeRows(rows: AdminApplication[]): AdminApplication[] {
+  const active: AdminApplication[] = [];
+  const withdrawn: AdminApplication[] = [];
+  for (const row of rows) {
+    if (row.withdrawnAt) withdrawn.push(row);
+    else active.push(row);
+  }
+  return [...active, ...withdrawn];
+}
+
 function AdminApplicationsTable({
   rows,
   saving,
   onPolish,
   onStatus,
+  onWithdraw,
 }: {
   rows: AdminApplication[];
   saving: boolean;
   onPolish: (id: string, polish: boolean) => void;
   onStatus: (id: string, status: Ochp2027Status | null) => void;
+  onWithdraw: (id: string, withdrawn: boolean) => void;
 }) {
-  if (rows.length === 0) {
+  const ordered = committeeRows(rows);
+  if (ordered.length === 0) {
     return <p className="mt-2 text-sm text-muted">Заявок пока нет.</p>;
   }
 
@@ -167,26 +182,32 @@ function AdminApplicationsTable({
             <th scope="col" className="px-4 py-2 font-semibold">
               Статус
             </th>
+            <th scope="col" className="px-4 py-2 font-semibold">
+              <span className="sr-only">Список</span>
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {rows.map((row) => {
+          {ordered.map((row) => {
             const note = ratingPolishNote(row);
             const noteId = `ochp-polish-note-${row.id}`;
             const polishLabel = row.polish ? "польская команда" : "не польская команда";
+            const struck = row.withdrawnAt ? "line-through" : "";
+            const listAction = row.withdrawnAt ? "Вернуть в список" : "Убрать из списка";
             return (
               <tr key={row.id} aria-busy={saving}>
-                <td className="px-4 py-3">
+                <td className={`px-4 py-3 ${struck}`}>
+                  {row.withdrawnAt && <span className="sr-only">Убрана из списка. </span>}
                   <span className="font-medium">{row.name}</span>
                   {row.teamChgkId != null && (
                     <span className="text-muted"> · {row.teamChgkId}</span>
                   )}
                   {row.isTest && <span className="font-normal text-muted"> · тест</span>}
                 </td>
-                <td className="px-4 py-3 text-muted">
+                <td className={`px-4 py-3 text-muted ${struck}`}>
                   {contactLabel(row.contactKind)}: {row.contactValue}
                 </td>
-                <td className="px-4 py-3">
+                <td className={`px-4 py-3 ${struck}`}>
                   <time dateTime={row.createdAt} className="text-xs text-muted tabular-nums whitespace-nowrap">
                     {formatWarsawDateTimeWithSeconds(row.createdAt)}
                   </time>
@@ -234,6 +255,17 @@ function AdminApplicationsTable({
                     ))}
                   </select>
                 </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <button
+                    type="button"
+                    disabled={saving}
+                    aria-label={`${listAction}: ${row.name}`}
+                    onClick={() => onWithdraw(row.id, !row.withdrawnAt)}
+                    className="rounded text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:opacity-50"
+                  >
+                    {listAction}
+                  </button>
+                </td>
               </tr>
             );
           })}
@@ -243,12 +275,20 @@ function AdminApplicationsTable({
   );
 }
 
+function listRows(teams: PublicTeam[], sort: SortState | null): PublicTeam[] {
+  const active: PublicTeam[] = [];
+  const withdrawn: PublicTeam[] = [];
+  for (const team of teams) {
+    if (team.withdrawnAt) withdrawn.push(team);
+    else active.push(team);
+  }
+  const orderedActive = sort ? [...active].sort((a, b) => compareTeams(a, b, sort)) : active;
+  return [...orderedActive, ...withdrawn];
+}
+
 function TeamsTable({ teams }: { teams: PublicTeam[] }) {
   const [sort, setSort] = useState<SortState | null>(null);
-  const rows = useMemo(() => {
-    if (!sort) return teams;
-    return [...teams].sort((a, b) => compareTeams(a, b, sort));
-  }, [teams, sort]);
+  const rows = useMemo(() => listRows(teams, sort), [teams, sort]);
 
   function onSort(key: SortKey) {
     setSort((prev) => {
@@ -279,29 +319,33 @@ function TeamsTable({ teams }: { teams: PublicTeam[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {rows.map((team, index) => (
-            <tr key={team.id}>
-              <td className="px-4 py-3 tabular-nums text-muted">{index + 1}</td>
-              <td className="px-4 py-3">
-                <span className="font-medium">{team.name}</span>
-                {team.polish ? <PolishFlag /> : null}
-              </td>
-              <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
-              <td className="px-4 py-3 text-muted">{team.city?.trim() || "—"}</td>
-              <td className="px-4 py-3 text-right tabular-nums text-muted">
-                {team.rating == null ? "—" : team.rating}
-              </td>
-              <td className="px-4 py-3 text-right">
-                {team.createdAt ? (
-                  <time dateTime={team.createdAt} className="text-xs text-muted tabular-nums">
-                    {formatWarsawDateTimeWithSeconds(team.createdAt)}
-                  </time>
-                ) : (
-                  <span className="text-xs text-muted">—</span>
-                )}
-              </td>
-            </tr>
-          ))}
+          {rows.map((team, index) => {
+            const struck = team.withdrawnAt ? "line-through" : "";
+            return (
+              <tr key={team.id}>
+                <td className="px-4 py-3 tabular-nums text-muted">{index + 1}</td>
+                <td className="px-4 py-3">
+                  {team.withdrawnAt && <span className="sr-only">Убрана из списка. </span>}
+                  <span className={`font-medium ${struck}`}>{team.name}</span>
+                  {team.polish ? <PolishFlag /> : null}
+                </td>
+                <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
+                <td className={`px-4 py-3 text-muted ${struck}`}>{team.city?.trim() || "—"}</td>
+                <td className={`px-4 py-3 text-right tabular-nums text-muted ${struck}`}>
+                  {team.rating == null ? "—" : team.rating}
+                </td>
+                <td className={`px-4 py-3 text-right ${struck}`}>
+                  {team.createdAt ? (
+                    <time dateTime={team.createdAt} className="text-xs text-muted tabular-nums">
+                      {formatWarsawDateTimeWithSeconds(team.createdAt)}
+                    </time>
+                  ) : (
+                    <span className="text-xs text-muted">—</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -548,7 +592,7 @@ export function Ochp2027Client() {
 
   async function saveApplication(
     id: string,
-    patch: { polishOverride?: boolean; status?: Ochp2027Status | null },
+    patch: { polishOverride?: boolean; status?: Ochp2027Status | null; withdrawn?: boolean },
   ) {
     if (savingApplicationRef.current) return;
     savingApplicationRef.current = true;
@@ -557,6 +601,7 @@ export function Ochp2027Client() {
     const snapshot = state;
     setState((current) => {
       if (!current) return current;
+      const withdrawnAt = patch.withdrawn ? new Date().toISOString() : null;
       const adminApplications = current.adminApplications?.map((row) => {
         if (row.id !== id) return row;
         const polishOverride = patch.polishOverride !== undefined ? patch.polishOverride : row.polishOverride;
@@ -566,20 +611,25 @@ export function Ochp2027Client() {
           polishOverride,
           status,
           polish: polishOverride ?? row.ratingPolish,
+          withdrawnAt: patch.withdrawn === undefined ? row.withdrawnAt : withdrawnAt,
         };
       });
-      const teams =
-        patch.polishOverride === undefined
-          ? current.teams
-          : current.teams.map((team) =>
-              team.id === id ? { ...team, polish: patch.polishOverride as boolean } : team,
-            );
-      const testTeams =
-        patch.polishOverride === undefined
-          ? current.testTeams
-          : current.testTeams?.map((team) =>
-              team.id === id ? { ...team, polish: patch.polishOverride as boolean } : team,
-            );
+      const teams = current.teams.map((team) => {
+        if (team.id !== id) return team;
+        return {
+          ...team,
+          ...(patch.polishOverride !== undefined ? { polish: patch.polishOverride } : {}),
+          ...(patch.withdrawn !== undefined ? { withdrawnAt } : {}),
+        };
+      });
+      const testTeams = current.testTeams?.map((team) => {
+        if (team.id !== id) return team;
+        return {
+          ...team,
+          ...(patch.polishOverride !== undefined ? { polish: patch.polishOverride } : {}),
+          ...(patch.withdrawn !== undefined ? { withdrawnAt } : {}),
+        };
+      });
       return { ...current, adminApplications, teams, testTeams };
     });
     try {
@@ -631,20 +681,24 @@ export function Ochp2027Client() {
               createdAt: "",
               rating: null,
               polish: false,
+              withdrawnAt: null,
             },
           ]
         : state.teams;
   const testPreview: PublicTeam[] =
     isAdmin && state
-      ? (state.testTeams ?? []).map((team) => ({
-          id: team.id,
-          teamChgkId: team.teamChgkId,
-          name: team.name,
-          city: team.city || "—",
-          createdAt: team.createdAt,
-          rating: team.rating ?? null,
-          polish: team.polish === true,
-        }))
+      ? (state.testTeams ?? [])
+          .filter((team) => !team.withdrawnAt)
+          .map((team) => ({
+            id: team.id,
+            teamChgkId: team.teamChgkId,
+            name: team.name,
+            city: team.city || "—",
+            createdAt: team.createdAt,
+            rating: team.rating ?? null,
+            polish: team.polish === true,
+            withdrawnAt: null,
+          }))
       : [];
   const closedText =
     state == null
@@ -1089,6 +1143,7 @@ export function Ochp2027Client() {
                 saving={savingApplication}
                 onPolish={(id, polish) => void saveApplication(id, { polishOverride: polish })}
                 onStatus={(id, status) => void saveApplication(id, { status })}
+                onWithdraw={(id, withdrawn) => void saveApplication(id, { withdrawn })}
               />
             </section>
           )}
@@ -1119,12 +1174,17 @@ export function Ochp2027Client() {
                   {state.testTeams?.map((team) => (
                     <li key={team.id} className="flex items-start justify-between gap-3 text-sm">
                       <div>
-                        <p className="font-medium">
-                          {team.name}
+                        <p>
+                          <span className={team.withdrawnAt ? "font-medium line-through" : "font-medium"}>
+                            {team.name}
+                          </span>
                           {team.polish ? <PolishFlag /> : null}{" "}
                           <span className="font-normal text-muted">· тест</span>
+                          {team.withdrawnAt && (
+                            <span className="font-normal text-muted"> · убрана из списка</span>
+                          )}
                         </p>
-                        <p className="text-xs text-muted">
+                        <p className={`text-xs text-muted ${team.withdrawnAt ? "line-through" : ""}`}>
                           {contactLabel(team.contactKind)}: {team.contactValue}
                         </p>
                       </div>

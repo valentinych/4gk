@@ -41,6 +41,7 @@ export type OchpPublicTeam = {
   createdAt: string;
   rating: number | null;
   polish: boolean;
+  withdrawnAt: string | null;
 };
 
 export type OchpAdminContact = {
@@ -63,6 +64,7 @@ export type OchpAdminApplication = {
   polish: boolean;
   status: Ochp2027Status | null;
   isTest: boolean;
+  withdrawnAt: string | null;
 };
 
 export type Ochp2027State = {
@@ -188,6 +190,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       rating: meta.rating,
       polish: effectivePolish(row.polishOverride, meta.polish),
       createdAt: row.createdAt.toISOString(),
+      withdrawnAt: row.withdrawnAt?.toISOString() ?? null,
     };
   });
 
@@ -220,6 +223,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       rating: meta.rating,
       polish: effectivePolish(row.polishOverride, meta.polish),
       createdAt: row.createdAt.toISOString(),
+      withdrawnAt: row.withdrawnAt?.toISOString() ?? null,
       contactKind: row.contactKind,
       contactValue: row.contactValue,
     };
@@ -240,6 +244,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
         polish: effectivePolish(row.polishOverride, meta.polish),
         status: storedStatus(row.status),
         isTest: row.isTest,
+        withdrawnAt: row.withdrawnAt?.toISOString() ?? null,
       };
     });
   return state;
@@ -393,7 +398,7 @@ export async function submitOchp2027(session: Session | null, body: SubmitBody):
 
 export async function updateOchp2027Application(
   session: Session | null,
-  body: { id?: unknown; polishOverride?: unknown; status?: unknown },
+  body: { id?: unknown; polishOverride?: unknown; status?: unknown; withdrawn?: unknown },
 ): Promise<void> {
   const user = await sessionUser(session);
   if (user?.role !== "ADMIN") {
@@ -403,7 +408,7 @@ export async function updateOchp2027Application(
   const id = typeof body.id === "string" ? body.id.trim() : "";
   if (!id) throw new Ochp2027HttpError(400, "Не указана заявка");
 
-  const data: { polishOverride?: boolean | null; status?: string | null } = {};
+  const data: { polishOverride?: boolean | null; status?: string | null; withdrawnAt?: Date | null } = {};
   if ("polishOverride" in body) {
     const value = body.polishOverride;
     if (value !== null && typeof value !== "boolean") {
@@ -421,7 +426,13 @@ export async function updateOchp2027Application(
       throw new Ochp2027HttpError(400, "Неизвестный статус");
     }
   }
-  if (!("polishOverride" in data) && !("status" in data)) {
+  if ("withdrawn" in body) {
+    if (typeof body.withdrawn !== "boolean") {
+      throw new Ochp2027HttpError(400, "Укажите, убрать команду из списка или вернуть");
+    }
+    data.withdrawnAt = body.withdrawn ? new Date() : null;
+  }
+  if (!("polishOverride" in data) && !("status" in data) && !("withdrawnAt" in data)) {
     throw new Ochp2027HttpError(400, "Нечего сохранять");
   }
 

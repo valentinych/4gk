@@ -251,6 +251,8 @@ model Ochp2027Application {
   polishOverride Boolean?
   /// Admin-only quota. Null means «не задан». Allowed labels are checked in app code.
   status        String?
+  /// Set when an admin withdraws the application from the list. The row stays.
+  withdrawnAt   DateTime?
   submittedById String?
   createdAt     DateTime        @default(now())
 

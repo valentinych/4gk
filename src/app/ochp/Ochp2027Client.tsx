@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Search, X } from "lucide-react";
-import { OCHP_2027_STATUSES, type Ochp2027Status } from "@/lib/ochp-2027-status";
+import { isOchp2027Status, OCHP_2027_STATUSES, type Ochp2027Status } from "@/lib/ochp-2027-status";
 import { formatWarsawDateTime, formatWarsawDateTimeWithSeconds, isoToWarsawInputValue } from "@/lib/time";
 
 type ContactKind = "EMAIL" | "TELEGRAM" | "OTHER";
@@ -21,6 +21,7 @@ type PublicTeam = {
   createdAt: string;
   rating: number | null;
   polish?: boolean;
+  status: Ochp2027Status | null;
   withdrawnAt?: string | null;
 };
 
@@ -112,6 +113,27 @@ function SortableTh({
         </span>
       </button>
     </th>
+  );
+}
+
+const STATUS_BADGE_CLASS: Record<Ochp2027Status, string> = {
+  "польская квота": "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200",
+  "общий рейтинг": "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200",
+  "первые заявившиеся":
+    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200",
+  "вайлд-кард":
+    "border-violet-200 bg-violet-50 text-violet-800 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-200",
+  "лист ожидания": "border-border bg-surface text-muted",
+};
+
+function StatusBadge({ status }: { status: string | null | undefined }) {
+  if (!isOchp2027Status(status)) return null;
+  return (
+    <span
+      className={`ml-1.5 inline-flex items-center whitespace-nowrap rounded-full border px-1.5 py-0.5 align-middle text-xs font-medium leading-none ${STATUS_BADGE_CLASS[status]}`}
+    >
+      {status}
+    </span>
   );
 }
 
@@ -327,6 +349,7 @@ function TeamsTable({ teams }: { teams: PublicTeam[] }) {
                 <td className="px-4 py-3">
                   {team.withdrawnAt && <span className="sr-only">Убрана из списка. </span>}
                   <span className={`font-medium ${struck}`}>{team.name}</span>
+                  <StatusBadge status={team.status} />
                   {team.polish ? <PolishFlag /> : null}
                 </td>
                 <td className="px-4 py-3 tabular-nums text-muted">{team.teamChgkId ?? "—"}</td>
@@ -619,6 +642,7 @@ export function Ochp2027Client() {
         return {
           ...team,
           ...(patch.polishOverride !== undefined ? { polish: patch.polishOverride } : {}),
+          ...(patch.status !== undefined ? { status: patch.status } : {}),
           ...(patch.withdrawn !== undefined ? { withdrawnAt } : {}),
         };
       });
@@ -627,6 +651,7 @@ export function Ochp2027Client() {
         return {
           ...team,
           ...(patch.polishOverride !== undefined ? { polish: patch.polishOverride } : {}),
+          ...(patch.status !== undefined ? { status: patch.status } : {}),
           ...(patch.withdrawn !== undefined ? { withdrawnAt } : {}),
         };
       });
@@ -681,6 +706,7 @@ export function Ochp2027Client() {
               createdAt: "",
               rating: null,
               polish: false,
+              status: null,
               withdrawnAt: null,
             },
           ]
@@ -697,6 +723,7 @@ export function Ochp2027Client() {
             createdAt: team.createdAt,
             rating: team.rating ?? null,
             polish: team.polish === true,
+            status: isOchp2027Status(team.status) ? team.status : null,
             withdrawnAt: null,
           }))
       : [];

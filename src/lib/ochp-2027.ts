@@ -41,6 +41,7 @@ export type OchpPublicTeam = {
   createdAt: string;
   rating: number | null;
   polish: boolean;
+  status: Ochp2027Status | null;
   withdrawnAt: string | null;
 };
 
@@ -189,6 +190,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       city: meta.city,
       rating: meta.rating,
       polish: effectivePolish(row.polishOverride, meta.polish),
+      status: storedStatus(row.status),
       createdAt: row.createdAt.toISOString(),
       withdrawnAt: row.withdrawnAt?.toISOString() ?? null,
     };
@@ -222,6 +224,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       city: meta.city,
       rating: meta.rating,
       polish: effectivePolish(row.polishOverride, meta.polish),
+      status: storedStatus(row.status),
       createdAt: row.createdAt.toISOString(),
       withdrawnAt: row.withdrawnAt?.toISOString() ?? null,
       contactKind: row.contactKind,

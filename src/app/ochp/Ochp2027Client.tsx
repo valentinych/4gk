@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Search, X } from "lucide-react";
+import { OCHP_2027_STATUSES, type Ochp2027Status } from "@/lib/ochp-2027-status";
 import { formatWarsawDateTime, formatWarsawDateTimeWithSeconds, isoToWarsawInputValue } from "@/lib/time";
 
 type ContactKind = "EMAIL" | "TELEGRAM" | "OTHER";
@@ -27,6 +28,19 @@ type SortDir = "asc" | "desc";
 type SortState = { key: SortKey; dir: SortDir };
 type ContactRow = { id: string; contactKind: ContactKind; contactValue: string };
 type TestTeam = PublicTeam & ContactRow;
+type AdminApplication = {
+  id: string;
+  teamChgkId: number | null;
+  name: string;
+  contactKind: ContactKind;
+  contactValue: string;
+  createdAt: string;
+  polishOverride: boolean | null;
+  ratingPolish: boolean;
+  polish: boolean;
+  status: Ochp2027Status | null;
+  isTest: boolean;
+};
 
 type OchpState = {
   opensAt: string | null;
@@ -36,6 +50,7 @@ type OchpState = {
   teams: PublicTeam[];
   contacts?: ContactRow[];
   testTeams?: TestTeam[];
+  adminApplications?: AdminApplication[];
 };
 
 type RatingTeam = { id: number; name: string; town?: { name: string } };
@@ -109,6 +124,122 @@ function PolishFlag() {
       <span className="block h-1/2 w-full bg-[#ffffff]" />
       <span className="block h-1/2 w-full bg-red-500" />
     </span>
+  );
+}
+
+function ratingPolishNote(row: AdminApplication): string | null {
+  if (row.polish === row.ratingPolish) return null;
+  return row.ratingPolish ? "в рейтинге: Польша" : "в рейтинге: не Польша";
+}
+
+function AdminApplicationsTable({
+  rows,
+  saving,
+  onPolish,
+  onStatus,
+}: {
+  rows: AdminApplication[];
+  saving: boolean;
+  onPolish: (id: string, polish: boolean) => void;
+  onStatus: (id: string, status: Ochp2027Status | null) => void;
+}) {
+  if (rows.length === 0) {
+    return <p className="mt-2 text-sm text-muted">Заявок пока нет.</p>;
+  }
+
+  return (
+    <div className="mt-3 overflow-x-auto rounded-xl border border-border bg-surface">
+      <table className="min-w-full text-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-xs font-semibold uppercase tracking-wide text-muted">
+            <th scope="col" className="px-4 py-2 font-semibold">
+              Команда
+            </th>
+            <th scope="col" className="px-4 py-2 font-semibold">
+              Контакт
+            </th>
+            <th scope="col" className="px-4 py-2 font-semibold">
+              Время заявки
+            </th>
+            <th scope="col" className="px-4 py-2 font-semibold">
+              Польская команда
+            </th>
+            <th scope="col" className="px-4 py-2 font-semibold">
+              Статус
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {rows.map((row) => {
+            const note = ratingPolishNote(row);
+            const noteId = `ochp-polish-note-${row.id}`;
+            const polishLabel = row.polish ? "польская команда" : "не польская команда";
+            return (
+              <tr key={row.id} aria-busy={saving}>
+                <td className="px-4 py-3">
+                  <span className="font-medium">{row.name}</span>
+                  {row.teamChgkId != null && (
+                    <span className="text-muted"> · {row.teamChgkId}</span>
+                  )}
+                  {row.isTest && <span className="font-normal text-muted"> · тест</span>}
+                </td>
+                <td className="px-4 py-3 text-muted">
+                  {contactLabel(row.contactKind)}: {row.contactValue}
+                </td>
+                <td className="px-4 py-3">
+                  <time dateTime={row.createdAt} className="text-xs text-muted tabular-nums whitespace-nowrap">
+                    {formatWarsawDateTimeWithSeconds(row.createdAt)}
+                  </time>
+                </td>
+                <td className="px-4 py-3">
+                  <label className="inline-flex min-h-6 cursor-pointer items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={row.polish}
+                      disabled={saving}
+                      aria-label={`${polishLabel}: ${row.name}`}
+                      aria-describedby={note ? noteId : undefined}
+                      onChange={(e) => onPolish(row.id, e.target.checked)}
+                      className="rounded focus-visible:ring-2 focus-visible:ring-accent/40"
+                    />
+                    <span>{polishLabel}</span>
+                  </label>
+                  {note && (
+                    <span id={noteId} className="mt-1 block text-xs text-muted">
+                      {note}
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  <select
+                    value={row.status ?? ""}
+                    disabled={saving}
+                    aria-label={`Статус: ${row.name}`}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        onStatus(row.id, null);
+                        return;
+                      }
+                      const status = OCHP_2027_STATUSES.find((item) => item === value);
+                      if (status) onStatus(row.id, status);
+                    }}
+                    className={`${inputClass} min-w-[12rem]`}
+                  >
+                    <option value="">не задан</option>
+                    {OCHP_2027_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -199,11 +330,13 @@ export function Ochp2027Client() {
   const [contactValue, setContactValue] = useState("");
   const [useAccountEmail, setUseAccountEmail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [savingApplication, setSavingApplication] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [invalidField, setInvalidField] = useState<string | null>(null);
 
   const searchRef = useRef<HTMLDivElement>(null);
+  const savingApplicationRef = useRef(false);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const teamRef = useRef<HTMLInputElement>(null);
   const freeRef = useRef<HTMLInputElement>(null);
@@ -410,6 +543,61 @@ export function Ochp2027Client() {
       setError(err instanceof Error ? err.message : "Не удалось сохранить заявку");
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function saveApplication(
+    id: string,
+    patch: { polishOverride?: boolean; status?: Ochp2027Status | null },
+  ) {
+    if (savingApplicationRef.current) return;
+    savingApplicationRef.current = true;
+    setSavingApplication(true);
+    setError(null);
+    const snapshot = state;
+    setState((current) => {
+      if (!current) return current;
+      const adminApplications = current.adminApplications?.map((row) => {
+        if (row.id !== id) return row;
+        const polishOverride = patch.polishOverride !== undefined ? patch.polishOverride : row.polishOverride;
+        const status = patch.status !== undefined ? patch.status : row.status;
+        return {
+          ...row,
+          polishOverride,
+          status,
+          polish: polishOverride ?? row.ratingPolish,
+        };
+      });
+      const teams =
+        patch.polishOverride === undefined
+          ? current.teams
+          : current.teams.map((team) =>
+              team.id === id ? { ...team, polish: patch.polishOverride as boolean } : team,
+            );
+      const testTeams =
+        patch.polishOverride === undefined
+          ? current.testTeams
+          : current.testTeams?.map((team) =>
+              team.id === id ? { ...team, polish: patch.polishOverride as boolean } : team,
+            );
+      return { ...current, adminApplications, teams, testTeams };
+    });
+    try {
+      const res = await fetch("/api/ochp/2027", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...patch }),
+      });
+      const data = (await res.json()) as OchpState & { error?: string };
+      if (!res.ok) throw new Error(data.error || "Не удалось сохранить");
+      setState(data);
+      setOpensInput(isoToWarsawInputValue(data.opensAt));
+    } catch (err) {
+      if (snapshot) setState(snapshot);
+      setError(err instanceof Error ? err.message : "Не удалось сохранить");
+    } finally {
+      savingApplicationRef.current = false;
+      setSavingApplication(false);
     }
   }
 
@@ -887,6 +1075,23 @@ export function Ochp2027Client() {
               </>
             )}
           </section>
+
+          {isAdmin && (
+            <section aria-labelledby={`${baseId}-committee`}>
+              <h2 id={`${baseId}-committee`} className="text-sm font-bold">
+                Заявки для оргкомитета
+              </h2>
+              <p className="mt-1 text-xs text-muted">
+                Видны только администраторам. Тестовые заявки отмечены и в общий список не попадают.
+              </p>
+              <AdminApplicationsTable
+                rows={state.adminApplications ?? []}
+                saving={savingApplication}
+                onPolish={(id, polish) => void saveApplication(id, { polishOverride: polish })}
+                onStatus={(id, status) => void saveApplication(id, { status })}
+              />
+            </section>
+          )}
 
           {isAdmin && (
             <section aria-labelledby={`${baseId}-tests`} className="rounded-xl border border-dashed border-border p-5">

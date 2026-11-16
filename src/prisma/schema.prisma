@@ -247,6 +247,10 @@ model Ochp2027Application {
   contactKind   OchpContactKind
   contactValue  String
   isTest        Boolean         @default(false)
+  /// Null follows the rating country. True or false is an admin override.
+  polishOverride Boolean?
+  /// Admin-only quota. Null means «не задан». Allowed labels are checked in app code.
+  status        String?
   submittedById String?
   createdAt     DateTime        @default(now())
 

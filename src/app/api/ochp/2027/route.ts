@@ -8,6 +8,7 @@ import {
   Ochp2027HttpError,
   setOchp2027OpensAt,
   submitOchp2027,
+  updateOchp2027Application,
 } from "@/lib/ochp-2027";
 
 export const dynamic = "force-dynamic";
@@ -44,13 +45,29 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  let applicationUpdate = false;
   try {
     const session = await getServerSession(authOptions);
-    const body = (await req.json()) as { opensAt?: unknown };
-    await setOchp2027OpensAt(session, body.opensAt);
+    const body = (await req.json()) as {
+      opensAt?: unknown;
+      id?: unknown;
+      polishOverride?: unknown;
+      status?: unknown;
+    };
+    if (body == null || typeof body !== "object" || Array.isArray(body)) {
+      throw new Ochp2027HttpError(400, "Нечего сохранять");
+    }
+    applicationUpdate = "polishOverride" in body || "status" in body;
+    if (applicationUpdate) {
+      await updateOchp2027Application(session, body);
+    } else if ("opensAt" in body) {
+      await setOchp2027OpensAt(session, body.opensAt);
+    } else {
+      throw new Ochp2027HttpError(400, "Нечего сохранять");
+    }
     return NextResponse.json(await loadOchp2027(session));
   } catch (e) {
-    return fail(e, "Не удалось сохранить время");
+    return fail(e, applicationUpdate ? "Не удалось сохранить заявку" : "Не удалось сохранить время");
   }
 }
 

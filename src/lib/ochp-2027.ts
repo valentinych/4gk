@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import type { Session } from "next-auth";
 import { fetchPlayerCurrentSeasonTeam, fetchTeam, fetchTeamRating, fetchTeamTown } from "@/lib/chgk";
 import { db } from "@/lib/db";
+import { isOchp2027Status, type Ochp2027Status } from "@/lib/ochp-2027-status";
 import { formatWarsawDateTime, warsawInputValueToIso } from "@/lib/time";
 
 const SETTINGS_ID = "default";
@@ -50,6 +51,20 @@ export type OchpAdminContact = {
 
 export type OchpTestTeam = OchpPublicTeam & OchpAdminContact;
 
+export type OchpAdminApplication = {
+  id: string;
+  teamChgkId: number | null;
+  name: string;
+  contactKind: ContactKind;
+  contactValue: string;
+  createdAt: string;
+  polishOverride: boolean | null;
+  ratingPolish: boolean;
+  polish: boolean;
+  status: Ochp2027Status | null;
+  isTest: boolean;
+};
+
 export type Ochp2027State = {
   opensAt: string | null;
   open: boolean;
@@ -62,6 +77,7 @@ export type Ochp2027State = {
   teams: OchpPublicTeam[];
   contacts?: OchpAdminContact[];
   testTeams?: OchpTestTeam[];
+  adminApplications?: OchpAdminApplication[];
 };
 
 function cleanText(value: unknown, max: number): string {
@@ -121,6 +137,14 @@ function factsFor(teamChgkId: number | null, facts: Map<number, TeamFacts>): Tea
   return facts.get(teamChgkId) ?? { city: "—", rating: null, polish: false };
 }
 
+function effectivePolish(override: boolean | null, ratingPolish: boolean): boolean {
+  return override ?? ratingPolish;
+}
+
+function storedStatus(value: string | null): Ochp2027Status | null {
+  return isOchp2027Status(value) ? value : null;
+}
+
 export async function loadOchp2027(session: Session | null): Promise<Ochp2027State> {
   const [user, opensAt, real] = await Promise.all([
     sessionUser(session),
@@ -162,7 +186,7 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       name: publicName(row.teamName, row.displayName),
       city: meta.city,
       rating: meta.rating,
-      polish: meta.polish,
+      polish: effectivePolish(row.polishOverride, meta.polish),
       createdAt: row.createdAt.toISOString(),
     };
   });
@@ -194,12 +218,30 @@ export async function loadOchp2027(session: Session | null): Promise<Ochp2027Sta
       name: publicName(row.teamName, row.displayName),
       city: meta.city,
       rating: meta.rating,
-      polish: meta.polish,
+      polish: effectivePolish(row.polishOverride, meta.polish),
       createdAt: row.createdAt.toISOString(),
       contactKind: row.contactKind,
       contactValue: row.contactValue,
     };
   });
+  state.adminApplications = [...real, ...tests]
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .map((row) => {
+      const meta = factsFor(row.teamChgkId, facts);
+      return {
+        id: row.id,
+        teamChgkId: row.teamChgkId,
+        name: publicName(row.teamName, row.displayName),
+        contactKind: row.contactKind,
+        contactValue: row.contactValue,
+        createdAt: row.createdAt.toISOString(),
+        polishOverride: row.polishOverride,
+        ratingPolish: meta.polish,
+        polish: effectivePolish(row.polishOverride, meta.polish),
+        status: storedStatus(row.status),
+        isTest: row.isTest,
+      };
+    });
   return state;
 }
 
@@ -347,6 +389,49 @@ export async function submitOchp2027(session: Session | null, body: SubmitBody):
       submittedById: user?.id ?? null,
     },
   });
+}
+
+export async function updateOchp2027Application(
+  session: Session | null,
+  body: { id?: unknown; polishOverride?: unknown; status?: unknown },
+): Promise<void> {
+  const user = await sessionUser(session);
+  if (user?.role !== "ADMIN") {
+    throw new Ochp2027HttpError(403, "Недостаточно прав");
+  }
+
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  if (!id) throw new Ochp2027HttpError(400, "Не указана заявка");
+
+  const data: { polishOverride?: boolean | null; status?: string | null } = {};
+  if ("polishOverride" in body) {
+    const value = body.polishOverride;
+    if (value !== null && typeof value !== "boolean") {
+      throw new Ochp2027HttpError(400, "Укажите, польская ли команда");
+    }
+    data.polishOverride = value;
+  }
+  if ("status" in body) {
+    const value = body.status;
+    if (value === null) {
+      data.status = null;
+    } else if (isOchp2027Status(value)) {
+      data.status = value;
+    } else {
+      throw new Ochp2027HttpError(400, "Неизвестный статус");
+    }
+  }
+  if (!("polishOverride" in data) && !("status" in data)) {
+    throw new Ochp2027HttpError(400, "Нечего сохранять");
+  }
+
+  const existing = await db.ochp2027Application.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!existing) throw new Ochp2027HttpError(404, "Заявка не найдена");
+
+  await db.ochp2027Application.update({ where: { id }, data });
 }
 
 export async function setOchp2027OpensAt(session: Session | null, opensAtRaw: unknown): Promise<void> {

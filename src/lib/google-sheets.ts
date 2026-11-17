@@ -141,8 +141,17 @@ function looksLikeHtml(text: string, contentType: string | null): boolean {
 }
 
 /** Raw CSV text. Preserves blank lines (needed for micromatch fight groups). */
-export async function fetchSheetCsv(parsed: ParsedGoogleSheet): Promise<string> {
-  const res = await fetch(parsed.csvUrl, { cache: "no-store", redirect: "follow" });
+export async function fetchSheetCsv(
+  parsed: ParsedGoogleSheet,
+  opts?: { revalidate?: number },
+): Promise<string> {
+  const revalidate = opts?.revalidate;
+  const res = await fetch(
+    parsed.csvUrl,
+    revalidate != null
+      ? { next: { revalidate }, redirect: "follow" }
+      : { cache: "no-store", redirect: "follow" },
+  );
   const text = await res.text();
 
   if (!res.ok || looksLikeHtml(text, res.headers.get("content-type"))) {

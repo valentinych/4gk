@@ -6,6 +6,7 @@ import { OCHB_CHANNEL_URL, OCHB_LINKS, OCHB_RATING_TOURNAMENT_ID } from "@/lib/o
 import { OchbParticipantsPage } from "./OchbParticipantsPage";
 import { OchbRosterPage } from "./OchbRosterPage";
 import { OchbSchedulePage } from "./OchbSchedulePage";
+import { OchbSiPage } from "./OchbSiPage";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -54,7 +55,12 @@ export default async function OchbSlugPage({ params }: Props) {
   const title = PAGE_TITLES[slug];
 
   return (
-    <div id="page-ochb-slug" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div
+      id="page-ochb-slug"
+      className={`mx-auto px-4 py-12 sm:px-6 ${
+        slug === "results-si" ? "max-w-[96rem]" : "max-w-4xl"
+      }`}
+    >
       <Link
         href="/ochb"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-foreground"
@@ -77,7 +83,7 @@ export default async function OchbSlugPage({ params }: Props) {
       ) : slug === "results-quiz" ? (
         <OchbSoon id="page-ochb-results-quiz" />
       ) : slug === "results-si" ? (
-        <OchbSoon id="page-ochb-results-si" />
+        <OchbSiPage />
       ) : slug === "results-black" ? (
         <OchbSoon id="page-ochb-results-black" />
       ) : slug === "links" ? (

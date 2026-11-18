@@ -147,7 +147,7 @@ export default async function OchbPage() {
         <ol className="mt-0.5 space-y-0.5">
           {OCHB_EDITORS.map((name, i) => (
             <li key={name}>
-              <span className="font-mono text-xs text-muted/60">{i + 1}. </span>
+              <span className="font-mono text-xs text-muted/60">Тур {i + 1} — </span>
               {name}
             </li>
           ))}

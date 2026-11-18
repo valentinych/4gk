@@ -3,6 +3,8 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import { OCHB_CHANNEL_URL, OCHB_LINKS, OCHB_RATING_TOURNAMENT_ID } from "@/lib/ochb";
+import { OchbAppealPage } from "./OchbAppealPage";
+import { OchbControversialPage } from "./OchbControversialPage";
 import { OchbParticipantsPage } from "./OchbParticipantsPage";
 import { OchbRosterPage } from "./OchbRosterPage";
 import { OchbSchedulePage } from "./OchbSchedulePage";
@@ -21,6 +23,8 @@ const PAGE_TITLES: Record<string, string> = {
   "results-si": "Результаты Своей игры",
   "results-black": "Чёрное ЧГК",
   roster: "Подать состав — ОЧБ-2026",
+  controversial: "Спорные",
+  appeals: "Апелляции",
 };
 
 function OchbSoon({ id }: { id: string }) {
@@ -86,6 +90,10 @@ export default async function OchbSlugPage({ params }: Props) {
         <OchbSiPage />
       ) : slug === "results-black" ? (
         <OchbSoon id="page-ochb-results-black" />
+      ) : slug === "appeals" ? (
+        <OchbAppealPage />
+      ) : slug === "controversial" ? (
+        <OchbControversialPage />
       ) : slug === "links" ? (
         <div id="page-ochb-links" className="space-y-3">
           {OCHB_LINKS.map((link) => (

@@ -7,7 +7,12 @@ import {
   ochpLandingTileHref,
   OCHP_GLOBAL_TILES,
 } from "@/lib/ochp-seasons";
-import { OCHB_HAZA_BROADCAST_ID, OCHB_PATH, ochbStaticTiles } from "@/lib/ochb";
+import {
+  OCHB_CHANNEL_URL,
+  OCHB_HAZA_BROADCAST_ID,
+  OCHB_PATH,
+  ochbStaticTiles,
+} from "@/lib/ochb";
 import { OCHCH_CURRENT_TILES, OCHCH_PATH } from "@/lib/ochch";
 import { SYRENY_LITE } from "@/lib/syreny-lite";
 import { turnirushkiHazaBroadcastAllowlist } from "@/lib/turnirushki-games";
@@ -34,6 +39,16 @@ export const OCHB_WIDGET_PATH = OCHB_PATH;
  * Hidden from the tile API so an admin delete is not recreated on the next load.
  */
 export const OCHB_SEED_MARKER_URL = "seed:/ochb";
+
+/**
+ * Archived row that records the one-shot swap of «Полезные ссылки» for the
+ * channel tile, plus «Спорные» and «Апелляции». A later admin delete stays deleted.
+ */
+export const OCHB_JURY_SEED_MARKER_URL = "seed:/ochb/jury";
+
+export function isOchbSeedMarkerUrl(url: string): boolean {
+  return url === OCHB_SEED_MARKER_URL || url === OCHB_JURY_SEED_MARKER_URL;
+}
 
 /** Landings that render PageWidgetTiles in their own tile slot (not the root layout). */
 export const PAGE_WIDGET_EMBEDDED_PATHS = new Set<string>([
@@ -388,9 +403,113 @@ export async function ensureDsHazaWidget(): Promise<void> {
   }
 }
 
+const OCHB_LINKS_WIDGET_URL = "/ochb/links";
+
+async function createArchivedSeedMarker(path: string, url: string): Promise<void> {
+  const last = await db.pageWidget.findFirst({
+    where: { path },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  try {
+    await db.pageWidget.create({
+      data: {
+        path,
+        type: PAGE_WIDGET_LINK,
+        title: "seed",
+        url,
+        sortOrder: (last?.sortOrder ?? -1) + 1,
+        archived: true,
+      },
+    });
+  } catch (e) {
+    if (isPrismaUniqueConflict(e)) return;
+    throw e;
+  }
+}
+
+/**
+ * One shot. Turns the «Полезные ссылки» tile into «Телеграм-канал» when that
+ * channel tile is missing, archives any other links tile, and inserts
+ * спорные / апелляции / the channel only if those rows are absent.
+ * The marker blocks a later run, so an admin delete is not recreated.
+ */
+async function ensureOchbJuryAndChannelWidgets(path: string): Promise<void> {
+  const marker = await db.pageWidget.findUnique({
+    where: {
+      path_type_url: {
+        path,
+        type: PAGE_WIDGET_LINK,
+        url: OCHB_JURY_SEED_MARKER_URL,
+      },
+    },
+    select: { id: true },
+  });
+  if (marker) return;
+
+  const [linksRows, channel] = await Promise.all([
+    db.pageWidget.findMany({
+      where: {
+        path,
+        OR: [
+          { url: OCHB_LINKS_WIDGET_URL },
+          { title: { contains: "Полезные ссылки" } },
+        ],
+      },
+    }),
+    db.pageWidget.findUnique({
+      where: {
+        path_type_url: {
+          path,
+          type: PAGE_WIDGET_LINK,
+          url: OCHB_CHANNEL_URL,
+        },
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  let channelExists = channel != null;
+  for (const row of linksRows) {
+    const canBecomeChannel =
+      !channelExists &&
+      row.type === PAGE_WIDGET_LINK &&
+      row.url === OCHB_LINKS_WIDGET_URL;
+    if (canBecomeChannel) {
+      try {
+        await db.pageWidget.update({
+          where: { id: row.id },
+          data: {
+            title: seedTitle("📣", "Телеграм-канал"),
+            url: OCHB_CHANNEL_URL,
+            archived: false,
+          },
+        });
+        channelExists = true;
+        continue;
+      } catch (e) {
+        if (!isPrismaUniqueConflict(e)) throw e;
+      }
+    }
+    if (!row.archived) {
+      await db.pageWidget.update({
+        where: { id: row.id },
+        data: { archived: true },
+      });
+    }
+  }
+
+  await ensurePageWidgets(path, [
+    seedLink("📣", "Телеграм-канал", OCHB_CHANNEL_URL),
+    seedLink("💬", "Спорные", "/ochb/controversial"),
+    seedLink("⚖️", "Апелляции", "/ochb/appeals"),
+  ]);
+  await createArchivedSeedMarker(path, OCHB_JURY_SEED_MARKER_URL);
+}
+
 /**
  * Inserts /ochb tiles once. The marker stays after an admin deletes every visible tile,
- * so those tiles are not created again.
+ * so those tiles are not created again. The jury/channel pass is also one-shot.
  */
 async function ensureOchbLandingWidgets(path: string): Promise<void> {
   const marker = await db.pageWidget.findUnique({
@@ -403,29 +522,11 @@ async function ensureOchbLandingWidgets(path: string): Promise<void> {
     },
     select: { id: true },
   });
-  if (marker) return;
-
-  await ensurePageWidgets(path, ochbCurrentWidgetSeeds());
-  const last = await db.pageWidget.findFirst({
-    where: { path },
-    orderBy: { sortOrder: "desc" },
-    select: { sortOrder: true },
-  });
-  try {
-    await db.pageWidget.create({
-      data: {
-        path,
-        type: PAGE_WIDGET_LINK,
-        title: "seed",
-        url: OCHB_SEED_MARKER_URL,
-        sortOrder: (last?.sortOrder ?? -1) + 1,
-        archived: true,
-      },
-    });
-  } catch (e) {
-    if (isPrismaUniqueConflict(e)) return;
-    throw e;
+  if (!marker) {
+    await ensurePageWidgets(path, ochbCurrentWidgetSeeds());
+    await createArchivedSeedMarker(path, OCHB_SEED_MARKER_URL);
   }
+  await ensureOchbJuryAndChannelWidgets(path);
 }
 
 /** Idempotent seed of current-season landing tiles. Does not update existing rows. */

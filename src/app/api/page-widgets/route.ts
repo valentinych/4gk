@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import {
   ensureLandingWidgets,
   isPrismaMissingTable,
-  OCHB_SEED_MARKER_URL,
+  isOchbSeedMarkerUrl,
   isPrismaUniqueConflict,
   normalizePagePath,
   resolveWidgetFields,
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     });
     return NextResponse.json({
       widgets: rows
-        .filter((row) => row.url !== OCHB_SEED_MARKER_URL)
+        .filter((row) => !isOchbSeedMarkerUrl(row.url))
         .map(toPageWidgetDto),
     });
   } catch (e) {

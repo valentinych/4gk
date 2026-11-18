@@ -201,6 +201,52 @@ model OchchAppeal {
   @@index([eventId])
 }
 
+/// OCHB «спорные». Separate from OchchControversial so OCHCH rows stay untouched.
+model OchbControversial {
+  id              String                   @id @default(cuid())
+  eventId         String
+  teamChgkId      Int
+  playerChgkId    Int
+  questionNumber  Int
+  answerText      String
+  status          OchbControversialStatus  @default(PENDING)
+  rationale       String?
+  decidedByChgkId Int?
+  decidedAt       DateTime?
+  locked          Boolean                  @default(false)
+  lockedAt        DateTime?
+  lockedByChgkId  Int?
+  trashed         Boolean                  @default(false)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([eventId])
+}
+
+/// OCHB «апелляции». Separate from OchchAppeal so OCHCH rows stay untouched.
+model OchbAppeal {
+  id              String            @id @default(cuid())
+  eventId         String
+  teamChgkId      Int
+  playerChgkId    Int
+  kind            OchbAppealKind
+  questionNumber  Int
+  answerText      String
+  argumentation   String
+  status          OchbAppealStatus  @default(PENDING)
+  adminRationale  String?
+  decidedByChgkId Int?
+  decidedAt       DateTime?
+  locked          Boolean           @default(false)
+  lockedAt        DateTime?
+  lockedByChgkId  Int?
+  trashed         Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([eventId])
+}
+
 /** OCHCH «любительская команда» flags. Determination by site ADMIN or 14219 orgcommittee. */
 model OchchAmateurTeam {
   eventId    String
@@ -287,6 +333,23 @@ enum OchchAppealKind {
 }
 
 enum OchchAppealStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum OchbControversialStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum OchbAppealKind {
+  REMOVE
+  CREDIT
+}
+
+enum OchbAppealStatus {
   PENDING
   ACCEPTED
   REJECTED

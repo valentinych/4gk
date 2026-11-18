@@ -137,10 +137,11 @@ export const OCHB_TILES: OchbLandingTile[] = [
     href: "/ochb/schedule",
   },
   {
-    slug: "links",
-    emoji: "🔗",
-    title: "Полезные ссылки",
-    href: "/ochb/links",
+    slug: "channel",
+    emoji: "📣",
+    title: "Телеграм-канал",
+    href: OCHB_CHANNEL_URL,
+    external: true,
   },
   {
     slug: "results",
@@ -171,6 +172,18 @@ export const OCHB_TILES: OchbLandingTile[] = [
     emoji: "📋",
     title: "Подать состав",
     href: "/ochb/roster",
+  },
+  {
+    slug: "controversial",
+    emoji: "💬",
+    title: "Спорные",
+    href: "/ochb/controversial",
+  },
+  {
+    slug: "appeals",
+    emoji: "⚖️",
+    title: "Апелляции",
+    href: "/ochb/appeals",
   },
   {
     slug: "registration",
@@ -205,6 +218,25 @@ export function ochbRatingPublicUrl(
 
 export function isOchbEvent(eventId: string): boolean {
   return eventId === OCHB_EVENT_ID;
+}
+
+/** Synthetic team for page admins who are not on a submitted roster. */
+export const OCHB_ADMIN_TEAM_CHGK_ID = 0;
+
+/** Roster team wins. Page admin without a roster submits as team 0. The client team is ignored. */
+export function resolveOchbSubmitTeamChgkId(opts: {
+  isPageAdmin: boolean;
+  rosterTeamChgkId: number | null;
+}):
+  | { ok: true; teamChgkId: number }
+  | { ok: false; error: string; status: 403 } {
+  if (opts.rosterTeamChgkId != null) {
+    return { ok: true, teamChgkId: opts.rosterTeamChgkId };
+  }
+  if (opts.isPageAdmin) {
+    return { ok: true, teamChgkId: OCHB_ADMIN_TEAM_CHGK_ID };
+  }
+  return { ok: false, error: "not-in-roster", status: 403 };
 }
 
 export const OCHB = {

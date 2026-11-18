@@ -250,9 +250,8 @@ const OCHB_ROSTER_ID_MOVES: ReadonlyArray<{ from: number; to: number }> = [
  * Workbook 1bLncFYCZ73ZQWM8pdMBCh0oQ91JaezKGxhfGYB36mYI, gid 0 (same sheet as SI).
  * Number is the «Бланк» column, name is «Player». That grid has no city;
  * cities are kept from the previous list.
- * teamChgkId is the tournament 14496 id. A rating rename replaces the sheet
- * spelling: «На всякий мем» (sheet «В поисках мема»), «Команда Ř» (sheet «Ř»).
- * «Polish Space Marines» stays on 77174 (Krakow) and is not replaced.
+ * teamChgkId is the tournament 14496 id.
+ * «Polish Space Marines» stays on 77174 (Krakow); the sheet still says «PSM».
  */
 export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 1, name: "Так тоже можно", city: "Барселона", teamChgkId: 102282 },
@@ -268,14 +267,14 @@ export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 11, name: "На всякий мем", city: "Цюрих", teamChgkId: 79286 },
   { number: 12, name: "В гостях у Кафки", city: "Прага", teamChgkId: 65268 },
   { number: 13, name: "X-promt", city: "Рига", teamChgkId: 4032 },
-  { number: 14, name: "Прыг-Скок", city: "Мюнхен", teamChgkId: 72544 },
+  { number: 14, name: "Poupas et Loupas sans Frontières", city: "Мюнхен", teamChgkId: 72544 },
   { number: 15, name: "Олеги Литвы", city: "Сборная", teamChgkId: 80965 },
   { number: 16, name: "Приматы", city: "Сборная", teamChgkId: 26956 },
   { number: 17, name: "Пробковый ноктурлабиум", city: "Хельсинки", teamChgkId: 91946 },
   { number: 18, name: "Карт бланш", city: "Кишинёв", teamChgkId: 6178 },
   { number: 19, name: "Приемлемо", city: "Варшава", teamChgkId: 91852 },
   { number: 20, name: "GOL", city: "Одеса", teamChgkId: 67674 },
-  { number: 21, name: "Команда Ř", city: "Прага", teamChgkId: 105175 },
+  { number: 21, name: "Ř", city: "Прага", teamChgkId: 105175 },
   { number: 22, name: "Вечер посудного дня", city: "Амстердам", teamChgkId: 106377 },
   { number: 23, name: "Коммуникативные неудачи", city: "Рига", teamChgkId: 4789 },
   { number: 24, name: "Левый глаз Дэвида Боуи", city: "сборная", teamChgkId: 109620 },

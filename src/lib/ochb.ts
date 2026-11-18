@@ -228,14 +228,31 @@ export interface OchbTeam {
 }
 
 /**
+ * Rating id of «PSM». Tournament 14496 calls this team «Polish Space Marines».
+ * The participants list keeps the short name and this id.
+ */
+const OCHB_PSM_TEAM_CHGK_ID = 77174;
+
+/**
+ * Same-slot lineup stored under the previous id. Moved onto the rating id
+ * so the «Состав» check stays on that team. Only ochb-2026, and only when
+ * the new id has no roster yet.
+ */
+const OCHB_ROSTER_ID_MOVES: ReadonlyArray<{ from: number; to: number }> = [
+  { from: -24, to: 109620 },
+  { from: -25, to: 100276 },
+  { from: 99764, to: 109623 },
+  { from: -32, to: 109615 },
+];
+
+/**
  * Snapshot of the «Барса-КСИ» grid, 18 Nov 2026.
  * Workbook 1bLncFYCZ73ZQWM8pdMBCh0oQ91JaezKGxhfGYB36mYI, gid 0 (same sheet as SI).
  * Number is the «Бланк» column, name is «Player». That grid has no city;
  * cities are kept from the previous list.
- * teamChgkId is the tournament 14496 id when the normalized name matches.
- * A submitted lineup keeps its stored id when that id disagrees with the rating:
- * Левый глаз −24 (rating 109620), Lorem United −25 (rating 100276),
- * Паюсная икра 99764 (rating 109623), Тыквенные латы −32 (rating 109615).
+ * teamChgkId is the tournament 14496 id. A rating rename replaces the sheet
+ * spelling: «На всякий мем» (sheet «В поисках мема»), «Команда Ř» (sheet «Ř»).
+ * PSM stays «PSM» / 77174 and is not replaced.
  */
 export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 1, name: "Так тоже можно", city: "Барселона", teamChgkId: 102282 },
@@ -248,7 +265,7 @@ export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 8, name: "Испанский стыд", city: "Gijon", teamChgkId: 107866 },
   { number: 9, name: "Белые риэлторы", city: "Валенсия", teamChgkId: 108161 },
   { number: 10, name: "Кринж без выходных", city: "Варшава", teamChgkId: 85064 },
-  { number: 11, name: "В поисках мема", city: "Цюрих", teamChgkId: 79286 },
+  { number: 11, name: "На всякий мем", city: "Цюрих", teamChgkId: 79286 },
   { number: 12, name: "В гостях у Кафки", city: "Прага", teamChgkId: 65268 },
   { number: 13, name: "X-promt", city: "Рига", teamChgkId: 4032 },
   { number: 14, name: "Прыг-Скок", city: "Мюнхен", teamChgkId: 72544 },
@@ -258,18 +275,18 @@ export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 18, name: "Карт бланш", city: "Кишинёв", teamChgkId: 6178 },
   { number: 19, name: "Приемлемо", city: "Варшава", teamChgkId: 91852 },
   { number: 20, name: "GOL", city: "Одеса", teamChgkId: 67674 },
-  { number: 21, name: "Ř", city: "Прага", teamChgkId: 105175 },
+  { number: 21, name: "Команда Ř", city: "Прага", teamChgkId: 105175 },
   { number: 22, name: "Вечер посудного дня", city: "Амстердам", teamChgkId: 106377 },
   { number: 23, name: "Коммуникативные неудачи", city: "Рига", teamChgkId: 4789 },
-  { number: 24, name: "Левый глаз Дэвида Боуи", city: "сборная", teamChgkId: null },
-  { number: 25, name: "Lorem United", city: "Одесса", teamChgkId: null },
+  { number: 24, name: "Левый глаз Дэвида Боуи", city: "сборная", teamChgkId: 109620 },
+  { number: 25, name: "Lorem United", city: "Одесса", teamChgkId: 100276 },
   { number: 26, name: "Или Вася", city: "Прага", teamChgkId: 86290 },
-  { number: 27, name: "Паюсная икра висконсинского осетра", city: "Сборная", teamChgkId: 99764 },
+  { number: 27, name: "Паюсная икра висконсинского осетра", city: "Сборная", teamChgkId: 109623 },
   { number: 28, name: "Византийский консенсус", city: "сборная", teamChgkId: 79497 },
-  { number: 29, name: "PSM", city: "Krakow", teamChgkId: 77174 },
+  { number: 29, name: "PSM", city: "Krakow", teamChgkId: OCHB_PSM_TEAM_CHGK_ID },
   { number: 30, name: "Самая большая лягушка", city: "Варшава", teamChgkId: 86769 },
   { number: 31, name: "Savage", city: "Кишинев", teamChgkId: 42558 },
-  { number: 32, name: "Тыквенные латы", city: "Тель Авив", teamChgkId: null },
+  { number: 32, name: "Тыквенные латы", city: "Тель Авив", teamChgkId: 109615 },
   { number: 33, name: "План Каплан", city: "Франкфурт-на-Майне", teamChgkId: 91497 },
   { number: 34, name: "РПМ", city: "Кишинев", teamChgkId: 105248 },
   { number: 35, name: "Всё дело в перце", city: "Хайфа", teamChgkId: 3269 },
@@ -293,8 +310,9 @@ function normOchbName(s: string): string {
 function applyRatingNames(teams: OchbTeam[], rating: OchbParticipant[]): OchbTeam[] {
   const byName = new Map(rating.map((t) => [normOchbName(t.name), t]));
   return teams.map((team) => {
+    if (team.number === 29 || team.teamChgkId === OCHB_PSM_TEAM_CHGK_ID) return team;
     const hit = byName.get(normOchbName(team.name));
-    if (!hit) return team;
+    if (!hit || hit.teamChgkId === OCHB_PSM_TEAM_CHGK_ID) return team;
     return {
       ...team,
       name: hit.name,
@@ -347,6 +365,37 @@ async function seedOchbTeams(teams: readonly OchbTeam[]) {
   );
 }
 
+/**
+ * Point an ochb-2026 lineup at the rating id for the same slot.
+ * A roster already stored on the new id is left in place, and the old row stays.
+ */
+async function moveOchbRosterIds() {
+  for (const { from, to } of OCHB_ROSTER_ID_MOVES) {
+    const [fromRows, toRows] = await Promise.all([
+      db.teamRoster.findMany({
+        where: { eventId: OCHB_EVENT_ID, teamChgkId: from },
+        select: { id: true },
+      }),
+      db.teamRoster.findMany({
+        where: { eventId: OCHB_EVENT_ID, teamChgkId: to },
+        select: { id: true },
+      }),
+    ]);
+    if (fromRows.length === 0) continue;
+    if (toRows.length > 0) {
+      console.warn(
+        `ochb roster id clash: ${from} → ${to} skipped (${fromRows.length} kept, ${toRows.length} already on the new id)`,
+      );
+      continue;
+    }
+    const moved = await db.teamRoster.updateMany({
+      where: { eventId: OCHB_EVENT_ID, teamChgkId: from },
+      data: { teamChgkId: to },
+    });
+    console.info(`ochb roster id move: ${from} → ${to} (${moved.count})`);
+  }
+}
+
 /** Calendar row plus EventTeam rows. Same display-name overwrite as Pražma on reseed. */
 export async function ensureOchbEvent() {
   const existing = await db.calendarEvent.findUnique({
@@ -371,6 +420,7 @@ export async function ensureOchbEvent() {
     }));
 
   await seedOchbTeams(OCHB_TEAMS);
+  await moveOchbRosterIds();
   const keepIds = OCHB_TEAMS.map((team) => ochbEventTeamChgkId(team));
   await db.eventTeam.updateMany({
     where: {

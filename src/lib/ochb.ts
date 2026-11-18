@@ -1,5 +1,8 @@
 import { ratingChgkResultsQuery } from "./chgk-tournament-results";
 import { db } from "./db";
+import { OCHB_TOUR_EDITORS } from "./ochb-tour-editors";
+
+export { OCHB_TOUR_EDITORS };
 
 export const OCHB_EVENT_ID = "ochb-2026";
 export const OCHB_PATH = "/ochb";
@@ -47,15 +50,10 @@ export const OCHB_ORG_COMMITTEE = [
   "Сергей Никольский",
 ] as const;
 
-/** Editors of the six CHGK tours, in tour order. Pairs share one line. */
-export const OCHB_EDITORS = [
-  "Тарас Вахрив",
-  "Александр Мерзликин",
-  "Фёдор Журавлёв и Филипп Тучак",
-  "Дмитрий Стальнухин",
-  "Александр Ермишкин и Алексей Шередега",
-  "Ксения Шагал и Эдуард Шагал",
-] as const;
+/** Editors of the six CHGK tours, in tour order. Pairs share one line. Ids are OCHB_TOUR_EDITORS. */
+export const OCHB_EDITORS = OCHB_TOUR_EDITORS.map((tour) =>
+  tour.editors.map((editor) => `${editor.name} ${editor.surname}`).join(" и "),
+);
 
 export interface OchbScheduleItem {
   time: string;

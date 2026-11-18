@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-export function OchbControversialForm() {
+export function OchbControversialForm({
+  minQuestion = 1,
+  maxQuestion = 90,
+}: {
+  minQuestion?: number;
+  maxQuestion?: number;
+}) {
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -58,6 +64,9 @@ export function OchbControversialForm() {
       <div>
         <label htmlFor="ochb-controversial-question" className="block text-sm font-medium">
           номер вопроса
+          {minQuestion !== 1 || maxQuestion !== 90
+            ? ` (${minQuestion}–${maxQuestion})`
+            : ""}
         </label>
         <input
           id="ochb-controversial-question"
@@ -65,8 +74,8 @@ export function OchbControversialForm() {
           type="number"
           inputMode="numeric"
           required
-          min={1}
-          max={90}
+          min={minQuestion}
+          max={maxQuestion}
           step={1}
           value={question}
           onChange={(e) => setQuestion(e.target.value)}

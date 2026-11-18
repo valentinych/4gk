@@ -67,6 +67,7 @@ export function OchbControversialAdminTable({
   canGraveyard,
   canUnlock,
   leaders,
+  questionRange = null,
 }: {
   initialRows: ControversialAdminRow[];
   initialGraveyard: ControversialAdminRow[];
@@ -78,6 +79,7 @@ export function OchbControversialAdminTable({
     acceptedLocked: number;
     rejectedLocked: number;
   }[] | null;
+  questionRange?: { from: number; to: number } | null;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
@@ -207,6 +209,11 @@ export function OchbControversialAdminTable({
     <>
     <section id="page-ochb-controversial-admin" className="space-y-3">
       <h2 className="text-lg font-bold">Поданные спорные</h2>
+      {questionRange ? (
+        <p className="text-sm text-muted">
+          Вопросы вашего тура: {questionRange.from}–{questionRange.to}
+        </p>
+      ) : null}
       {error ? (
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-danger" role="alert">
           {error}

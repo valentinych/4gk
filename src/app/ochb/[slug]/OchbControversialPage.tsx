@@ -106,21 +106,37 @@ export async function OchbControversialPage() {
     );
   }
 
+  const scope = access.moderationScope;
   const [adminRows, graveyardRows, mineItems, leaders] = await Promise.all([
-    access.isPageAdmin ? loadOchbControversialAdmin() : Promise.resolve(null),
-    access.isPageAdmin ? loadOchbControversialGraveyard() : Promise.resolve(null),
+    scope ? loadOchbControversialAdmin(scope) : Promise.resolve(null),
+    scope ? loadOchbControversialGraveyard(scope) : Promise.resolve(null),
     access.teamChgkId
       ? loadOchbControversialMine(access.teamChgkId)
-      : access.isPageAdmin
+      : access.chgkId != null && access.isPageAdmin
         ? loadOchbControversialMineByPlayer(access.chgkId)
         : Promise.resolve(null),
-    access.canGraveyard ? loadOchbControversialLeaders() : Promise.resolve(null),
+    access.canGraveyard && scope
+      ? loadOchbControversialLeaders(scope)
+      : Promise.resolve(null),
   ]);
 
   return (
     <div id="page-ochb-controversial" className="space-y-8">
       <OchbControversialAutoRefresh />
-      {access.canSubmit ? <OchbControversialForm /> : null}
+      {access.canSubmit ? (
+        <OchbControversialForm
+          minQuestion={
+            access.moderationScope?.kind === "range"
+              ? access.moderationScope.from
+              : undefined
+          }
+          maxQuestion={
+            access.moderationScope?.kind === "range"
+              ? access.moderationScope.to
+              : undefined
+          }
+        />
+      ) : null}
       {adminRows ? (
         <OchbControversialAdminTable
           initialRows={adminRows}
@@ -128,6 +144,14 @@ export async function OchbControversialPage() {
           canGraveyard={access.canGraveyard}
           canUnlock={access.canUnlock}
           leaders={leaders}
+          questionRange={
+            access.moderationScope?.kind === "range"
+              ? {
+                  from: access.moderationScope.from,
+                  to: access.moderationScope.to,
+                }
+              : null
+          }
         />
       ) : null}
       {mineItems ? <MineList items={mineItems} /> : null}

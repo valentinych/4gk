@@ -8,6 +8,14 @@ import {
   ratingPlayerDisplayName,
   ratingPlayerDisplayNames,
 } from "./ochb-rating-staff";
+import {
+  ochbQuestionNumberWhere,
+  ochbTourRangeForPlayer,
+  scopeForOchbModerator,
+  type OchbControversialQuestionScope,
+} from "./ochb-tour-editors";
+
+export type { OchbControversialQuestionScope };
 
 export { ochbSlotNumber, ratingPlayerDisplayName };
 
@@ -47,6 +55,8 @@ export type OchbControversialAccess =
       playerChgkId: number;
       teamChgkId: number | null;
       isPageAdmin: boolean;
+      /** Null for a player. Tour editors get `range` even when they are also ИЖ. */
+      moderationScope: OchbControversialQuestionScope | null;
     }
   | { ok: false; reason: "no-id" | "not-in-roster" };
 
@@ -55,8 +65,9 @@ export type OchbControversialPageAccess =
   | { gate: "not-in-roster" }
   | {
       gate: "ok";
-      chgkId: number;
+      chgkId: number | null;
       isPageAdmin: boolean;
+      moderationScope: OchbControversialQuestionScope | null;
       canGraveyard: boolean;
       canUnlock: boolean;
       canSubmit: boolean;
@@ -107,7 +118,8 @@ export async function resolveOchbControversialAccess(
     select: { teamChgkId: true },
   });
   const teamChgkId = roster?.teamChgkId ?? null;
-  const isPageAdmin = await isOchbControversialPageAdmin(user.role, user.chgkId);
+  const moderationScope = await resolveOchbModerationScope(user.role, user.chgkId);
+  const isPageAdmin = moderationScope != null;
   if (!teamChgkId && !isPageAdmin) return { ok: false, reason: "not-in-roster" };
 
   return {
@@ -115,6 +127,7 @@ export async function resolveOchbControversialAccess(
     playerChgkId: user.chgkId,
     teamChgkId,
     isPageAdmin,
+    moderationScope,
   };
 }
 
@@ -125,30 +138,35 @@ export async function resolveOchbControversialPageAccess(
     where: { id: userId },
     select: { chgkId: true, role: true, email: true },
   });
-  if (!user?.chgkId) return { gate: "no-id" };
+  if (!user) return { gate: "no-id" };
+  if (!user.chgkId && !isOchbSiteAdmin(user.role)) return { gate: "no-id" };
 
-  const roster = await db.teamRoster.findFirst({
-    where: {
-      eventId: OCHB_EVENT_ID,
-      teamChgkId: { not: null },
-      players: { some: { chgkId: user.chgkId } },
-    },
-    select: { teamChgkId: true },
-  });
+  const roster = user.chgkId
+    ? await db.teamRoster.findFirst({
+        where: {
+          eventId: OCHB_EVENT_ID,
+          teamChgkId: { not: null },
+          players: { some: { chgkId: user.chgkId } },
+        },
+        select: { teamChgkId: true },
+      })
+    : null;
   const teamChgkId = roster?.teamChgkId ?? null;
-  const isPageAdmin = await isOchbControversialPageAdmin(user.role, user.chgkId);
+  const moderationScope = await resolveOchbModerationScope(user.role, user.chgkId);
+  const isPageAdmin = moderationScope != null;
   if (!teamChgkId && !isPageAdmin) return { gate: "not-in-roster" };
 
   return {
     gate: "ok",
     chgkId: user.chgkId,
     isPageAdmin,
+    moderationScope,
     canGraveyard: await isOchbControversialGraveyardMember(
       user.role,
       user.chgkId,
     ),
     canUnlock: canUnlockOchchDecision(user.email),
-    canSubmit: isPageAdmin || teamChgkId != null,
+    canSubmit: user.chgkId != null && (isPageAdmin || teamChgkId != null),
     teamChgkId,
   };
 }
@@ -158,14 +176,25 @@ export async function getOchbControversialStaffIds(): Promise<Set<number> | null
   return getOchbStaffIds(["gameJury"]);
 }
 
-export async function isOchbControversialPageAdmin(
+/**
+ * Who may open the moderator UI, and for which questions.
+ * Site ADMIN, including one with no rating id: every question.
+ * ИЖ outside the tour-editor map: every question. Appeal jury is not staff here.
+ * A tour editor, including one who is also ИЖ: only that tour.
+ * Rating being down does not remove a tour editor; it still drops other ИЖ.
+ */
+export async function resolveOchbModerationScope(
   role: string | null | undefined,
   chgkId: number | null | undefined,
-): Promise<boolean> {
-  if (isOchbSiteAdmin(role)) return true;
-  if (chgkId == null) return false;
-  const ids = await getOchbControversialStaffIds();
-  return ids?.has(chgkId) ?? false;
+): Promise<OchbControversialQuestionScope | null> {
+  const isSiteAdmin = isOchbSiteAdmin(role);
+  const playerId = chgkId ?? null;
+  let isGameJury = false;
+  if (!isSiteAdmin && playerId != null && ochbTourRangeForPlayer(playerId) == null) {
+    const ids = await getOchbControversialStaffIds();
+    isGameJury = ids?.has(playerId) ?? false;
+  }
+  return scopeForOchbModerator({ isSiteAdmin, playerId, isGameJury });
 }
 
 /** Trash to the graveyard: site ADMIN or Игровое жюри. Hard delete is disabled. */
@@ -258,9 +287,14 @@ export async function loadOchbControversialMineByPlayer(
 
 async function loadOchbControversialAdminByTrashed(
   trashed: boolean,
+  scope: OchbControversialQuestionScope,
 ): Promise<OchbControversialAdminItem[]> {
   const rows = await db.ochbControversial.findMany({
-    where: { eventId: OCHB_EVENT_ID, trashed },
+    where: {
+      eventId: OCHB_EVENT_ID,
+      trashed,
+      ...ochbQuestionNumberWhere(scope),
+    },
     orderBy: [{ questionNumber: "asc" }, { createdAt: "asc" }],
   });
   const names = await ratingPlayerDisplayNames(
@@ -281,16 +315,16 @@ async function loadOchbControversialAdminByTrashed(
   }));
 }
 
-export async function loadOchbControversialAdmin(): Promise<
-  OchbControversialAdminItem[]
-> {
-  return loadOchbControversialAdminByTrashed(false);
+export async function loadOchbControversialAdmin(
+  scope: OchbControversialQuestionScope,
+): Promise<OchbControversialAdminItem[]> {
+  return loadOchbControversialAdminByTrashed(false, scope);
 }
 
-export async function loadOchbControversialGraveyard(): Promise<
-  OchbControversialAdminItem[]
-> {
-  return loadOchbControversialAdminByTrashed(true);
+export async function loadOchbControversialGraveyard(
+  scope: OchbControversialQuestionScope,
+): Promise<OchbControversialAdminItem[]> {
+  return loadOchbControversialAdminByTrashed(true, scope);
 }
 
 /**
@@ -299,12 +333,12 @@ export async function loadOchbControversialGraveyard(): Promise<
  * including trashed. Unlocked and PENDING rows do not increment them.
  * Permanent delete is disabled; rows already removed are not in the table.
  */
-export async function loadOchbControversialLeaders(): Promise<
-  OchbControversialLeader[]
-> {
+export async function loadOchbControversialLeaders(
+  scope: OchbControversialQuestionScope,
+): Promise<OchbControversialLeader[]> {
   const grouped = await db.ochbControversial.groupBy({
     by: ["teamChgkId", "status", "locked"],
-    where: { eventId: OCHB_EVENT_ID },
+    where: { eventId: OCHB_EVENT_ID, ...ochbQuestionNumberWhere(scope) },
     _count: { id: true },
   });
   const byTeam = new Map<

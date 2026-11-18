@@ -12,13 +12,17 @@ import {
   OCHB_CONTROVERSIAL_NOT_IN_ROSTER,
   OCHB_CONTROVERSIAL_UNLOCK_FORBIDDEN,
   isOchbControversialGraveyardMember,
-  isOchbControversialPageAdmin,
   isValidQuestionNumber,
   parseQuestionNumber,
   parseVerdict,
   ratingPlayerDisplayName,
   resolveOchbControversialAccess,
+  resolveOchbModerationScope,
 } from "@/lib/ochb-controversial";
+import {
+  canModerateOchbQuestion,
+  type OchbControversialQuestionScope,
+} from "@/lib/ochb-tour-editors";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +65,17 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  if (
+    access.moderationScope?.kind === "range" &&
+    !canModerateOchbQuestion(access.moderationScope, questionNumber)
+  ) {
+    return NextResponse.json(
+      {
+        error: `Можно отправить только вопросы ${access.moderationScope.from}–${access.moderationScope.to}`,
+      },
+      { status: 403 },
+    );
+  }
 
   const answerText =
     typeof raw.answerText === "string" ? raw.answerText.trim() : "";
@@ -91,7 +106,13 @@ export async function POST(req: Request) {
 }
 
 async function requirePageAdmin(): Promise<
-  | { ok: true; chgkId: number; role: string; email: string | null }
+  | {
+      ok: true;
+      chgkId: number | null;
+      role: string;
+      email: string | null;
+      scope: OchbControversialQuestionScope;
+    }
   | { ok: false; response: NextResponse }
 > {
   const session = await getServerSession(authOptions);
@@ -106,25 +127,31 @@ async function requirePageAdmin(): Promise<
     where: { id: session.user.id },
     select: { chgkId: true, role: true, email: true },
   });
-  if (!user?.chgkId) {
+  if (!user) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Недостаточно прав" }, { status: 403 }),
     };
   }
-  const isAdmin = await isOchbControversialPageAdmin(user.role, user.chgkId);
-  if (!isAdmin) {
+  const scope = await resolveOchbModerationScope(user.role, user.chgkId);
+  if (!scope) {
     return {
       ok: false,
       response: NextResponse.json({ error: "Недостаточно прав" }, { status: 403 }),
     };
   }
-  return { ok: true, chgkId: user.chgkId, role: user.role, email: user.email };
+  return {
+    ok: true,
+    chgkId: user.chgkId,
+    role: user.role,
+    email: user.email,
+    scope,
+  };
 }
 
 async function requireGraveyardMember(
   role: string,
-  chgkId: number,
+  chgkId: number | null,
 ): Promise<NextResponse | null> {
   if (await isOchbControversialGraveyardMember(role, chgkId)) return null;
   return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
@@ -170,19 +197,52 @@ export async function PATCH(req: Request) {
   }
 
   const action = typeof raw.action === "string" ? raw.action : null;
+  if (action === "hardDelete") {
+    return hardDeleteForbidden();
+  }
+  if (
+    action != null &&
+    action !== "lock" &&
+    action !== "trash" &&
+    action !== "unlock"
+  ) {
+    return NextResponse.json({ error: "invalid action" }, { status: 400 });
+  }
+
+  const existing = await db.ochbControversial.findFirst({
+    where: { id, eventId: OCHB_EVENT_ID },
+    select: {
+      id: true,
+      questionNumber: true,
+      status: true,
+      rationale: true,
+      locked: true,
+      trashed: true,
+      decidedByChgkId: true,
+    },
+  });
+  if (!existing) {
+    if (
+      (action === "unlock" || raw.locked === false) &&
+      !canUnlockOchchDecision(admin.email)
+    ) {
+      return NextResponse.json(
+        { error: OCHB_CONTROVERSIAL_UNLOCK_FORBIDDEN },
+        { status: 403 },
+      );
+    }
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (!canModerateOchbQuestion(admin.scope, existing.questionNumber)) {
+    return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
+  }
+
   if (action === "unlock" || raw.locked === false) {
     if (!canUnlockOchchDecision(admin.email)) {
       return NextResponse.json(
         { error: OCHB_CONTROVERSIAL_UNLOCK_FORBIDDEN },
         { status: 403 },
       );
-    }
-    const existing = await db.ochbControversial.findFirst({
-      where: { id, eventId: OCHB_EVENT_ID },
-      select: { id: true, decidedByChgkId: true },
-    });
-    if (!existing) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     const row = await db.ochbControversial.update({
       where: { id: existing.id },
@@ -205,30 +265,9 @@ export async function PATCH(req: Request) {
       decidedByName,
     });
   }
-  if (action === "hardDelete") {
-    return hardDeleteForbidden();
-  }
-  if (action != null && action !== "lock" && action !== "trash") {
-    return NextResponse.json({ error: "invalid action" }, { status: 400 });
-  }
   if (action === "trash") {
     const denied = await requireGraveyardMember(admin.role, user.chgkId);
     if (denied) return denied;
-  }
-
-  const existing = await db.ochbControversial.findFirst({
-    where: { id, eventId: OCHB_EVENT_ID },
-    select: {
-      id: true,
-      status: true,
-      rationale: true,
-      locked: true,
-      trashed: true,
-      decidedByChgkId: true,
-    },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   if (action === "trash") {
@@ -291,7 +330,7 @@ export async function PATCH(req: Request) {
   const data: {
     status?: "PENDING" | "ACCEPTED" | "REJECTED";
     rationale?: string | null;
-    decidedByChgkId: number;
+    decidedByChgkId: number | null;
     decidedAt: Date;
   } = {
     decidedByChgkId: user.chgkId,
@@ -312,7 +351,8 @@ export async function PATCH(req: Request) {
   }
 
   if (hasStatus && existing.status === data.status && !hasRationale) {
-    const decidedByName = await ratingPlayerDisplayName(user.chgkId);
+    const decidedByName =
+      user.chgkId != null ? await ratingPlayerDisplayName(user.chgkId) : null;
     return NextResponse.json({
       ok: true,
       id: existing.id,

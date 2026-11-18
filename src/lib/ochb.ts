@@ -228,8 +228,8 @@ export interface OchbTeam {
 }
 
 /**
- * Rating id of «PSM». Tournament 14496 calls this team «Polish Space Marines».
- * The participants list keeps the short name and this id.
+ * Rating id of «Polish Space Marines» (sheet short name «PSM»).
+ * The participants list uses this name and keeps id 77174.
  */
 const OCHB_PSM_TEAM_CHGK_ID = 77174;
 
@@ -252,7 +252,7 @@ const OCHB_ROSTER_ID_MOVES: ReadonlyArray<{ from: number; to: number }> = [
  * cities are kept from the previous list.
  * teamChgkId is the tournament 14496 id. A rating rename replaces the sheet
  * spelling: «На всякий мем» (sheet «В поисках мема»), «Команда Ř» (sheet «Ř»).
- * PSM stays «PSM» / 77174 and is not replaced.
+ * «Polish Space Marines» stays on 77174 (Krakow) and is not replaced.
  */
 export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 1, name: "Так тоже можно", city: "Барселона", teamChgkId: 102282 },
@@ -283,7 +283,7 @@ export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 26, name: "Или Вася", city: "Прага", teamChgkId: 86290 },
   { number: 27, name: "Паюсная икра висконсинского осетра", city: "Сборная", teamChgkId: 109623 },
   { number: 28, name: "Византийский консенсус", city: "сборная", teamChgkId: 79497 },
-  { number: 29, name: "PSM", city: "Krakow", teamChgkId: OCHB_PSM_TEAM_CHGK_ID },
+  { number: 29, name: "Polish Space Marines", city: "Krakow", teamChgkId: OCHB_PSM_TEAM_CHGK_ID },
   { number: 30, name: "Самая большая лягушка", city: "Варшава", teamChgkId: 86769 },
   { number: 31, name: "Savage", city: "Кишинев", teamChgkId: 42558 },
   { number: 32, name: "Тыквенные латы", city: "Тель Авив", teamChgkId: 109615 },

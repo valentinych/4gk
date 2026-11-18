@@ -3,24 +3,9 @@ import { db } from "@/lib/db";
 import {
   OCHB_EVENT_ID,
   OCHB_TEAMS,
-  listOchbParticipants,
-  loadOchbTeams,
   ochbEventTeamChgkId,
   ochbRatingPublicUrl,
-  type OchbTeam,
 } from "@/lib/ochb";
-
-async function teamsForPage(): Promise<OchbTeam[]> {
-  if (process.env.DATABASE_URL) {
-    try {
-      const fromDb = await listOchbParticipants();
-      if (fromDb.length >= OCHB_TEAMS.length) return fromDb;
-    } catch {
-      /* database down — the static list still renders */
-    }
-  }
-  return loadOchbTeams();
-}
 
 /** A roster is submitted once TeamRoster exists (POST requires ≥1 player). */
 async function loadRosterChgkIds(): Promise<Set<number>> {
@@ -41,7 +26,8 @@ async function loadRosterChgkIds(): Promise<Set<number>> {
 }
 
 export async function OchbParticipantsPage() {
-  const [teams, rosterIds] = await Promise.all([teamsForPage(), loadRosterChgkIds()]);
+  const rosterIds = await loadRosterChgkIds();
+  const teams = OCHB_TEAMS;
 
   return (
     <div id="page-ochb-participants" className="space-y-4">

@@ -9,7 +9,6 @@ import {
   OCHB_EVENT_ID,
   OCHB_TEAMS,
   ensureOchbEvent,
-  listOchbParticipants,
   ochbEventTeamChgkId,
   type OchbTeam,
 } from "@/lib/ochb";
@@ -95,17 +94,15 @@ export async function OchbRosterPage() {
   if (process.env.DATABASE_URL) {
     try {
       await ensureOchbEvent();
-      const [found, roster, fromDb] = await Promise.all([
+      const [found, roster] = await Promise.all([
         db.calendarEvent.findUnique({ where: { id: OCHB_EVENT_ID } }),
         db.teamRoster.findUnique({
           where: { eventId_userId: { eventId: OCHB_EVENT_ID, userId: session.user.id } },
           include: { players: { orderBy: { sortOrder: "asc" } } },
         }),
-        listOchbParticipants(),
       ]);
       event = found;
       existingRoster = roster;
-      if (fromDb.length > 0) teams = fromDb;
     } catch {
       teams = [...OCHB_TEAMS];
     }

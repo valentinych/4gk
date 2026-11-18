@@ -228,16 +228,14 @@ export interface OchbTeam {
 }
 
 /**
- * Numbered list from the «Витрина» tab, fetched 2026-11-09.
- * Source: OCHB_TEAMS_SHEET_URL (t.me/nvrmr_bcn/60).
- * The older registration sheet
- * https://docs.google.com/spreadsheets/d/1b288ua8AvE9QPjK1sH7V3SMi4chJlBprWi-QA1DJkFs
- * opens, but it is the form dump, not this list.
- * Rating ids are the sheet cell when it is a real team id.
- * Пляжники: sheet cell 86177 is «Сфинкс Света»; exact name is 107727.
- * Византийский консенсус: cell was not an id; exact name is 79497.
- * Левый глаз Дэвида Боуи: cell 99296 is «Щи loves you»; no exact-name team.
- * Manychat, Lorem Ipsum and Тыквенные латы have no unique exact-name id.
+ * Snapshot of the «Барса-КСИ» grid, 18 Nov 2026.
+ * Workbook 1bLncFYCZ73ZQWM8pdMBCh0oQ91JaezKGxhfGYB36mYI, gid 0 (same sheet as SI).
+ * Number is the «Бланк» column, name is «Player». That grid has no city;
+ * cities are kept from the previous list.
+ * teamChgkId is the tournament 14496 id when the normalized name matches.
+ * A submitted lineup keeps its stored id when that id disagrees with the rating:
+ * Левый глаз −24 (rating 109620), Lorem United −25 (rating 100276),
+ * Паюсная икра 99764 (rating 109623), Тыквенные латы −32 (rating 109615).
  */
 export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 1, name: "Так тоже можно", city: "Барселона", teamChgkId: 102282 },
@@ -264,9 +262,9 @@ export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 22, name: "Вечер посудного дня", city: "Амстердам", teamChgkId: 106377 },
   { number: 23, name: "Коммуникативные неудачи", city: "Рига", teamChgkId: 4789 },
   { number: 24, name: "Левый глаз Дэвида Боуи", city: "сборная", teamChgkId: null },
-  { number: 25, name: "Lorem Ipsum", city: "Одесса", teamChgkId: null },
+  { number: 25, name: "Lorem United", city: "Одесса", teamChgkId: null },
   { number: 26, name: "Или Вася", city: "Прага", teamChgkId: 86290 },
-  { number: 27, name: "Одинокие ковбои", city: "Сборная", teamChgkId: 99764 },
+  { number: 27, name: "Паюсная икра висконсинского осетра", city: "Сборная", teamChgkId: 99764 },
   { number: 28, name: "Византийский консенсус", city: "сборная", teamChgkId: 79497 },
   { number: 29, name: "PSM", city: "Krakow", teamChgkId: 77174 },
   { number: 30, name: "Самая большая лягушка", city: "Варшава", teamChgkId: 86769 },
@@ -275,8 +273,8 @@ export const OCHB_TEAMS: readonly OchbTeam[] = [
   { number: 33, name: "План Каплан", city: "Франкфурт-на-Майне", teamChgkId: 91497 },
   { number: 34, name: "РПМ", city: "Кишинев", teamChgkId: 105248 },
   { number: 35, name: "Всё дело в перце", city: "Хайфа", teamChgkId: 3269 },
-  { number: 36, name: "Мы убили Кенни", city: "Валенсия", teamChgkId: 108716 },
-  { number: 37, name: "Пляжники", city: "Нью-Йорк", teamChgkId: 107727 },
+  { number: 36, name: "Пляжники", city: "Нью-Йорк", teamChgkId: 107727 },
+  { number: 37, name: "Соборная Святого семейства", city: "", teamChgkId: null },
 ];
 
 /** EventTeam key. Teams without a rating id use a stable negative number. */
@@ -353,7 +351,6 @@ async function seedOchbTeams(teams: readonly OchbTeam[]) {
 export async function ensureOchbEvent() {
   const existing = await db.calendarEvent.findUnique({
     where: { id: OCHB_EVENT_ID },
-    include: { _count: { select: { eventTeams: true } } },
   });
 
   const event =
@@ -373,10 +370,16 @@ export async function ensureOchbEvent() {
       },
     }));
 
-  if (!existing || existing._count.eventTeams < OCHB_TEAMS.length) {
-    const teams = await loadOchbTeams();
-    await seedOchbTeams(teams.length > 0 ? teams : OCHB_TEAMS);
-  }
+  await seedOchbTeams(OCHB_TEAMS);
+  const keepIds = OCHB_TEAMS.map((team) => ochbEventTeamChgkId(team));
+  await db.eventTeam.updateMany({
+    where: {
+      eventId: OCHB_EVENT_ID,
+      withdrawnAt: null,
+      teamChgkId: { notIn: keepIds },
+    },
+    data: { withdrawnAt: new Date() },
+  });
 
   return event;
 }

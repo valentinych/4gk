@@ -1,9 +1,10 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   Shield,
@@ -15,6 +16,8 @@ import {
   Check,
   X,
   Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface UserRow {
@@ -27,9 +30,30 @@ interface UserRow {
   createdAt: string;
 }
 
-export default function AdminPage() {
+interface UsersPage {
+  users: UserRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+function parsePage(raw: string | null): number {
+  const n = Number.parseInt(raw ?? "1", 10);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return n;
+}
+
+function AdminPageInner() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const page = parsePage(searchParams.get("page"));
   const [users, setUsers] = useState<UserRow[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
+  const [shownPage, setShownPage] = useState(page);
+  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [editingChgk, setEditingChgk] = useState<string | null>(null);
@@ -37,27 +61,58 @@ export default function AdminPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const prevSearch = useRef(search);
+  const urlRef = useRef({ pathname, searchParams, router });
+  urlRef.current = { pathname, searchParams, router };
 
-  const fetchUsers = useCallback(async (q = "") => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`);
-      if (res.ok) setUsers(await res.json());
-    } finally {
-      setLoading(false);
-    }
+  const goToPage = useCallback((next: number) => {
+    const { pathname: path, searchParams: sp, router: r } = urlRef.current;
+    const params = new URLSearchParams(sp.toString());
+    if (next <= 1) params.delete("page");
+    else params.set("page", String(next));
+    const qs = params.toString();
+    r.replace(qs ? `${path}?${qs}` : path, { scroll: false });
   }, []);
 
-  useEffect(() => {
-    if (session?.user?.role === "ADMIN") fetchUsers();
-  }, [session, fetchUsers]);
+  const load = useCallback(async (q: string, requestedPage: number, signal?: AbortSignal) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      params.set("page", String(requestedPage));
+      const res = await fetch(`/api/admin/users?${params}`, { signal });
+      if (!res.ok) return;
+      const data = (await res.json()) as UsersPage;
+      setUsers(data.users);
+      setTotal(data.total);
+      setShownPage(data.page);
+      setTotalPages(data.totalPages);
+      if (data.page !== requestedPage) goToPage(data.page);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, [goToPage]);
 
   useEffect(() => {
+    if (session?.user?.role !== "ADMIN") return;
+    const ac = new AbortController();
+    const searchChanged = prevSearch.current !== search;
+    prevSearch.current = search;
+    const delay = searchChanged ? 300 : 0;
     const timer = setTimeout(() => {
-      if (session?.user?.role === "ADMIN") fetchUsers(search);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search, session, fetchUsers]);
+      if (searchChanged && page > 1) {
+        goToPage(1);
+        return;
+      }
+      void load(search, page, ac.signal);
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+      ac.abort();
+    };
+  }, [search, page, session, load, goToPage]);
 
   async function updateUser(id: string, data: Record<string, unknown>) {
     setSaving(id);
@@ -95,7 +150,7 @@ export default function AdminPage() {
         setError(err.error || "Не удалось удалить пользователя");
         return;
       }
-      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+      await load(search, page);
     } catch {
       setError("Ошибка сети");
     } finally {
@@ -368,9 +423,52 @@ export default function AdminPage() {
         </table>
       </div>
 
-      <p className="mt-3 text-xs text-muted">
-        Всего пользователей: {users.length}
-      </p>
+      <div id="page-admin-users-pager" className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted">
+          Всего пользователей: {total === null ? "…" : total}
+        </p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={loading || shownPage <= 1}
+              onClick={() => goToPage(shownPage - 1)}
+              className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-surface/80 disabled:pointer-events-none disabled:opacity-40"
+              aria-label="Предыдущая страница"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+              Назад
+            </button>
+            <span className="min-w-[4.5rem] text-center text-xs font-mono tabular-nums text-muted">
+              {shownPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={loading || shownPage >= totalPages}
+              onClick={() => goToPage(shownPage + 1)}
+              className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-surface/80 disabled:pointer-events-none disabled:opacity-40"
+              aria-label="Следующая страница"
+            >
+              Вперёд
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense
+      fallback={
+        <div id="page-admin-loading" className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted" />
+        </div>
+      }
+    >
+      <AdminPageInner />
+    </Suspense>
   );
 }

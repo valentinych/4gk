@@ -1,41 +1,86 @@
 import { Check, ExternalLink } from "lucide-react";
 import { db } from "@/lib/db";
-import { fetchOchbTechnicalRatings } from "@/lib/ochb-technical-rating";
+import {
+  fetchOchbTechnicalRatings,
+  fetchPlayerBaseRatings,
+  formatTechnicalRating,
+  technicalRatingFromPlayerRatings,
+} from "@/lib/ochb-technical-rating";
 import {
   OCHB_EVENT_ID,
   OCHB_TEAMS,
+  type OchbTeam,
   ochbEventTeamChgkId,
   ochbRatingPublicUrl,
 } from "@/lib/ochb";
 
+interface SubmittedRoster {
+  teamIds: Set<number>;
+  /** Player rating ids of the latest roster for that storage team id. */
+  playerIdsByTeam: Map<number, number[]>;
+}
+
 /** A roster is submitted once TeamRoster exists (POST requires ≥1 player). */
-async function loadRosterChgkIds(): Promise<Set<number>> {
-  if (!process.env.DATABASE_URL) return new Set();
+async function loadSubmittedRosters(): Promise<SubmittedRoster> {
+  const empty: SubmittedRoster = { teamIds: new Set(), playerIdsByTeam: new Map() };
+  if (!process.env.DATABASE_URL) return empty;
   try {
     const rosters = await db.teamRoster.findMany({
       where: { eventId: OCHB_EVENT_ID },
-      select: { teamChgkId: true },
+      select: {
+        teamChgkId: true,
+        updatedAt: true,
+        players: { select: { chgkId: true }, orderBy: { sortOrder: "asc" } },
+      },
+      orderBy: { updatedAt: "desc" },
     });
-    return new Set(
-      rosters
-        .map((r) => r.teamChgkId)
-        .filter((id): id is number => id != null && id !== 0),
-    );
+    const teamIds = new Set<number>();
+    const playerIdsByTeam = new Map<number, number[]>();
+    for (const roster of rosters) {
+      const teamId = roster.teamChgkId;
+      if (teamId == null || teamId === 0) continue;
+      teamIds.add(teamId);
+      if (playerIdsByTeam.has(teamId)) continue;
+      playerIdsByTeam.set(
+        teamId,
+        roster.players
+          .map((player) => player.chgkId)
+          .filter((id): id is number => id != null && id > 0),
+      );
+    }
+    return { teamIds, playerIdsByTeam };
   } catch {
-    return new Set();
+    return empty;
   }
 }
 
+function hasRatingTeamId(team: OchbTeam): boolean {
+  return team.teamChgkId != null && team.teamChgkId > 0;
+}
+
 export async function OchbParticipantsPage() {
-  const [rosterIds, technicalByTeam] = await Promise.all([
-    loadRosterChgkIds(),
+  const [rosters, technicalByTeam] = await Promise.all([
+    loadSubmittedRosters(),
     fetchOchbTechnicalRatings(),
   ]);
-  const ratingOf = (teamChgkId: number | null) =>
-    teamChgkId != null ? technicalByTeam.get(teamChgkId) : undefined;
+  const rosterPlayerIds = OCHB_TEAMS.filter((team) => !hasRatingTeamId(team)).flatMap(
+    (team) => rosters.playerIdsByTeam.get(ochbEventTeamChgkId(team)) ?? [],
+  );
+  const playerBaseRatings = await fetchPlayerBaseRatings(rosterPlayerIds);
+  const ratingOf = (team: OchbTeam): number | undefined => {
+    if (team.teamChgkId != null && team.teamChgkId > 0) {
+      return technicalByTeam.get(team.teamChgkId);
+    }
+    const playerIds = rosters.playerIdsByTeam.get(ochbEventTeamChgkId(team)) ?? [];
+    if (playerIds.length === 0) return undefined;
+    const ratings = playerIds
+      .map((id) => playerBaseRatings.get(id))
+      .filter((rating): rating is number => rating != null);
+    return technicalRatingFromPlayerRatings(ratings) ?? undefined;
+  };
   const teams = [...OCHB_TEAMS].sort((a, b) => {
-    const ra = ratingOf(a.teamChgkId);
-    const rb = ratingOf(b.teamChgkId);
+    const ra = ratingOf(a);
+    const rb = ratingOf(b);
     if (ra != null && rb != null && ra !== rb) return rb - ra;
     if ((ra == null) !== (rb == null)) return ra == null ? 1 : -1;
     return a.number - b.number;
@@ -78,7 +123,7 @@ export async function OchbParticipantsPage() {
                 </th>
                 <th
                   className="whitespace-nowrap px-3 py-2.5 text-right font-medium"
-                  title="По составу, заявленному на rating.chgk.info"
+                  title="Пять сильнейших игроков состава, базовый рейтинг"
                 >
                   Технический рейтинг
                 </th>
@@ -88,8 +133,8 @@ export async function OchbParticipantsPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {teams.map((t) => {
-                const hasRoster = rosterIds.has(ochbEventTeamChgkId(t));
-                const technical = ratingOf(t.teamChgkId);
+                const hasRoster = rosters.teamIds.has(ochbEventTeamChgkId(t));
+                const technical = ratingOf(t);
                 return (
                   <tr key={t.number} className="hover:bg-surface/50">
                     <td className="px-3 py-2.5 font-mono text-muted">{t.number}</td>
@@ -120,7 +165,7 @@ export async function OchbParticipantsPage() {
                       ) : null}
                     </td>
                     <td className="px-3 py-2.5 text-right font-mono text-muted">
-                      {technical == null ? "—" : technical}
+                      {technical == null ? "—" : formatTechnicalRating(technical)}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-muted">{t.city}</td>
                     <td className="px-3 py-2.5 font-mono text-muted">

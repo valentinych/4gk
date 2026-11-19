@@ -1,55 +1,37 @@
 import { OCHB_RATING_TOURNAMENT_ID } from "@/lib/ochb";
 
 const RESULTS = "https://api.rating.chgk.info";
-const RELEASES = "https://rating.chgk.gg/api/v1/b/releases";
+const GG = "https://rating.chgk.gg/api/v1/b";
 const REVALIDATE_SECONDS = 300;
 
 /**
- * Технический рейтинг заявленного состава (RT), целое.
+ * Технический рейтинг заявленного состава: взвешенная сумма пяти самых
+ * сильных игроков. Веса 1, 0.8, 0.6, 0.4, 0.2. Шестой и остальные не входят.
+ * Если игроков меньше пяти — веса с начала ряда, без виртуальных игроков.
+ * Легионеры входят в пул. На Q релиза сумма не умножается.
  *
- * Документация API, поле TournamentPositionsBalanced.rt
- * (https://api.rating.chgk.info/docs.jsonld): «технический рейтинг команды
- * (умноженная на Q сумма рейтингов шести наиболее высокорейтинговых игроков
- * с коэффициентами 1, 5/6, ..., 1/6)».
- *
- * Так считает рейтинг (https://github.com/chgk-gg/rating-b/blob/main/scripts/tools.py
- * и constants.py): шесть наибольших teamMembers.rating заявки, коэффициенты
- * 6/6 … 1/6; если игроков меньше шести — коэффициенты с начала ряда, без
- * виртуальных игроков. Легионеры и свободные агенты входят в сумму. Сначала
- * сумма округляется до целого (half to even, как np.round), затем умножается
- * на Q релиза, в который турнир входит, и снова округляется до целого.
- * Q — среднее R/TRB ста лучших команд (scripts/teams.py), поле `q`:
- * https://rating.chgk.gg/api/v1/b/releases
- *
- * Рейтинг игрока уже лежит в заявке: «индивидуальный рейтинг в релизе,
- * предшествующем окончанию турнира» (поле TeamMember.rating).
+ * Рейтинг игрока — базовый, тот же, что в заявке турнира (TeamMember.rating):
+ * индивидуальный рейтинг релиза, непосредственно предшествующего релизу,
+ * в который входит турнир. Не рейтинг более нового релиза.
  */
-const COEFF_NUMERATORS = [6, 5, 4, 3, 2, 1] as const;
-const Q_SCALE = 100_000;
+const WEIGHT_TENTHS = [10, 8, 6, 4, 2] as const;
 
-export function technicalRatingFromPlayerRatings(
-  ratings: readonly number[],
-  q: number,
-): number | null {
-  if (!Number.isFinite(q)) return null;
+export function technicalRatingFromPlayerRatings(ratings: readonly number[]): number | null {
   const usable = ratings.filter((rating) => Number.isFinite(rating));
   if (usable.length === 0) return null;
-  const top = [...usable].sort((a, b) => b - a).slice(0, COEFF_NUMERATORS.length);
-  let numerator = 0;
-  for (let i = 0; i < top.length; i++) numerator += top[i] * COEFF_NUMERATORS[i];
-  const roundedSum = roundDivHalfEven(numerator, 6);
-  const qScaled = Math.round(q * Q_SCALE);
-  return roundDivHalfEven(roundedSum * qScaled, Q_SCALE);
+  const top = [...usable].sort((a, b) => b - a).slice(0, WEIGHT_TENTHS.length);
+  let tenths = 0;
+  for (let i = 0; i < top.length; i++) tenths += top[i] * WEIGHT_TENTHS[i];
+  return tenths / 10;
 }
 
-/** Round numerator/denominator to nearest integer, halves to even. */
-function roundDivHalfEven(numerator: number, denominator: number): number {
-  const quotient = Math.floor(numerator / denominator);
-  const remainder = numerator - quotient * denominator;
-  const twice = remainder * 2;
-  if (twice < denominator) return quotient;
-  if (twice > denominator) return quotient + 1;
-  return quotient % 2 === 0 ? quotient : quotient + 1;
+/** Whole number when the sum is whole, otherwise one decimal. */
+export function formatTechnicalRating(value: number): string {
+  const tenths = Math.round(value * 10);
+  const whole = Math.trunc(tenths / 10);
+  const frac = Math.abs(tenths % 10);
+  if (frac === 0) return String(whole);
+  return `${whole}.${frac}`;
 }
 
 interface RatingRosterRow {
@@ -58,9 +40,14 @@ interface RatingRosterRow {
 }
 
 interface GgRelease {
+  id?: unknown;
   date?: unknown;
-  q?: unknown;
   tournaments?: { in_rating?: unknown; not_in_rating?: unknown };
+}
+
+interface PlayerReleaseItem {
+  id?: unknown;
+  rating?: unknown;
 }
 
 function memberRatings(members: unknown): number[] {
@@ -79,12 +66,13 @@ function releaseListsTournament(release: GgRelease, tournamentId: number): boole
   return lists.some((list) => Array.isArray(list) && list.includes(tournamentId));
 }
 
-export function releaseQForTournament(releases: readonly GgRelease[], tournamentId: number): number | null {
-  const hits = releases
-    .filter((release) => releaseListsTournament(release, tournamentId))
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
-  const q = hits[0]?.q;
-  return typeof q === "number" && Number.isFinite(q) ? q : null;
+/** Release whose player rating is TeamMember.rating for this tournament. */
+function baseReleaseIdForTournament(releases: readonly GgRelease[], tournamentId: number): number | null {
+  const sorted = [...releases].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const index = sorted.findIndex((release) => releaseListsTournament(release, tournamentId));
+  if (index <= 0) return null;
+  const id = sorted[index - 1]?.id;
+  return typeof id === "number" ? id : null;
 }
 
 /**
@@ -95,34 +83,84 @@ export async function fetchOchbTechnicalRatings(
   tournamentId: number = OCHB_RATING_TOURNAMENT_ID,
 ): Promise<Map<number, number>> {
   try {
-    const [rosterRes, releasesRes] = await Promise.all([
-      fetch(`${RESULTS}/tournaments/${tournamentId}/results?includeTeamMembers=1`, {
+    const rosterRes = await fetch(
+      `${RESULTS}/tournaments/${tournamentId}/results?includeTeamMembers=1`,
+      {
         headers: { Accept: "application/json" },
         next: { revalidate: REVALIDATE_SECONDS },
-      }),
-      fetch(RELEASES, {
-        headers: { Accept: "application/json" },
-        next: { revalidate: REVALIDATE_SECONDS },
-      }),
-    ]);
-    if (!rosterRes.ok || !releasesRes.ok) return new Map();
+      },
+    );
+    if (!rosterRes.ok) return new Map();
     const rows = (await rosterRes.json()) as unknown;
-    const releasesBody = (await releasesRes.json()) as { items?: GgRelease[] } | GgRelease[];
-    const releases = Array.isArray(releasesBody) ? releasesBody : (releasesBody.items ?? []);
-    const q = releaseQForTournament(releases, tournamentId);
-    if (q == null || !Array.isArray(rows)) return new Map();
+    if (!Array.isArray(rows)) return new Map();
 
     const byTeam = new Map<number, number>();
     for (const row of rows as RatingRosterRow[]) {
       const teamId = row?.team?.id;
       if (typeof teamId !== "number") continue;
       const ratings = memberRatings(row.teamMembers);
-      if (ratings.length === 0) continue;
-      const technical = technicalRatingFromPlayerRatings(ratings, q);
+      const technical = technicalRatingFromPlayerRatings(ratings);
       if (technical == null) continue;
       byTeam.set(teamId, technical);
     }
     return byTeam;
+  } catch {
+    return new Map();
+  }
+}
+
+async function fetchReleaseList(): Promise<GgRelease[]> {
+  const res = await fetch(`${GG}/releases`, {
+    headers: { Accept: "application/json" },
+    next: { revalidate: REVALIDATE_SECONDS },
+  });
+  if (!res.ok) return [];
+  const body = (await res.json()) as { items?: GgRelease[] } | GgRelease[];
+  return Array.isArray(body) ? body : (body.items ?? []);
+}
+
+async function fetchPlayerRatingAtRelease(playerId: number, releaseId: number): Promise<number | null> {
+  try {
+    const res = await fetch(`${GG}/players/${playerId}/releases`, {
+      headers: { Accept: "application/json" },
+      next: { revalidate: REVALIDATE_SECONDS },
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { items?: PlayerReleaseItem[] } | PlayerReleaseItem[];
+    const items = Array.isArray(body) ? body : (body.items ?? []);
+    const hit = items.find((item) => item?.id === releaseId);
+    const rating = hit?.rating;
+    return typeof rating === "number" && Number.isFinite(rating) ? rating : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Base ratings for these player ids at the same release the tournament lineup uses.
+ * A missed player is absent from the map. An empty map if the release cannot be loaded.
+ */
+export async function fetchPlayerBaseRatings(
+  playerIds: readonly number[],
+  tournamentId: number = OCHB_RATING_TOURNAMENT_ID,
+): Promise<Map<number, number>> {
+  const unique = [...new Set(playerIds.filter((id) => Number.isInteger(id) && id > 0))];
+  if (unique.length === 0) return new Map();
+  try {
+    const releases = await fetchReleaseList();
+    const releaseId = baseReleaseIdForTournament(releases, tournamentId);
+    if (releaseId == null) return new Map();
+    const pairs = await Promise.all(
+      unique.map(async (playerId) => {
+        const rating = await fetchPlayerRatingAtRelease(playerId, releaseId);
+        return [playerId, rating] as const;
+      }),
+    );
+    const byPlayer = new Map<number, number>();
+    for (const [playerId, rating] of pairs) {
+      if (rating != null) byPlayer.set(playerId, rating);
+    }
+    return byPlayer;
   } catch {
     return new Map();
   }

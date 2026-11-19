@@ -1,5 +1,6 @@
 import { Check, ExternalLink } from "lucide-react";
 import { db } from "@/lib/db";
+import { fetchOchbTechnicalRatings } from "@/lib/ochb-technical-rating";
 import {
   OCHB_EVENT_ID,
   OCHB_TEAMS,
@@ -26,7 +27,10 @@ async function loadRosterChgkIds(): Promise<Set<number>> {
 }
 
 export async function OchbParticipantsPage() {
-  const rosterIds = await loadRosterChgkIds();
+  const [rosterIds, technicalByTeam] = await Promise.all([
+    loadRosterChgkIds(),
+    fetchOchbTechnicalRatings(),
+  ]);
   const teams = OCHB_TEAMS;
 
   return (
@@ -64,6 +68,12 @@ export async function OchbParticipantsPage() {
                 >
                   Состав
                 </th>
+                <th
+                  className="whitespace-nowrap px-3 py-2.5 text-right font-medium"
+                  title="По составу, заявленному на rating.chgk.info"
+                >
+                  Технический рейтинг
+                </th>
                 <th className="px-3 py-2.5 text-left font-medium">Город</th>
                 <th className="px-3 py-2.5 text-left font-medium">ID</th>
               </tr>
@@ -71,6 +81,8 @@ export async function OchbParticipantsPage() {
             <tbody className="divide-y divide-border">
               {teams.map((t) => {
                 const hasRoster = rosterIds.has(ochbEventTeamChgkId(t));
+                const technical =
+                  t.teamChgkId != null ? technicalByTeam.get(t.teamChgkId) : undefined;
                 return (
                   <tr key={t.number} className="hover:bg-surface/50">
                     <td className="px-3 py-2.5 font-mono text-muted">{t.number}</td>
@@ -99,6 +111,9 @@ export async function OchbParticipantsPage() {
                           <Check className="h-4 w-4 text-green-600" aria-hidden />
                         </span>
                       ) : null}
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-mono text-muted">
+                      {technical == null ? "—" : technical}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-muted">{t.city}</td>
                     <td className="px-3 py-2.5 font-mono text-muted">

@@ -25,13 +25,15 @@ export function technicalRatingFromPlayerRatings(ratings: readonly number[]): nu
   return tenths / 10;
 }
 
-/** Whole number when the sum is whole, otherwise one decimal. */
-export function formatTechnicalRating(value: number): string {
-  const tenths = Math.round(value * 10);
-  const whole = Math.trunc(tenths / 10);
-  const frac = Math.abs(tenths % 10);
-  if (frac === 0) return String(whole);
-  return `${whole}.${frac}`;
+/**
+ * Value shown on the participants page: the weighted sum divided by 10,
+ * nearest integer. Halves round away from zero.
+ */
+export function displayedTechnicalRating(sum: number): number {
+  const tenths = Math.round(sum * 10);
+  const sign = tenths < 0 ? -1 : 1;
+  const abs = Math.abs(tenths);
+  return sign * (Math.trunc(abs / 100) + (abs % 100 >= 50 ? 1 : 0));
 }
 
 interface RatingRosterRow {

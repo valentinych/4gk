@@ -1,9 +1,9 @@
 import { Check, ExternalLink } from "lucide-react";
 import { db } from "@/lib/db";
 import {
+  displayedTechnicalRating,
   fetchOchbTechnicalRatings,
   fetchPlayerBaseRatings,
-  formatTechnicalRating,
   technicalRatingFromPlayerRatings,
 } from "@/lib/ochb-technical-rating";
 import {
@@ -58,6 +58,13 @@ function hasRatingTeamId(team: OchbTeam): boolean {
   return team.teamChgkId != null && team.teamChgkId > 0;
 }
 
+/** Soft wash: highest on the page is green, middle yellow, lowest red. */
+function ratingRowWash(value: number, min: number, max: number): string {
+  const t = max === min ? 1 : (value - min) / (max - min);
+  const hue = Math.round(t * 120);
+  return `color-mix(in srgb, hsl(${hue} 70% 45%) 24%, var(--surface))`;
+}
+
 export async function OchbParticipantsPage() {
   const [rosters, technicalByTeam] = await Promise.all([
     loadSubmittedRosters(),
@@ -78,9 +85,18 @@ export async function OchbParticipantsPage() {
       .filter((rating): rating is number => rating != null);
     return technicalRatingFromPlayerRatings(ratings) ?? undefined;
   };
+  const displayedOf = (team: OchbTeam): number | undefined => {
+    const sum = ratingOf(team);
+    return sum == null ? undefined : displayedTechnicalRating(sum);
+  };
+  const displayedRatings = OCHB_TEAMS.map(displayedOf).filter(
+    (value): value is number => value != null,
+  );
+  const ratingMin = displayedRatings.length === 0 ? 0 : Math.min(...displayedRatings);
+  const ratingMax = displayedRatings.length === 0 ? 0 : Math.max(...displayedRatings);
   const teams = [...OCHB_TEAMS].sort((a, b) => {
-    const ra = ratingOf(a);
-    const rb = ratingOf(b);
+    const ra = displayedOf(a);
+    const rb = displayedOf(b);
     if (ra != null && rb != null && ra !== rb) return rb - ra;
     if ((ra == null) !== (rb == null)) return ra == null ? 1 : -1;
     return a.number - b.number;
@@ -121,11 +137,9 @@ export async function OchbParticipantsPage() {
                 >
                   Состав
                 </th>
-                <th
-                  className="whitespace-nowrap px-3 py-2.5 text-right font-medium"
-                  title="Пять сильнейших игроков состава, базовый рейтинг"
-                >
-                  Технический рейтинг
+                <th className="px-3 py-2.5 text-right font-medium">
+                  Технический{" "}
+                  <span className="whitespace-nowrap">рейтинг*</span>
                 </th>
                 <th className="px-3 py-2.5 text-left font-medium">Город</th>
                 <th className="px-3 py-2.5 text-left font-medium">ID</th>
@@ -134,9 +148,15 @@ export async function OchbParticipantsPage() {
             <tbody className="divide-y divide-border">
               {teams.map((t) => {
                 const hasRoster = rosters.teamIds.has(ochbEventTeamChgkId(t));
-                const technical = ratingOf(t);
+                const technical = displayedOf(t);
+                const wash =
+                  technical == null ? undefined : ratingRowWash(technical, ratingMin, ratingMax);
                 return (
-                  <tr key={t.number} className="hover:bg-surface/50">
+                  <tr
+                    key={t.number}
+                    className={wash ? undefined : "hover:bg-surface/50"}
+                    style={wash ? { backgroundColor: wash } : undefined}
+                  >
                     <td className="px-3 py-2.5 font-mono text-muted">{t.number}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 font-medium">
                       {t.teamChgkId ? (
@@ -165,7 +185,7 @@ export async function OchbParticipantsPage() {
                       ) : null}
                     </td>
                     <td className="px-3 py-2.5 text-right font-mono text-muted">
-                      {technical == null ? "—" : formatTechnicalRating(technical)}
+                      {technical == null ? "—" : technical}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-muted">{t.city}</td>
                     <td className="px-3 py-2.5 font-mono text-muted">
@@ -189,6 +209,12 @@ export async function OchbParticipantsPage() {
           </table>
         </div>
       )}
+      <p className="text-sm text-muted">
+        Технический рейтинг* — сумма рейтингов пяти сильнейших игроков состава с
+        весами 1, 0,8, 0,6, 0,4 и 0,2, делённая на 10 и округлённая до целого.
+        Шестой и остальные игроки не учитываются. Если в составе меньше пяти
+        человек, берутся веса с начала ряда.
+      </p>
     </div>
   );
 }

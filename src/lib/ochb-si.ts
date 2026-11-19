@@ -7,8 +7,10 @@ export const OCHB_SI_SHEET_ID = "1bLncFYCZ73ZQWM8pdMBCh0oQ91JaezKGxhfGYB36mYI";
 /**
  * Only tab. `export?format=csv&gid=0` is the grid with Rank and Round 1–20.
  * Each round is six columns: question cells 10, 20, 30, 40, 50, then Σ.
- * A question cell is blank until it is played. The page shows that raw cell
- * (a plus, a minus, a point value, or empty) — nothing is derived.
+ * A question cell is blank until it is played. The sheet stores a plus as 1
+ * and a minus as -1; the page shows that mark times the column stake
+ * (10, 20, 30, 40, 50). A cell that already holds the stake is left as written.
+ * Σ is the sheet total and is not recomputed.
  * Columns pluses / pluses rank / full rank are game-wide counts, not topics.
  */
 export const OCHB_SI_GID = "0";
@@ -35,7 +37,7 @@ const SKIP_HEADERS = new Set([
 export interface OchbSiMark {
   /** Subheader, e.g. "10". */
   label: string;
-  /** Raw question cell. Empty when the question has not been played. */
+  /** Stake for this question. Empty when it has not been played. */
   value: string;
 }
 
@@ -82,6 +84,24 @@ function sheet(): ParsedGoogleSheet {
 
 function cell(row: string[], index: number): string {
   return (row[index] ?? "").trim();
+}
+
+const QUESTION_STAKES = new Set([10, 20, 30, 40, 50]);
+
+/**
+ * Question cells are a plus/minus mark: 1, -1, or a bare + / − / -.
+ * Display is sign × the column stake. Blank stays blank.
+ * 10, 20, -30 and the other stakes are already points, so they are not scaled again.
+ */
+function questionPoints(raw: string, label: string): string {
+  const value = raw.trim();
+  if (!value) return "";
+  const nominal = Number(label);
+  if (!QUESTION_STAKES.has(nominal)) return value;
+  const mark = value.replace(/[−–]/g, "-");
+  if (mark === "1" || mark === "+1" || mark === "+") return String(nominal);
+  if (mark === "-1" || mark === "-") return String(-nominal);
+  return value;
 }
 
 function nextHeader(header: string[], from: number): number {
@@ -166,9 +186,10 @@ export function parseOchbSiGrid(grid: string[][], viewUrl: string): OchbSiBoard 
         const marks: OchbSiMark[] = [];
         for (let i = 0; i < span.end - span.start; i++) {
           if (i === sumOffset) continue;
+          const label = labels[i] || String(marks.length + 1);
           marks.push({
-            label: labels[i] || String(marks.length + 1),
-            value: cell(row, span.start + i),
+            label,
+            value: questionPoints(cell(row, span.start + i), label),
           });
         }
         return {

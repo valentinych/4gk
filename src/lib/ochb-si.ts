@@ -210,3 +210,14 @@ export async function loadOchbSi(): Promise<OchbSiBoard> {
   const text = await fetchSheetCsv(parsed, { revalidate: OCHB_SI_REVALIDATE_SECONDS });
   return parseOchbSiGrid(parseCsv(text), parsed.viewUrl);
 }
+
+/**
+ * Same board as {@link loadOchbSi} for the 60-second poll.
+ * Omits `revalidate`, so this request uses `cache: "no-store"` and does not
+ * read the page's 3-minute fetch cache. Other sheet fetches are unchanged.
+ */
+export async function loadOchbSiFresh(): Promise<OchbSiBoard> {
+  const parsed = sheet();
+  const text = await fetchSheetCsv(parsed);
+  return parseOchbSiGrid(parseCsv(text), parsed.viewUrl);
+}

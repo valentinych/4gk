@@ -1,8 +1,23 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import type { OchbSiBoard as Board, OchbSiTopic } from "@/lib/ochb-si";
+
+const REFRESH_SECONDS = 60;
+
+function countdownLabel(totalSeconds: number): string {
+  const seconds = Math.max(0, totalSeconds);
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return `${minutes}:${rest.toString().padStart(2, "0")}`;
+}
+
+function isBoard(data: unknown): data is Board {
+  if (!data || typeof data !== "object") return false;
+  const board = data as Partial<Board>;
+  return typeof board.viewUrl === "string" && Array.isArray(board.teams) && Array.isArray(board.topicNames);
+}
 
 function topicLabel(name: string): string {
   const match = /^Round\s+(\d+)$/i.exec(name.trim());
@@ -78,11 +93,58 @@ function TopicMarks({ topic, onClose }: { topic: OchbSiTopic; onClose: () => voi
   );
 }
 
-export function OchbSiBoard({ board }: { board: Board }) {
-  const [open, setOpen] = useState<{ team: number; topic: number } | null>(null);
+export function OchbSiBoard({ board: initialBoard }: { board: Board }) {
+  const [board, setBoard] = useState(initialBoard);
+  const [open, setOpen] = useState<{ team: string; topic: string } | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(REFRESH_SECONDS);
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const colCount = 2 + (board.sumHeader ? 1 : 0) + board.topicNames.length;
 
-  function toggle(team: number, topic: number) {
+  useEffect(() => {
+    let cancelled = false;
+    let left = REFRESH_SECONDS;
+    let refreshing = false;
+
+    async function refresh() {
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        const res = await fetch("/api/ochb/si", { cache: "no-store" });
+        if (!res.ok) throw new Error(String(res.status));
+        const data: unknown = await res.json();
+        if (!isBoard(data)) throw new Error("bad payload");
+        if (cancelled) return;
+        setBoard(data);
+        setRefreshFailed(false);
+        setOpen((cur) => {
+          if (!cur) return null;
+          const team = data.teams.find((item) => item.name === cur.team);
+          const topic = team?.topics.find((item) => item.name === cur.topic);
+          return topic ? cur : null;
+        });
+      } catch {
+        if (!cancelled) setRefreshFailed(true);
+      } finally {
+        refreshing = false;
+      }
+    }
+
+    const id = window.setInterval(() => {
+      left -= 1;
+      if (left < 0) {
+        left = REFRESH_SECONDS;
+        void refresh();
+      }
+      if (!cancelled) setSecondsLeft(left);
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
+
+  function toggle(team: string, topic: string) {
     setOpen((cur) =>
       cur && cur.team === team && cur.topic === topic ? null : { team, topic },
     );
@@ -91,10 +153,16 @@ export function OchbSiBoard({ board }: { board: Board }) {
   return (
     <div id="page-ochb-results-si" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted">
-          Нажмите на сумму темы, чтобы увидеть плюсы и минусы по вопросам.
-          Повторное нажатие скрывает их.
-        </p>
+        <div className="space-y-1">
+          <p className="text-sm text-muted">
+            Нажмите на сумму темы, чтобы увидеть плюсы и минусы по вопросам.
+            Повторное нажатие скрывает их.
+          </p>
+          <p className="text-sm text-muted tabular-nums">
+            Обновление через {countdownLabel(secondsLeft)}
+            {refreshFailed ? " · не удалось" : ""}
+          </p>
+        </div>
         <SheetLink href={board.viewUrl} />
       </div>
 
@@ -129,10 +197,13 @@ export function OchbSiBoard({ board }: { board: Board }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {board.teams.map((team, ti) => {
-                const opened = open?.team === ti ? team.topics[open.topic] : null;
+              {board.teams.map((team) => {
+                const opened =
+                  open?.team === team.name
+                    ? (team.topics.find((topic) => topic.name === open.topic) ?? null)
+                    : null;
                 return (
-                  <Fragment key={`${ti}-${team.name}`}>
+                  <Fragment key={team.name}>
                     <tr data-rank={team.rank} data-team={team.name} className="hover:bg-surface/50">
                       <td className="px-2.5 py-1.5 text-center font-mono text-xs tabular-nums text-muted">
                         {rankLabel(team.rank)}
@@ -145,8 +216,8 @@ export function OchbSiBoard({ board }: { board: Board }) {
                           {team.sum || "—"}
                         </td>
                       ) : null}
-                      {team.topics.map((topic, qi) => {
-                        const isOpen = open?.team === ti && open.topic === qi;
+                      {team.topics.map((topic) => {
+                        const isOpen = open?.team === team.name && open.topic === topic.name;
                         return (
                           <td key={topic.name} className="p-0">
                             <button
@@ -154,7 +225,7 @@ export function OchbSiBoard({ board }: { board: Board }) {
                               aria-expanded={isOpen}
                               title={topic.name}
                               data-topic={topic.name}
-                              onClick={() => toggle(ti, qi)}
+                              onClick={() => toggle(team.name, topic.name)}
                               className={`w-full cursor-pointer px-1.5 py-1.5 text-center font-mono text-xs tabular-nums hover:bg-accent/10 ${
                                 isOpen ? "bg-accent/15 font-semibold" : ""
                               }`}

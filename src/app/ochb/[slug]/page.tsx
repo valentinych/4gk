@@ -8,6 +8,7 @@ import { OchbControversialPage } from "./OchbControversialPage";
 import { OchbParticipantsPage } from "./OchbParticipantsPage";
 import { OchbRosterPage } from "./OchbRosterPage";
 import { OchbSchedulePage } from "./OchbSchedulePage";
+import { OchbQuizPage } from "./OchbQuizPage";
 import { OchbSiPage } from "./OchbSiPage";
 
 type Props = {
@@ -62,7 +63,7 @@ export default async function OchbSlugPage({ params }: Props) {
     <div
       id="page-ochb-slug"
       className={`mx-auto px-4 py-12 sm:px-6 ${
-        slug === "results-si" ? "max-w-[96rem]" : "max-w-4xl"
+        slug === "results-si" || slug === "results-quiz" ? "max-w-[96rem]" : "max-w-4xl"
       }`}
     >
       <Link
@@ -85,7 +86,7 @@ export default async function OchbSlugPage({ params }: Props) {
       ) : slug === "roster" ? (
         <OchbRosterPage />
       ) : slug === "results-quiz" ? (
-        <OchbSoon id="page-ochb-results-quiz" />
+        <OchbQuizPage />
       ) : slug === "results-si" ? (
         <OchbSiPage />
       ) : slug === "results-black" ? (

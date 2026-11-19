@@ -8,7 +8,9 @@ export const OCHB_QUIZ_SHEET_ID = "1mKqi6_nk6rBC8h1qieuase8wqqiSjzkHAiJ7OuUZVcI"
  * Only tab (Sheet1). `export?format=csv&gid=0` is a flat score table:
  * Команда, the stage columns, and Финальный счёт. There is no Rank column
  * and no per-question grid, so the page does not open a detail row.
- * Formula cells that the sheet stores as 0 stay 0. A blank cell stays blank.
+ * The final-score column is moved first so the board can show it beside the
+ * team name. Formula cells that the sheet stores as 0 stay 0. A blank cell
+ * stays blank.
  */
 export const OCHB_QUIZ_GID = "0";
 
@@ -27,6 +29,7 @@ export interface OchbQuizRow {
   order: number;
   /**
    * Sheet place, or a computed place when the sheet has none.
+   * Computed places follow final-score order; equal scores share a place.
    * Empty when the row is unranked (blank total, or Rank 0 / blank).
    */
   rank: string;
@@ -41,7 +44,10 @@ export interface OchbQuizBoard {
   rankHeader: string;
   teamHeader: string;
   columns: string[];
-  /** Index into `columns` of the total, or -1. */
+  /**
+   * Index into `columns` of the total, or -1.
+   * When present, the total is the first column (beside the team name).
+   */
   totalColumn: number;
   teams: OchbQuizRow[];
 }
@@ -103,7 +109,8 @@ function scoreNumber(raw: string): number | null {
 }
 
 /**
- * A positive Rank (1, 2, 3, …) is a place and sorts ascending.
+ * Used only when the sheet has a place and no final score.
+ * A positive Rank (1, 2, 3, …) sorts ascending.
  * Rank 0, blank, and non-numeric are unranked: they follow every place, in sheet order.
  * The same place keeps sheet order.
  */
@@ -149,6 +156,13 @@ export function parseOchbQuizGrid(grid: string[][], viewUrl: string): OchbQuizBo
     if (c === teamCol || c === placeCol) continue;
     columnIndexes.push(c);
   }
+  if (totalCol >= 0) {
+    const at = columnIndexes.indexOf(totalCol);
+    if (at > 0) {
+      columnIndexes.splice(at, 1);
+      columnIndexes.unshift(totalCol);
+    }
+  }
   if (columnIndexes.length === 0 && placeCol < 0) throw new Error(READ_ERROR);
 
   const drafts: Draft[] = [];
@@ -167,17 +181,7 @@ export function parseOchbQuizGrid(grid: string[][], viewUrl: string): OchbQuizBo
     });
   }
 
-  if (placeCol >= 0) {
-    drafts.sort((a, b) => {
-      const ra = rankNumber(a.rank);
-      const rb = rankNumber(b.rank);
-      if (ra == null && rb == null) return a.order - b.order;
-      if (ra == null) return 1;
-      if (rb == null) return -1;
-      if (ra !== rb) return ra - rb;
-      return a.order - b.order;
-    });
-  } else if (totalCol >= 0) {
+  if (totalCol >= 0) {
     drafts.sort((a, b) => {
       const sa = scoreNumber(a.total);
       const sb = scoreNumber(b.total);
@@ -187,7 +191,17 @@ export function parseOchbQuizGrid(grid: string[][], viewUrl: string): OchbQuizBo
       if (sa !== sb) return sb - sa;
       return a.order - b.order;
     });
-    assignPlaces(drafts);
+    if (placeCol < 0) assignPlaces(drafts);
+  } else if (placeCol >= 0) {
+    drafts.sort((a, b) => {
+      const ra = rankNumber(a.rank);
+      const rb = rankNumber(b.rank);
+      if (ra == null && rb == null) return a.order - b.order;
+      if (ra == null) return 1;
+      if (rb == null) return -1;
+      if (ra !== rb) return ra - rb;
+      return a.order - b.order;
+    });
   }
 
   return {

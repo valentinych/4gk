@@ -9,6 +9,15 @@ function topicLabel(name: string): string {
   return match ? match[1] : name;
 }
 
+/** Real places stay as written. Rank 0, blank, and missing are not a place. */
+function rankLabel(rank: string): string {
+  const t = rank.trim();
+  if (!/^\d+(?:[.,]\d+)?$/.test(t)) return "—";
+  const n = Number(t.replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0) return "—";
+  return t;
+}
+
 function markClass(value: string): string {
   const v = value.trim();
   if (!v) return "text-muted/50";
@@ -126,7 +135,7 @@ export function OchbSiBoard({ board }: { board: Board }) {
                   <Fragment key={`${ti}-${team.name}`}>
                     <tr data-rank={team.rank} data-team={team.name} className="hover:bg-surface/50">
                       <td className="px-2.5 py-1.5 text-center font-mono text-xs tabular-nums text-muted">
-                        {team.rank || "—"}
+                        {rankLabel(team.rank)}
                       </td>
                       <td className="px-2.5 py-1.5 text-left font-medium whitespace-nowrap">
                         {team.name}

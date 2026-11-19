@@ -91,12 +91,16 @@ function nextHeader(header: string[], from: number): number {
   return header.length;
 }
 
-/** Blank and non-numeric Rank values sort after numeric ones. Ties keep sheet order. */
+/**
+ * A positive Rank (1, 2, 3, …) is a place and sorts ascending.
+ * Rank 0, blank, and non-numeric are unranked: they follow every place, in sheet order.
+ * The same place keeps sheet order.
+ */
 function rankNumber(raw: string): number | null {
   const t = raw.trim();
-  if (!/^-?\d+(?:[.,]\d+)?$/.test(t)) return null;
+  if (!/^\d+(?:[.,]\d+)?$/.test(t)) return null;
   const n = Number(t.replace(",", "."));
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 function topicSpans(header: string[], sub: string[]): TopicSpan[] {

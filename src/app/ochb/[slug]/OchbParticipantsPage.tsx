@@ -31,7 +31,15 @@ export async function OchbParticipantsPage() {
     loadRosterChgkIds(),
     fetchOchbTechnicalRatings(),
   ]);
-  const teams = OCHB_TEAMS;
+  const ratingOf = (teamChgkId: number | null) =>
+    teamChgkId != null ? technicalByTeam.get(teamChgkId) : undefined;
+  const teams = [...OCHB_TEAMS].sort((a, b) => {
+    const ra = ratingOf(a.teamChgkId);
+    const rb = ratingOf(b.teamChgkId);
+    if (ra != null && rb != null && ra !== rb) return rb - ra;
+    if ((ra == null) !== (rb == null)) return ra == null ? 1 : -1;
+    return a.number - b.number;
+  });
 
   return (
     <div id="page-ochb-participants" className="space-y-4">
@@ -81,8 +89,7 @@ export async function OchbParticipantsPage() {
             <tbody className="divide-y divide-border">
               {teams.map((t) => {
                 const hasRoster = rosterIds.has(ochbEventTeamChgkId(t));
-                const technical =
-                  t.teamChgkId != null ? technicalByTeam.get(t.teamChgkId) : undefined;
+                const technical = ratingOf(t.teamChgkId);
                 return (
                   <tr key={t.number} className="hover:bg-surface/50">
                     <td className="px-3 py-2.5 font-mono text-muted">{t.number}</td>

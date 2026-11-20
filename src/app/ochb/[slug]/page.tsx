@@ -3,12 +3,14 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import ChgkRatingApiResults from "@/app/ochp/[slug]/ChgkRatingApiResults";
 import { OCHB_CHANNEL_URL, OCHB_LINKS, OCHB_RATING_TOURNAMENT_ID } from "@/lib/ochb";
+import { OCHB_REGLAMENT_TITLE } from "@/lib/ochb-reglament";
 import { OchbAppealPage } from "./OchbAppealPage";
 import { OchbControversialPage } from "./OchbControversialPage";
 import { OchbParticipantsPage } from "./OchbParticipantsPage";
 import { OchbRosterPage } from "./OchbRosterPage";
 import { OchbSchedulePage } from "./OchbSchedulePage";
 import { OchbQuizPage } from "./OchbQuizPage";
+import { OchbReglamentPage } from "./OchbReglamentPage";
 import { OchbSiPage } from "./OchbSiPage";
 
 type Props = {
@@ -18,6 +20,7 @@ type Props = {
 const PAGE_TITLES: Record<string, string> = {
   participants: "Участники ОЧБ-2026",
   schedule: "Расписание ОЧБ-2026",
+  reglament: OCHB_REGLAMENT_TITLE,
   links: "Полезные ссылки — ОЧБ-2026",
   results: "Результаты рейтинга",
   "results-quiz": "Квиз «Вопроситос»",
@@ -83,6 +86,8 @@ export default async function OchbSlugPage({ params }: Props) {
         <OchbParticipantsPage />
       ) : slug === "schedule" ? (
         <OchbSchedulePage />
+      ) : slug === "reglament" ? (
+        <OchbReglamentPage />
       ) : slug === "roster" ? (
         <OchbRosterPage />
       ) : slug === "results-quiz" ? (

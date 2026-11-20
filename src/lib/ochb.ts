@@ -132,6 +132,12 @@ export const OCHB_TILES: OchbLandingTile[] = [
     href: "/ochb/schedule",
   },
   {
+    slug: "reglament",
+    emoji: "📜",
+    title: "Регламент",
+    href: "/ochb/reglament",
+  },
+  {
     slug: "channel",
     emoji: "📣",
     title: "Телеграм-канал",

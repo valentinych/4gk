@@ -46,8 +46,18 @@ export const OCHB_SEED_MARKER_URL = "seed:/ochb";
  */
 export const OCHB_JURY_SEED_MARKER_URL = "seed:/ochb/jury";
 
+/**
+ * Archived row that records the one-shot insert of «Регламент».
+ * A later admin delete stays deleted.
+ */
+export const OCHB_REGLAMENT_SEED_MARKER_URL = "seed:/ochb/reglament";
+
 export function isOchbSeedMarkerUrl(url: string): boolean {
-  return url === OCHB_SEED_MARKER_URL || url === OCHB_JURY_SEED_MARKER_URL;
+  return (
+    url === OCHB_SEED_MARKER_URL ||
+    url === OCHB_JURY_SEED_MARKER_URL ||
+    url === OCHB_REGLAMENT_SEED_MARKER_URL
+  );
 }
 
 /** Landings that render PageWidgetTiles in their own tile slot (not the root layout). */
@@ -404,6 +414,7 @@ export async function ensureDsHazaWidget(): Promise<void> {
 }
 
 const OCHB_LINKS_WIDGET_URL = "/ochb/links";
+const OCHB_REGLAMENT_WIDGET_URL = "/ochb/reglament";
 
 async function createArchivedSeedMarker(path: string, url: string): Promise<void> {
   const last = await db.pageWidget.findFirst({
@@ -508,8 +519,32 @@ async function ensureOchbJuryAndChannelWidgets(path: string): Promise<void> {
 }
 
 /**
+ * One shot. Appends «Регламент» when that row is missing.
+ * The marker blocks a later run, so an admin delete is not recreated.
+ * Existing tiles keep their order.
+ */
+async function ensureOchbReglamentWidget(path: string): Promise<void> {
+  const marker = await db.pageWidget.findUnique({
+    where: {
+      path_type_url: {
+        path,
+        type: PAGE_WIDGET_LINK,
+        url: OCHB_REGLAMENT_SEED_MARKER_URL,
+      },
+    },
+    select: { id: true },
+  });
+  if (marker) return;
+
+  await ensurePageWidgets(path, [
+    seedLink("📜", "Регламент", OCHB_REGLAMENT_WIDGET_URL),
+  ]);
+  await createArchivedSeedMarker(path, OCHB_REGLAMENT_SEED_MARKER_URL);
+}
+
+/**
  * Inserts /ochb tiles once. The marker stays after an admin deletes every visible tile,
- * so those tiles are not created again. The jury/channel pass is also one-shot.
+ * so those tiles are not created again. The jury/channel and reglament passes are also one-shot.
  */
 async function ensureOchbLandingWidgets(path: string): Promise<void> {
   const marker = await db.pageWidget.findUnique({
@@ -527,6 +562,7 @@ async function ensureOchbLandingWidgets(path: string): Promise<void> {
     await createArchivedSeedMarker(path, OCHB_SEED_MARKER_URL);
   }
   await ensureOchbJuryAndChannelWidgets(path);
+  await ensureOchbReglamentWidget(path);
 }
 
 /** Idempotent seed of current-season landing tiles. Does not update existing rows. */

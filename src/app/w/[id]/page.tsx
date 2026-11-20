@@ -6,6 +6,9 @@ import ChgkResults from "@/app/ochp/[slug]/ChgkResults";
 import { BrainRingWidgetClient } from "@/components/page-widgets/BrainRingWidgetClient";
 import { TableWidgetClient } from "@/components/page-widgets/TableWidgetClient";
 import { db } from "@/lib/db";
+import { OCHB_HAZA_BROADCAST_ID } from "@/lib/ochb";
+import { loadOchbAmateurBroadcastNames } from "@/lib/ochb-technical-rating";
+import { fetchHazaBroadcastData, type HazaData } from "@/lib/ochp-haza";
 import {
   PAGE_WIDGET_BRAIN,
   PAGE_WIDGET_HAZA,
@@ -46,6 +49,17 @@ async function loadWidget(id: string): Promise<LoadedWidget | null> {
   }
 }
 
+async function loadOchbChgk(broadcastId: number): Promise<{
+  amateurTeamNames: string[];
+  initialData: HazaData | null;
+}> {
+  const [amateurTeamNames, initialData] = await Promise.all([
+    loadOchbAmateurBroadcastNames(),
+    fetchHazaBroadcastData(broadcastId).catch(() => null),
+  ]);
+  return { amateurTeamNames, initialData };
+}
+
 function fallbackTitle(kind: LoadedWidget["kind"] | undefined): string {
   if (kind === "brain") return "Брейн-ринг";
   if (kind === "table") return "Таблица";
@@ -69,6 +83,10 @@ export default async function PageWidgetPage({ params }: Props) {
   if (!widget) notFound();
 
   const { text } = splitTileTitle(widget.title);
+  const ochbChgk =
+    widget.kind === "haza" && widget.broadcastId === OCHB_HAZA_BROADCAST_ID
+      ? await loadOchbChgk(widget.broadcastId)
+      : null;
 
   return (
     <div id="page-widget" className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
@@ -83,7 +101,12 @@ export default async function PageWidgetPage({ params }: Props) {
         {text || widget.title}
       </h1>
       {widget.kind === "haza" ? (
-        <ChgkResults broadcastId={widget.broadcastId} apiPath="/api/haza" />
+        <ChgkResults
+          broadcastId={widget.broadcastId}
+          apiPath="/api/haza"
+          initialData={ochbChgk?.initialData ?? null}
+          amateurTeamNames={ochbChgk?.amateurTeamNames}
+        />
       ) : widget.kind === "brain" ? (
         <BrainRingWidgetClient widgetId={widget.id} />
       ) : (

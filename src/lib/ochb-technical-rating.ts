@@ -1,4 +1,11 @@
-import { OCHB_RATING_TOURNAMENT_ID } from "@/lib/ochb";
+import { db } from "@/lib/db";
+import {
+  OCHB_EVENT_ID,
+  OCHB_RATING_TOURNAMENT_ID,
+  OCHB_TEAMS,
+  ochbEventTeamChgkId,
+  type OchbTeam,
+} from "@/lib/ochb";
 
 const RESULTS = "https://api.rating.chgk.info";
 const GG = "https://rating.chgk.gg/api/v1/b";
@@ -166,4 +173,115 @@ export async function fetchPlayerBaseRatings(
   } catch {
     return new Map();
   }
+}
+
+/** Displayed technical rating at or below this is «любители». 1800 is included. */
+export const OCHB_AMATEUR_RATING_MAX = 1800;
+
+/** A missing rating («—») is not amateur. */
+export function isOchbAmateurRating(displayed: number | null | undefined): boolean {
+  return displayed != null && displayed <= OCHB_AMATEUR_RATING_MAX;
+}
+
+/**
+ * Labels on haza broadcast 684 that are not the participants-list name.
+ * The participants page still shows the list name.
+ */
+const OCHB_HAZA_NAME_BY_NUMBER: Readonly<Record<number, string>> = {
+  21: "Команда R",
+  28: "Византийский консенсунс",
+  29: "PSM",
+};
+
+interface SubmittedRoster {
+  teamIds: Set<number>;
+  playerIdsByTeam: Map<number, number[]>;
+}
+
+/** A roster is submitted once TeamRoster exists (POST requires ≥1 player). */
+async function loadSubmittedRosters(): Promise<SubmittedRoster> {
+  const empty: SubmittedRoster = { teamIds: new Set(), playerIdsByTeam: new Map() };
+  if (!process.env.DATABASE_URL) return empty;
+  try {
+    const rosters = await db.teamRoster.findMany({
+      where: { eventId: OCHB_EVENT_ID },
+      select: {
+        teamChgkId: true,
+        updatedAt: true,
+        players: { select: { chgkId: true }, orderBy: { sortOrder: "asc" } },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    const teamIds = new Set<number>();
+    const playerIdsByTeam = new Map<number, number[]>();
+    for (const roster of rosters) {
+      const teamId = roster.teamChgkId;
+      if (teamId == null || teamId === 0) continue;
+      teamIds.add(teamId);
+      if (playerIdsByTeam.has(teamId)) continue;
+      playerIdsByTeam.set(
+        teamId,
+        roster.players
+          .map((player) => player.chgkId)
+          .filter((id): id is number => id != null && id > 0),
+      );
+    }
+    return { teamIds, playerIdsByTeam };
+  } catch {
+    return empty;
+  }
+}
+
+function hasRatingTeamId(team: OchbTeam): boolean {
+  return team.teamChgkId != null && team.teamChgkId > 0;
+}
+
+/**
+ * Displayed technical rating of each team on the participants list, plus which
+ * teams have a submitted lineup. Teams with no rating are absent from the map.
+ * A rating id uses the tournament lineup. A team without one (Manychat,
+ * Соборная) uses its submitted roster. This does not write rating ids.
+ */
+export async function loadOchbParticipantMarks(
+  teams: readonly OchbTeam[] = OCHB_TEAMS,
+): Promise<{ displayedByNumber: Map<number, number>; rosterTeamIds: Set<number> }> {
+  const [rosters, technicalByTeam] = await Promise.all([
+    loadSubmittedRosters(),
+    fetchOchbTechnicalRatings(),
+  ]);
+  const rosterPlayerIds = teams
+    .filter((team) => !hasRatingTeamId(team))
+    .flatMap((team) => rosters.playerIdsByTeam.get(ochbEventTeamChgkId(team)) ?? []);
+  const playerBaseRatings = await fetchPlayerBaseRatings(rosterPlayerIds);
+  const displayedByNumber = new Map<number, number>();
+  for (const team of teams) {
+    let sum: number | undefined;
+    if (team.teamChgkId != null && team.teamChgkId > 0) {
+      sum = technicalByTeam.get(team.teamChgkId);
+    } else {
+      const playerIds = rosters.playerIdsByTeam.get(ochbEventTeamChgkId(team)) ?? [];
+      if (playerIds.length > 0) {
+        const ratings = playerIds
+          .map((id) => playerBaseRatings.get(id))
+          .filter((rating): rating is number => rating != null);
+        sum = technicalRatingFromPlayerRatings(ratings) ?? undefined;
+      }
+    }
+    if (sum == null) continue;
+    displayedByNumber.set(team.number, displayedTechnicalRating(sum));
+  }
+  return { displayedByNumber, rosterTeamIds: rosters.teamIds };
+}
+
+/** Participants-list names of amateur teams, plus the broadcast label when it differs. */
+export async function loadOchbAmateurBroadcastNames(): Promise<string[]> {
+  const { displayedByNumber } = await loadOchbParticipantMarks();
+  const names: string[] = [];
+  for (const team of OCHB_TEAMS) {
+    if (!isOchbAmateurRating(displayedByNumber.get(team.number))) continue;
+    names.push(team.name);
+    const alias = OCHB_HAZA_NAME_BY_NUMBER[team.number];
+    if (alias) names.push(alias);
+  }
+  return names;
 }

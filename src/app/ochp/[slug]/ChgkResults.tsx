@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
+import { OchbAmateurBadge } from "@/app/ochb/OchbAmateurBadge";
 import {
   formatTenth,
   hazaColumnStats,
@@ -34,6 +35,10 @@ interface HazaData {
 
 const REFRESH_INTERVAL = 60;
 
+function amateurNameKey(name: string): string {
+  return name.replace(/ё/gi, "е").trim().replace(/\s+/g, " ").toLocaleLowerCase("ru");
+}
+
 function hazaTourColumnMaxima(
   teams: HazaTeam[],
   tours: HazaTour[],
@@ -52,12 +57,18 @@ function hazaTourColumnMaxima(
 export default function ChgkResults({
   broadcastId = OCHP_CHGK_HAZA_BROADCAST_CURRENT,
   apiPath = "/api/ochp/haza",
+  initialData = null,
+  amateurTeamNames,
 }: {
   broadcastId?: number;
   apiPath?: string;
+  /** First paint, so the team list (and amateur badges) are in the HTML. */
+  initialData?: HazaData | null;
+  /** OCHB amateur teams, matched to the broadcast by displayed name. */
+  amateurTeamNames?: readonly string[];
 }) {
-  const [data, setData] = useState<HazaData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<HazaData | null>(initialData);
+  const [loading, setLoading] = useState(initialData == null);
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -121,6 +132,11 @@ export default function ChgkResults({
   const columnStats = useMemo(
     () => (data ? hazaColumnStats(data.teams, data.tours, data.lastQuestion) : null),
     [data],
+  );
+
+  const amateurNames = useMemo(
+    () => new Set((amateurTeamNames ?? []).map(amateurNameKey)),
+    [amateurTeamNames],
   );
 
   if (error && !data) {
@@ -206,6 +222,7 @@ export default function ChgkResults({
             <tbody className="divide-y divide-border">
               {data.teams.map((team, i) => {
                 const scores = tourScoresFromAnswers(team.answers, data.tours);
+                const amateur = amateurNames.has(amateurNameKey(team.name));
                 return (
                   <tr
                     key={i}
@@ -219,6 +236,7 @@ export default function ChgkResults({
                         <span className="font-medium text-sm leading-tight break-words min-w-0">
                           {team.name}
                         </span>
+                        {amateur ? <OchbAmateurBadge /> : null}
                         {team.group === 0 && (
                           <span
                             className="inline-block w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-border overflow-hidden shrink-0 mt-0.5"

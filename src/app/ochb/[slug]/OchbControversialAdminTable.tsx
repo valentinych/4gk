@@ -2,7 +2,8 @@
 
 import { Check, HelpCircle, Lock, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { FitTextarea } from "./FitTextarea";
 
 export type ControversialVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
 
@@ -17,8 +18,14 @@ export type ControversialAdminRow = {
   decidedByName: string | null;
 };
 
-const COMMENT_TEXTAREA_CLASS =
-  "mt-2 min-h-40 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none [field-sizing:content] focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60";
+const TABLE_WRAP =
+  "max-md:overflow-visible rounded-xl border border-border bg-surface md:overflow-x-auto";
+const TABLE =
+  "w-full text-sm max-md:block md:min-w-[36rem]";
+const TABLE_BODY = "max-md:block";
+const DATA_ROW =
+  "hover:bg-surface/50 max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-3 max-md:gap-y-2 max-md:px-3 max-md:py-2.5";
+const CELL = "px-3 py-2.5 max-md:block max-md:max-w-full max-md:min-w-0 max-md:p-0";
 
 const VERDICT_BUTTONS: {
   value: ControversialVerdict;
@@ -87,9 +94,6 @@ export function OchbControversialAdminTable({
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   const [graveyard, setGraveyard] = useState(initialGraveyard);
-  const [selectedId, setSelectedId] = useState<string | null>(
-    initialRows[0]?.id ?? null,
-  );
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,14 +101,7 @@ export function OchbControversialAdminTable({
   useEffect(() => {
     setRows(initialRows);
     setGraveyard(initialGraveyard);
-    setSelectedId((prev) =>
-      prev && initialRows.some((r) => r.id === prev)
-        ? prev
-        : (initialRows[0]?.id ?? null),
-    );
   }, [initialRows, initialGraveyard]);
-
-  const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   async function patch(
     id: string,
@@ -231,7 +228,6 @@ export function OchbControversialAdminTable({
       };
       setGraveyard((prev) => prev.filter((r) => r.id !== row.id));
       setRows((prev) => [...prev.filter((r) => r.id !== row.id), returned]);
-      setSelectedId(row.id);
     } else {
       setRows((prev) =>
         prev.map((r) => (r.id === row.id ? { ...r, locked: false } : r)),
@@ -256,9 +252,6 @@ export function OchbControversialAdminTable({
           updated.rationale !== undefined ? updated.rationale : row.rationale,
       },
     ]);
-    setSelectedId((prev) =>
-      prev === row.id ? (remaining[0]?.id ?? null) : prev,
-    );
     clearDraft(row.id);
     router.refresh();
   }
@@ -280,9 +273,9 @@ export function OchbControversialAdminTable({
       {rows.length === 0 ? (
         <p className="text-sm text-muted">Пока нет поданных спорных.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="w-full min-w-[36rem] text-sm">
-            <thead>
+        <div className={TABLE_WRAP}>
+          <table className={TABLE}>
+            <thead className="max-md:hidden">
               <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
                 <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
                 <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
@@ -296,8 +289,8 @@ export function OchbControversialAdminTable({
                 ) : null}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((row) => {
+            <tbody className={TABLE_BODY}>
+              {rows.map((row, index) => {
                 const busy = pendingId === row.id;
                 const verdictDisabled = row.locked || busy;
                 const lockNeedsVerdict = !row.locked && row.status === "PENDING";
@@ -305,144 +298,133 @@ export function OchbControversialAdminTable({
                 const lockDisabled = unlockable
                   ? busy
                   : row.locked || busy || lockNeedsVerdict;
-                const isSelected = row.id === selectedId;
                 return (
-                  <tr
-                    key={row.id}
-                    aria-selected={isSelected}
-                    onClick={() => setSelectedId(row.id)}
-                    className={`cursor-pointer ${
-                      isSelected ? "bg-accent/10" : "hover:bg-surface/50"
-                    }`}
-                  >
-                    <td className="px-3 py-2.5 font-mono tabular-nums">
-                      {row.questionNumber}
-                    </td>
-                    <td className="px-3 py-2.5">{row.answerText}</td>
-                    <td className="px-3 py-2.5">
-                      <div role="group" aria-label="Вердикт" className="flex gap-1">
-                        {VERDICT_BUTTONS.map(({ value, label, Icon, activeClass }) => {
-                          const pressed = row.status === value;
-                          return (
-                            <button
-                              key={value}
-                              type="button"
-                              aria-pressed={pressed}
-                              aria-label={label}
-                              aria-disabled={verdictDisabled}
-                              disabled={verdictDisabled}
-                              onClick={() => onVerdict(row, value)}
-                              className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
-                                pressed ? activeClass : "text-muted/40"
-                              } disabled:opacity-60`}
-                            >
-                              <Icon className="h-5 w-5" aria-hidden />
-                            </button>
-                          );
-                        })}
-                        <button
-                          type="button"
-                          aria-label={
-                            unlockable
-                              ? "Снять замок"
-                              : row.locked
-                                ? "Решение зафиксировано"
+                  <Fragment key={row.id}>
+                    <tr className={DATA_ROW}>
+                      <td className={`${CELL} font-mono tabular-nums`}>
+                        {row.questionNumber}
+                      </td>
+                      <td className={`${CELL} break-words`}>{row.answerText}</td>
+                      <td className={`${CELL} max-md:shrink-0`}>
+                        <div role="group" aria-label="Вердикт" className="flex gap-1">
+                          {VERDICT_BUTTONS.map(({ value, label, Icon, activeClass }) => {
+                            const pressed = row.status === value;
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                aria-pressed={pressed}
+                                aria-label={label}
+                                aria-disabled={verdictDisabled}
+                                disabled={verdictDisabled}
+                                onClick={() => onVerdict(row, value)}
+                                className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
+                                  pressed ? activeClass : "text-muted/40"
+                                } disabled:opacity-60`}
+                              >
+                                <Icon className="h-5 w-5" aria-hidden />
+                              </button>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            aria-label={
+                              unlockable
+                                ? "Снять замок"
+                                : row.locked
+                                  ? "Решение зафиксировано"
+                                  : lockNeedsVerdict
+                                    ? "Сначала выберите вердикт"
+                                    : "Заблокировать решение"
+                            }
+                            title={
+                              unlockable
+                                ? "Снять замок"
                                 : lockNeedsVerdict
                                   ? "Сначала выберите вердикт"
-                                  : "Заблокировать решение"
-                          }
-                          title={
-                            unlockable
-                              ? "Снять замок"
-                              : lockNeedsVerdict
-                                ? "Сначала выберите вердикт"
-                                : undefined
-                          }
-                          aria-pressed={row.locked}
-                          aria-disabled={lockDisabled}
-                          disabled={lockDisabled}
-                          onClick={() =>
-                            unlockable ? onUnlock(row, "rows") : onLock(row)
-                          }
-                          className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
-                            row.locked
-                              ? unlockable
-                                ? "text-red-600 hover:bg-red-50 disabled:opacity-60"
-                                : "cursor-default text-red-600 disabled:opacity-100"
-                              : "text-muted disabled:opacity-60"
-                          }`}
-                        >
-                          <Lock className="h-5 w-5" aria-hidden />
-                        </button>
-                      </div>
-                    </td>
-                    <td
-                      className="px-3 py-2.5 font-mono tabular-nums text-muted"
-                      title={row.teamNumber === 0 ? "Админы" : undefined}
-                    >
-                      {row.teamNumber ?? "—"}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-muted">
-                      {row.decidedByName ?? ""}
-                    </td>
-                    {canGraveyard ? (
-                      <td className="px-3 py-2.5">
-                        <button
-                          type="button"
-                          aria-label="На кладбище"
-                          disabled={busy}
-                          onClick={() => onTrash(row)}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted hover:text-foreground disabled:opacity-60"
-                        >
-                          <Trash2 className="h-5 w-5" aria-hidden />
-                        </button>
+                                  : undefined
+                            }
+                            aria-pressed={row.locked}
+                            aria-disabled={lockDisabled}
+                            disabled={lockDisabled}
+                            onClick={() =>
+                              unlockable ? onUnlock(row, "rows") : onLock(row)
+                            }
+                            className={`inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border ${
+                              row.locked
+                                ? unlockable
+                                  ? "text-red-600 hover:bg-red-50 disabled:opacity-60"
+                                  : "cursor-default text-red-600 disabled:opacity-100"
+                                : "text-muted disabled:opacity-60"
+                            }`}
+                          >
+                            <Lock className="h-5 w-5" aria-hidden />
+                          </button>
+                        </div>
                       </td>
-                    ) : null}
-                  </tr>
+                      <td
+                        className={`${CELL} font-mono tabular-nums text-muted`}
+                        title={row.teamNumber === 0 ? "Админы" : undefined}
+                      >
+                        {row.teamNumber ?? "—"}
+                      </td>
+                      <td className={`${CELL} text-muted md:whitespace-nowrap`}>
+                        {row.decidedByName ?? ""}
+                      </td>
+                      {canGraveyard ? (
+                        <td className={`${CELL} max-md:shrink-0`}>
+                          <button
+                            type="button"
+                            aria-label="На кладбище"
+                            disabled={busy}
+                            onClick={() => onTrash(row)}
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted hover:text-foreground disabled:opacity-60"
+                          >
+                            <Trash2 className="h-5 w-5" aria-hidden />
+                          </button>
+                        </td>
+                      ) : null}
+                    </tr>
+                    <tr className="max-md:block">
+                      <td
+                        colSpan={canGraveyard ? 6 : 5}
+                        className={`px-3 pb-3 pt-1 max-md:block max-md:w-full ${
+                          index < rows.length - 1 ? "border-b border-border" : ""
+                        }`}
+                      >
+                        <div
+                          id={`page-ochb-controversial-comment-${row.id}`}
+                          className="w-full max-w-none"
+                        >
+                          <FitTextarea
+                            id={`ochb-controversial-comment-${row.id}`}
+                            label="Аргументация"
+                            value={drafts[row.id] ?? row.rationale ?? ""}
+                            disabled={row.locked}
+                            onChange={(value) =>
+                              setDrafts((d) => ({ ...d, [row.id]: value }))
+                            }
+                          />
+                          {row.locked ? null : (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => onSaveRationale(row)}
+                              className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+                            >
+                              Сохранить
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  </Fragment>
                 );
               })}
             </tbody>
           </table>
         </div>
       )}
-      {selected ? (
-        <div
-          id="page-ochb-controversial-comment"
-          className="w-full max-w-none rounded-xl border border-border bg-surface p-4"
-        >
-          <label
-            htmlFor="ochb-controversial-comment"
-            className="text-xs font-medium uppercase tracking-wider text-muted"
-          >
-            Аргументация
-            <span className="ml-2 font-normal normal-case tracking-normal">
-              вопрос {selected.questionNumber}
-            </span>
-          </label>
-          <textarea
-            id="ochb-controversial-comment"
-            aria-label="Аргументация"
-            rows={8}
-            disabled={selected.locked}
-            readOnly={selected.locked}
-            value={drafts[selected.id] ?? selected.rationale ?? ""}
-            onChange={(e) =>
-              setDrafts((d) => ({ ...d, [selected.id]: e.target.value }))
-            }
-            className={COMMENT_TEXTAREA_CLASS}
-          />
-          {selected.locked ? null : (
-            <button
-              type="button"
-              disabled={pendingId === selected.id}
-              onClick={() => onSaveRationale(selected)}
-              className="mt-2 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
-            >
-              Сохранить
-            </button>
-          )}
-        </div>
-      ) : null}
     </section>
     {leaders ? (
       <details
@@ -509,33 +491,34 @@ export function OchbControversialAdminTable({
         {graveyard.length === 0 ? (
           <p className="text-sm text-muted">Пусто.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[24rem] text-sm">
-              <thead>
-                <tr className="text-xs uppercase tracking-wider text-muted">
+          <div className="max-md:overflow-visible md:overflow-x-auto">
+            <table className="w-full text-sm max-md:block md:min-w-[24rem]">
+              <thead className="max-md:hidden">
+                <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
                   <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
                   <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
                   <th className="px-3 py-2.5 text-left font-medium">№ команды</th>
                   <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {graveyard.map((row) => {
+              <tbody id="page-ochb-controversial-graveyard-comments" className={TABLE_BODY}>
+                {graveyard.map((row, index) => {
                   const busy = pendingId === row.id;
                   const unlockable = canUnlock && row.locked;
                   return (
-                  <tr key={row.id}>
-                    <td className="px-3 py-2.5 font-mono tabular-nums">
+                  <Fragment key={row.id}>
+                  <tr className={DATA_ROW}>
+                    <td className={`${CELL} font-mono tabular-nums`}>
                       {row.questionNumber}
                     </td>
-                    <td className="px-3 py-2.5">{row.answerText}</td>
+                    <td className={`${CELL} break-words`}>{row.answerText}</td>
                     <td
-                      className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                      className={`${CELL} font-mono tabular-nums text-muted`}
                       title={row.teamNumber === 0 ? "Админы" : undefined}
                     >
                       {row.teamNumber ?? "—"}
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td className={`${CELL} max-md:shrink-0`}>
                       <div className="flex items-center gap-1">
                         <OchbControversialVerdictMark status={row.status} />
                         {unlockable ? (
@@ -571,32 +554,28 @@ export function OchbControversialAdminTable({
                       </div>
                     </td>
                   </tr>
+                  <tr className="max-md:block">
+                    <td
+                      colSpan={4}
+                      className={`px-3 pb-3 pt-1 max-md:block max-md:w-full ${
+                        index < graveyard.length - 1 ? "border-b border-border" : ""
+                      }`}
+                    >
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                        Аргументация
+                      </p>
+                      <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
+                        {row.rationale?.trim() ? row.rationale : "—"}
+                      </p>
+                    </td>
+                  </tr>
+                  </Fragment>
                   );
                 })}
               </tbody>
             </table>
           </div>
         )}
-        {graveyard.length > 0 ? (
-          <ul
-            id="page-ochb-controversial-graveyard-comments"
-            className="mt-3 space-y-3"
-          >
-            {graveyard.map((row) => (
-              <li key={row.id} className="w-full max-w-none">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Аргументация
-                  <span className="ml-2 font-normal normal-case tracking-normal">
-                    вопрос {row.questionNumber}
-                  </span>
-                </p>
-                <p className="mt-1.5 whitespace-pre-wrap text-sm">
-                  {row.rationale?.trim() ? row.rationale : "—"}
-                </p>
-              </li>
-            ))}
-          </ul>
-        ) : null}
       </div>
     </details>
     </>

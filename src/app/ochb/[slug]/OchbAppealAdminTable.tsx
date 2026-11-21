@@ -2,7 +2,8 @@
 
 import { Check, HelpCircle, Lock, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { FitTextarea } from "./FitTextarea";
 
 type AppealKind = "REMOVE" | "CREDIT";
 type AppealVerdict = "PENDING" | "ACCEPTED" | "REJECTED";
@@ -15,8 +16,13 @@ const KIND_LABELS: Record<AppealKind, string> = {
 const ADMIN_RATIONALE_REQUIRED =
   "Для принятия или отклонения апелляции заполните обоснование жюри";
 
-const COMMENT_TEXTAREA_CLASS =
-  "mt-2 min-h-40 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none [field-sizing:content] focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60";
+const TABLE_WRAP =
+  "max-md:overflow-visible rounded-xl border border-border bg-surface md:overflow-x-auto";
+const TABLE = "w-full text-sm max-md:block md:min-w-[32rem]";
+const TABLE_BODY = "max-md:block";
+const DATA_ROW =
+  "hover:bg-surface/50 max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-3 max-md:gap-y-2 max-md:px-3 max-md:py-2.5";
+const CELL = "px-3 py-2.5 max-md:block max-md:max-w-full max-md:min-w-0 max-md:p-0";
 
 export type AppealAdminRow = {
   id: string;
@@ -95,9 +101,6 @@ export function OchbAppealAdminTable({
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   const [graveyard, setGraveyard] = useState(initialGraveyard);
-  const [selectedId, setSelectedId] = useState<string | null>(
-    initialRows[0]?.id ?? null,
-  );
   const [showTeamNo, setShowTeamNo] = useState(false);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -106,14 +109,7 @@ export function OchbAppealAdminTable({
   useEffect(() => {
     setRows(initialRows);
     setGraveyard(initialGraveyard);
-    setSelectedId((prev) =>
-      prev && initialRows.some((r) => r.id === prev)
-        ? prev
-        : (initialRows[0]?.id ?? null),
-    );
   }, [initialRows, initialGraveyard]);
-
-  const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   async function patch(
     id: string,
@@ -261,7 +257,6 @@ export function OchbAppealAdminTable({
       };
       setGraveyard((prev) => prev.filter((r) => r.id !== row.id));
       setRows((prev) => [...prev.filter((r) => r.id !== row.id), returned]);
-      setSelectedId(row.id);
     } else {
       setRows((prev) =>
         prev.map((r) => (r.id === row.id ? { ...r, locked: false } : r)),
@@ -292,9 +287,6 @@ export function OchbAppealAdminTable({
             : row.adminRationale,
       },
     ]);
-    setSelectedId((prev) =>
-      prev === row.id ? (remaining[0]?.id ?? null) : prev,
-    );
     clearDraft(row.id);
     router.refresh();
   }
@@ -330,10 +322,9 @@ export function OchbAppealAdminTable({
       {rows.length === 0 ? (
         <p className="text-sm text-muted">Пока нет поданных апелляций.</p>
       ) : (
-        <div className="space-y-3">
-          <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-            <table className="w-full min-w-[32rem] text-sm">
-              <thead>
+        <div className={TABLE_WRAP}>
+            <table className={TABLE}>
+              <thead className="max-md:hidden">
                 <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
                   <th className="px-3 py-2.5 text-left font-medium">Вид</th>
                   <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
@@ -350,34 +341,28 @@ export function OchbAppealAdminTable({
                   ) : null}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {rows.map((row) => {
+              <tbody className={TABLE_BODY}>
+                {rows.map((row, index) => {
                   const busy = pendingId === row.id;
-                  const isSelected = row.id === selectedId;
                   const verdictDisabled = row.locked || busy;
                   const lockNeedsVerdict = !row.locked && row.status === "PENDING";
                   const unlockable = canUnlock && row.locked;
                   const lockDisabled = unlockable
                     ? busy
                     : row.locked || busy || lockNeedsVerdict;
+                  const columnCount =
+                    5 + (showTeamNo ? 1 : 0) + (canGraveyard ? 1 : 0);
                   return (
-                    <tr
-                      key={row.id}
-                      aria-selected={isSelected}
-                      onClick={() => setSelectedId(row.id)}
-                      onFocusCapture={() => setSelectedId(row.id)}
-                      className={`cursor-pointer ${
-                        isSelected ? "bg-accent/10" : "hover:bg-surface/50"
-                      }`}
-                    >
-                      <td className="whitespace-nowrap px-3 py-2.5">
+                    <Fragment key={row.id}>
+                    <tr className={DATA_ROW}>
+                      <td className={`${CELL} md:whitespace-nowrap`}>
                         {KIND_LABELS[row.kind]}
                       </td>
-                      <td className="px-3 py-2.5 font-mono tabular-nums">
+                      <td className={`${CELL} font-mono tabular-nums`}>
                         {row.questionNumber}
                       </td>
-                      <td className="px-3 py-2.5">{row.answerText}</td>
-                      <td className="px-3 py-2.5">
+                      <td className={`${CELL} break-words`}>{row.answerText}</td>
+                      <td className={`${CELL} max-md:shrink-0`}>
                         <div role="group" aria-label="Вердикт" className="flex gap-1">
                           {VERDICT_BUTTONS.map(
                             ({ value, label, Icon, activeClass }) => {
@@ -436,19 +421,19 @@ export function OchbAppealAdminTable({
                           </button>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-muted">
+                      <td className={`${CELL} text-muted md:whitespace-nowrap`}>
                         {row.decidedByName ?? ""}
                       </td>
                       {showTeamNo ? (
                         <td
-                          className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                          className={`${CELL} font-mono tabular-nums text-muted`}
                           title={row.teamNumber === 0 ? "Админы" : undefined}
                         >
                           {row.teamNumber ?? "—"}
                         </td>
                       ) : null}
                       {canGraveyard ? (
-                        <td className="px-3 py-2.5">
+                        <td className={`${CELL} max-md:shrink-0`}>
                           <button
                             type="button"
                             aria-label="На кладбище"
@@ -461,59 +446,49 @@ export function OchbAppealAdminTable({
                         </td>
                       ) : null}
                     </tr>
+                    <tr className="max-md:block">
+                      <td
+                        colSpan={columnCount}
+                        className={`space-y-3 px-3 pb-3 pt-1 max-md:block max-md:w-full ${
+                          index < rows.length - 1 ? "border-b border-border" : ""
+                        }`}
+                      >
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                            Аргументация
+                          </p>
+                          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
+                            {row.argumentation?.trim() ? row.argumentation : "—"}
+                          </p>
+                        </div>
+                        <div id={`page-ochb-appeals-comment-${row.id}`}>
+                          <FitTextarea
+                            id={`ochb-appeal-admin-rationale-${row.id}`}
+                            label="Обоснование жюри"
+                            value={drafts[row.id] ?? row.adminRationale ?? ""}
+                            disabled={row.locked}
+                            onChange={(value) =>
+                              setDrafts((d) => ({ ...d, [row.id]: value }))
+                            }
+                          />
+                          {row.locked ? null : (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => onSaveRationale(row)}
+                              className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+                            >
+                              Сохранить
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    </Fragment>
                   );
                 })}
               </tbody>
             </table>
-          </div>
-          {selected ? (
-            <div className="w-full max-w-none space-y-3">
-              <div className="w-full max-w-none rounded-xl border border-border bg-surface p-4">
-                <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Аргументация
-                  <span className="ml-2 font-normal normal-case tracking-normal">
-                    {KIND_LABELS[selected.kind]} · вопрос {selected.questionNumber}
-                  </span>
-                </h3>
-                <p className="mt-2 whitespace-pre-wrap text-sm">
-                  {selected.argumentation}
-                </p>
-              </div>
-              <div
-                id="page-ochb-appeals-comment"
-                className="w-full max-w-none rounded-xl border border-border bg-surface p-4"
-              >
-                <label
-                  htmlFor="ochb-appeal-admin-rationale"
-                  className="text-xs font-medium uppercase tracking-wider text-muted"
-                >
-                  Обоснование жюри
-                </label>
-                <textarea
-                  id="ochb-appeal-admin-rationale"
-                  aria-label="Обоснование жюри"
-                  rows={8}
-                  disabled={selected.locked}
-                  readOnly={selected.locked}
-                  value={drafts[selected.id] ?? selected.adminRationale ?? ""}
-                  onChange={(e) =>
-                    setDrafts((d) => ({ ...d, [selected.id]: e.target.value }))
-                  }
-                  className={COMMENT_TEXTAREA_CLASS}
-                />
-                {selected.locked ? null : (
-                  <button
-                    type="button"
-                    disabled={pendingId === selected.id}
-                    onClick={() => onSaveRationale(selected)}
-                    className="mt-2 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
-                  >
-                    Сохранить
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : null}
         </div>
       )}
     </section>
@@ -564,10 +539,10 @@ export function OchbAppealAdminTable({
         {graveyard.length === 0 ? (
           <p className="text-sm text-muted">Пусто.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[24rem] text-sm">
-              <thead>
-                <tr className="text-xs uppercase tracking-wider text-muted">
+          <div className="max-md:overflow-visible md:overflow-x-auto">
+            <table className="w-full text-sm max-md:block md:min-w-[24rem]">
+              <thead className="max-md:hidden">
+                <tr className="border-b border-border text-xs uppercase tracking-wider text-muted">
                   <th className="px-3 py-2.5 text-left font-medium">Вид</th>
                   <th className="px-3 py-2.5 text-left font-medium">Вопрос</th>
                   <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
@@ -580,25 +555,27 @@ export function OchbAppealAdminTable({
                   ) : null}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {graveyard.map((row) => {
+              <tbody id="page-ochb-appeals-graveyard-comments" className={TABLE_BODY}>
+                {graveyard.map((row, index) => {
                   const busy = pendingId === row.id;
+                  const columnCount = 5 + (canGraveyard ? 1 : 0);
                   return (
-                    <tr key={row.id}>
-                      <td className="whitespace-nowrap px-3 py-2.5">
+                    <Fragment key={row.id}>
+                    <tr className={DATA_ROW}>
+                      <td className={`${CELL} md:whitespace-nowrap`}>
                         {KIND_LABELS[row.kind]}
                       </td>
-                      <td className="px-3 py-2.5 font-mono tabular-nums">
+                      <td className={`${CELL} font-mono tabular-nums`}>
                         {row.questionNumber}
                       </td>
-                      <td className="px-3 py-2.5">{row.answerText}</td>
+                      <td className={`${CELL} break-words`}>{row.answerText}</td>
                       <td
-                        className="px-3 py-2.5 font-mono tabular-nums text-muted"
+                        className={`${CELL} font-mono tabular-nums text-muted`}
                         title={row.teamNumber === 0 ? "Админы" : undefined}
                       >
                         {row.teamNumber ?? "—"}
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td className={`${CELL} max-md:shrink-0`}>
                         <div className="flex items-center gap-1">
                           <OchbAppealVerdictMark status={row.status} />
                           {canUnlock && row.locked ? (
@@ -634,7 +611,7 @@ export function OchbAppealAdminTable({
                         </div>
                       </td>
                       {canGraveyard ? (
-                        <td className="px-3 py-2.5">
+                        <td className={`${CELL} max-md:shrink-0`}>
                           <button
                             type="button"
                             disabled={busy}
@@ -646,39 +623,38 @@ export function OchbAppealAdminTable({
                         </td>
                       ) : null}
                     </tr>
+                    <tr className="max-md:block">
+                      <td
+                        colSpan={columnCount}
+                        className={`space-y-2 px-3 pb-3 pt-1 max-md:block max-md:w-full ${
+                          index < graveyard.length - 1 ? "border-b border-border" : ""
+                        }`}
+                      >
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                            Аргументация
+                          </p>
+                          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
+                            {row.argumentation?.trim() ? row.argumentation : "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                            Обоснование жюри
+                          </p>
+                          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
+                            {row.adminRationale?.trim() ? row.adminRationale : "—"}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                    </Fragment>
                   );
                 })}
               </tbody>
             </table>
           </div>
         )}
-        {graveyard.length > 0 ? (
-          <ul id="page-ochb-appeals-graveyard-comments" className="mt-3 space-y-3">
-            {graveyard.map((row) => (
-              <li key={row.id} className="w-full max-w-none space-y-2">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                    Аргументация
-                    <span className="ml-2 font-normal normal-case tracking-normal">
-                      {KIND_LABELS[row.kind]} · вопрос {row.questionNumber}
-                    </span>
-                  </p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm">
-                    {row.argumentation?.trim() ? row.argumentation : "—"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                    Обоснование жюри
-                  </p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm">
-                    {row.adminRationale?.trim() ? row.adminRationale : "—"}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : null}
       </div>
     </details>
     </>

@@ -69,7 +69,7 @@ function MineList({
                   {item.answerText}
                 </p>
                 {item.rationale ? (
-                  <p className="mt-1 text-muted">{item.rationale}</p>
+                  <p className="mt-1 whitespace-pre-wrap text-muted">{item.rationale}</p>
                 ) : null}
               </div>
             </li>

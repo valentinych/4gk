@@ -13,6 +13,8 @@ import {
   OCHB_CONTROVERSIAL_UNLOCK_FORBIDDEN,
   isOchbControversialGraveyardMember,
   isValidQuestionNumber,
+  ochbControversialCommentUpdate,
+  ochbControversialUnlockUpdate,
   parseQuestionNumber,
   parseVerdict,
   ratingPlayerDisplayName,
@@ -246,11 +248,7 @@ export async function PATCH(req: Request) {
     }
     const row = await db.ochbControversial.update({
       where: { id: existing.id },
-      data: {
-        locked: false,
-        lockedAt: null,
-        lockedByChgkId: null,
-      },
+      data: ochbControversialUnlockUpdate(existing.trashed),
     });
     const decidedByName =
       row.decidedByChgkId != null
@@ -262,22 +260,31 @@ export async function PATCH(req: Request) {
       status: row.status,
       rationale: row.rationale,
       locked: false,
+      trashed: row.trashed,
       decidedByName,
     });
   }
   if (action === "trash") {
     const denied = await requireGraveyardMember(admin.role, user.chgkId);
     if (denied) return denied;
-  }
-
-  if (action === "trash") {
-    const row = existing.trashed
-      ? existing
-      : await db.ochbControversial.update({
-          where: { id: existing.id },
-          data: { trashed: true },
-        });
-    return NextResponse.json({ ok: true, id: row.id, trashed: true });
+    const comment = Object.prototype.hasOwnProperty.call(raw, "rationale")
+      ? typeof raw.rationale === "string"
+        ? raw.rationale.trim() || null
+        : null
+      : undefined;
+    const row = await db.ochbControversial.update({
+      where: { id: existing.id },
+      data: {
+        trashed: true,
+        ...ochbControversialCommentUpdate(existing.locked, comment),
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      id: row.id,
+      trashed: true,
+      rationale: row.rationale,
+    });
   }
 
   if (action === "lock") {
@@ -287,6 +294,11 @@ export async function PATCH(req: Request) {
         { status: 409 },
       );
     }
+    const comment = Object.prototype.hasOwnProperty.call(raw, "rationale")
+      ? typeof raw.rationale === "string"
+        ? raw.rationale.trim() || null
+        : null
+      : undefined;
     const row = existing.locked
       ? existing
       : await db.ochbControversial.update({
@@ -295,6 +307,7 @@ export async function PATCH(req: Request) {
             locked: true,
             lockedAt: new Date(),
             lockedByChgkId: user.chgkId,
+            ...ochbControversialCommentUpdate(false, comment),
           },
         });
     const decidedByName =

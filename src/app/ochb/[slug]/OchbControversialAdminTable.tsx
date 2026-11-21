@@ -17,6 +17,9 @@ export type ControversialAdminRow = {
   decidedByName: string | null;
 };
 
+const COMMENT_TEXTAREA_CLASS =
+  "mt-2 min-h-40 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none [field-sizing:content] focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60";
+
 const VERDICT_BUTTONS: {
   value: ControversialVerdict;
   label: string;
@@ -84,6 +87,9 @@ export function OchbControversialAdminTable({
   const router = useRouter();
   const [rows, setRows] = useState(initialRows);
   const [graveyard, setGraveyard] = useState(initialGraveyard);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialRows[0]?.id ?? null,
+  );
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +97,14 @@ export function OchbControversialAdminTable({
   useEffect(() => {
     setRows(initialRows);
     setGraveyard(initialGraveyard);
+    setSelectedId((prev) =>
+      prev && initialRows.some((r) => r.id === prev)
+        ? prev
+        : (initialRows[0]?.id ?? null),
+    );
   }, [initialRows, initialGraveyard]);
+
+  const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   async function patch(
     id: string,
@@ -125,9 +138,23 @@ export function OchbControversialAdminTable({
     }
   }
 
+  function draftRationale(row: ControversialAdminRow) {
+    return drafts[row.id] ?? row.rationale ?? "";
+  }
+
+  function clearDraft(id: string) {
+    setDrafts((d) => {
+      if (!(id in d)) return d;
+      const next = { ...d };
+      delete next[id];
+      return next;
+    });
+  }
+
   async function onVerdict(row: ControversialAdminRow, status: ControversialVerdict) {
     if (row.locked || row.status === status || pendingId) return;
-    const updated = await patch(row.id, { status });
+    const rationale = draftRationale(row);
+    const updated = await patch(row.id, { status, rationale });
     if (!updated) return;
     setRows((prev) =>
       prev.map((r) =>
@@ -135,16 +162,19 @@ export function OchbControversialAdminTable({
           ? {
               ...r,
               status: updated.status ?? r.status,
+              rationale:
+                updated.rationale !== undefined ? updated.rationale : r.rationale,
               decidedByName: updated.decidedByName ?? r.decidedByName,
             }
           : r,
       ),
     );
+    clearDraft(row.id);
   }
 
   async function onSaveRationale(row: ControversialAdminRow) {
     if (row.locked || pendingId) return;
-    const rationale = drafts[row.id] ?? row.rationale ?? "";
+    const rationale = draftRationale(row);
     const updated = await patch(row.id, { rationale });
     if (!updated) return;
     setRows((prev) =>
@@ -152,26 +182,34 @@ export function OchbControversialAdminTable({
         r.id === row.id
           ? {
               ...r,
-              rationale: updated.rationale ?? r.rationale,
+              rationale:
+                updated.rationale !== undefined ? updated.rationale : r.rationale,
               decidedByName: updated.decidedByName ?? r.decidedByName,
             }
           : r,
       ),
     );
-    setDrafts((d) => {
-      const next = { ...d };
-      delete next[row.id];
-      return next;
-    });
+    clearDraft(row.id);
   }
 
   async function onLock(row: ControversialAdminRow) {
     if (row.locked || pendingId || row.status === "PENDING") return;
-    const updated = await patch(row.id, { action: "lock" });
+    const rationale = draftRationale(row);
+    const updated = await patch(row.id, { action: "lock", rationale });
     if (!updated) return;
     setRows((prev) =>
-      prev.map((r) => (r.id === row.id ? { ...r, locked: true } : r)),
+      prev.map((r) =>
+        r.id === row.id
+          ? {
+              ...r,
+              locked: true,
+              rationale:
+                updated.rationale !== undefined ? updated.rationale : r.rationale,
+            }
+          : r,
+      ),
     );
+    clearDraft(row.id);
     router.refresh();
   }
 
@@ -182,26 +220,46 @@ export function OchbControversialAdminTable({
     if (!canUnlock || !row.locked || pendingId) return;
     const updated = await patch(row.id, { action: "unlock" });
     if (!updated) return;
-    const apply = (prev: ControversialAdminRow[]) =>
-      prev.map((r) => (r.id === row.id ? { ...r, locked: false } : r));
-    if (where === "graveyard") setGraveyard(apply);
-    else setRows(apply);
+    if (where === "graveyard") {
+      const returned: ControversialAdminRow = {
+        ...row,
+        locked: false,
+        status: updated.status ?? "PENDING",
+        rationale:
+          updated.rationale !== undefined ? updated.rationale : row.rationale,
+        decidedByName: null,
+      };
+      setGraveyard((prev) => prev.filter((r) => r.id !== row.id));
+      setRows((prev) => [...prev.filter((r) => r.id !== row.id), returned]);
+      setSelectedId(row.id);
+    } else {
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, locked: false } : r)),
+      );
+    }
     router.refresh();
   }
 
   async function onTrash(row: ControversialAdminRow) {
     if (pendingId) return;
     if (!window.confirm("На кладбище?")) return;
-    const updated = await patch(row.id, { action: "trash" });
+    const rationale = draftRationale(row);
+    const updated = await patch(row.id, { action: "trash", rationale });
     if (!updated) return;
-    setRows((prev) => prev.filter((r) => r.id !== row.id));
-    setGraveyard((prev) => [...prev, row]);
-    setDrafts((d) => {
-      if (!(row.id in d)) return d;
-      const next = { ...d };
-      delete next[row.id];
-      return next;
-    });
+    const remaining = rows.filter((r) => r.id !== row.id);
+    setRows(remaining);
+    setGraveyard((prev) => [
+      ...prev,
+      {
+        ...row,
+        rationale:
+          updated.rationale !== undefined ? updated.rationale : row.rationale,
+      },
+    ]);
+    setSelectedId((prev) =>
+      prev === row.id ? (remaining[0]?.id ?? null) : prev,
+    );
+    clearDraft(row.id);
     router.refresh();
   }
 
@@ -230,7 +288,6 @@ export function OchbControversialAdminTable({
                 <th className="px-3 py-2.5 text-left font-medium">Ответ</th>
                 <th className="px-3 py-2.5 text-left font-medium">Вердикт</th>
                 <th className="px-3 py-2.5 text-left font-medium">№ команды</th>
-                <th className="px-3 py-2.5 text-left font-medium">Аргументация</th>
                 <th className="px-3 py-2.5 text-left font-medium">Решение</th>
                 {canGraveyard ? (
                   <th className="px-3 py-2.5 text-left font-medium">
@@ -248,8 +305,16 @@ export function OchbControversialAdminTable({
                 const lockDisabled = unlockable
                   ? busy
                   : row.locked || busy || lockNeedsVerdict;
+                const isSelected = row.id === selectedId;
                 return (
-                  <tr key={row.id}>
+                  <tr
+                    key={row.id}
+                    aria-selected={isSelected}
+                    onClick={() => setSelectedId(row.id)}
+                    className={`cursor-pointer ${
+                      isSelected ? "bg-accent/10" : "hover:bg-surface/50"
+                    }`}
+                  >
                     <td className="px-3 py-2.5 font-mono tabular-nums">
                       {row.questionNumber}
                     </td>
@@ -317,29 +382,6 @@ export function OchbControversialAdminTable({
                     >
                       {row.teamNumber ?? "—"}
                     </td>
-                    <td className="min-w-[12rem] px-3 py-2.5">
-                      <textarea
-                        aria-label="Аргументация"
-                        rows={2}
-                        disabled={row.locked}
-                        readOnly={row.locked}
-                        value={drafts[row.id] ?? row.rationale ?? ""}
-                        onChange={(e) =>
-                          setDrafts((d) => ({ ...d, [row.id]: e.target.value }))
-                        }
-                        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60"
-                      />
-                      {row.locked ? null : (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => onSaveRationale(row)}
-                          className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
-                        >
-                          Сохранить
-                        </button>
-                      )}
-                    </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-muted">
                       {row.decidedByName ?? ""}
                     </td>
@@ -363,6 +405,44 @@ export function OchbControversialAdminTable({
           </table>
         </div>
       )}
+      {selected ? (
+        <div
+          id="page-ochb-controversial-comment"
+          className="w-full max-w-none rounded-xl border border-border bg-surface p-4"
+        >
+          <label
+            htmlFor="ochb-controversial-comment"
+            className="text-xs font-medium uppercase tracking-wider text-muted"
+          >
+            Аргументация
+            <span className="ml-2 font-normal normal-case tracking-normal">
+              вопрос {selected.questionNumber}
+            </span>
+          </label>
+          <textarea
+            id="ochb-controversial-comment"
+            aria-label="Аргументация"
+            rows={8}
+            disabled={selected.locked}
+            readOnly={selected.locked}
+            value={drafts[selected.id] ?? selected.rationale ?? ""}
+            onChange={(e) =>
+              setDrafts((d) => ({ ...d, [selected.id]: e.target.value }))
+            }
+            className={COMMENT_TEXTAREA_CLASS}
+          />
+          {selected.locked ? null : (
+            <button
+              type="button"
+              disabled={pendingId === selected.id}
+              onClick={() => onSaveRationale(selected)}
+              className="mt-2 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+            >
+              Сохранить
+            </button>
+          )}
+        </div>
+      ) : null}
     </section>
     {leaders ? (
       <details
@@ -497,6 +577,26 @@ export function OchbControversialAdminTable({
             </table>
           </div>
         )}
+        {graveyard.length > 0 ? (
+          <ul
+            id="page-ochb-controversial-graveyard-comments"
+            className="mt-3 space-y-3"
+          >
+            {graveyard.map((row) => (
+              <li key={row.id} className="w-full max-w-none">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                  Аргументация
+                  <span className="ml-2 font-normal normal-case tracking-normal">
+                    вопрос {row.questionNumber}
+                  </span>
+                </p>
+                <p className="mt-1.5 whitespace-pre-wrap text-sm">
+                  {row.rationale?.trim() ? row.rationale : "—"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </details>
     </>

@@ -194,6 +194,34 @@ function trimText(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+/**
+ * Pool unlock only clears the lock. Cemetery unlock returns the appeal to
+ * the unreviewed pool. Jury rationale is not in the patch, so it stays.
+ */
+export function ochbAppealUnlockUpdate(trashed: boolean): {
+  locked: false;
+  lockedAt: null;
+  lockedByChgkId: null;
+  trashed?: false;
+  status?: "PENDING";
+  decidedByChgkId?: null;
+  decidedAt?: null;
+} {
+  const cleared = {
+    locked: false as const,
+    lockedAt: null,
+    lockedByChgkId: null,
+  };
+  if (!trashed) return cleared;
+  return {
+    ...cleared,
+    trashed: false,
+    status: "PENDING",
+    decidedByChgkId: null,
+    decidedAt: null,
+  };
+}
+
 /** Submitter view: hide the real verdict until this row is locked. */
 export function serializeAppealMineVerdict(
   locked: boolean,

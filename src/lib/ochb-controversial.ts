@@ -213,6 +213,43 @@ function trimRationale(value: string | null | undefined): string | null {
   return t ? t : null;
 }
 
+/**
+ * Pool unlock only clears the lock. Cemetery unlock also leaves the cemetery
+ * and clears the verdict. Rationale is not in the patch, so the comment stays.
+ */
+export function ochbControversialUnlockUpdate(trashed: boolean): {
+  locked: false;
+  lockedAt: null;
+  lockedByChgkId: null;
+  trashed?: false;
+  status?: "PENDING";
+  decidedByChgkId?: null;
+  decidedAt?: null;
+} {
+  const cleared = {
+    locked: false as const,
+    lockedAt: null,
+    lockedByChgkId: null,
+  };
+  if (!trashed) return cleared;
+  return {
+    ...cleared,
+    trashed: false,
+    status: "PENDING",
+    decidedByChgkId: null,
+    decidedAt: null,
+  };
+}
+
+/** Absent means “do not touch the stored comment”. Locked rows keep theirs. */
+export function ochbControversialCommentUpdate(
+  locked: boolean,
+  rationale: string | null | undefined,
+): { rationale?: string | null } {
+  if (locked || rationale === undefined) return {};
+  return { rationale };
+}
+
 /** Submitter view: hide the real verdict until this row is locked. */
 export function serializeControversialMineVerdict(
   locked: boolean,

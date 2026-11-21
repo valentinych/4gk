@@ -15,6 +15,9 @@ const KIND_LABELS: Record<AppealKind, string> = {
 const ADMIN_RATIONALE_REQUIRED =
   "Для принятия или отклонения апелляции заполните обоснование жюри";
 
+const COMMENT_TEXTAREA_CLASS =
+  "mt-2 min-h-40 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none [field-sizing:content] focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60";
+
 export type AppealAdminRow = {
   id: string;
   kind: AppealKind;
@@ -160,7 +163,10 @@ export function OchbAppealAdminTable({
           ? {
               ...r,
               status: updated.status ?? r.status,
-              adminRationale: updated.adminRationale ?? r.adminRationale,
+              adminRationale:
+                updated.adminRationale !== undefined
+                  ? updated.adminRationale
+                  : r.adminRationale,
               decidedByName: updated.decidedByName ?? r.decidedByName,
             }
           : r,
@@ -182,7 +188,10 @@ export function OchbAppealAdminTable({
         r.id === row.id
           ? {
               ...r,
-              adminRationale: updated.adminRationale ?? r.adminRationale,
+              adminRationale:
+                updated.adminRationale !== undefined
+                  ? updated.adminRationale
+                  : r.adminRationale,
               decidedByName: updated.decidedByName ?? r.decidedByName,
             }
           : r,
@@ -195,13 +204,43 @@ export function OchbAppealAdminTable({
     });
   }
 
+  function draftRationale(row: AppealAdminRow) {
+    return drafts[row.id] ?? row.adminRationale ?? "";
+  }
+
+  function clearDraft(id: string) {
+    setDrafts((d) => {
+      if (!(id in d)) return d;
+      const next = { ...d };
+      delete next[id];
+      return next;
+    });
+  }
+
   async function onLock(row: AppealAdminRow) {
     if (row.locked || pendingId || row.status === "PENDING") return;
-    const updated = await patch(row.id, { action: "lock" });
+    const adminRationale = draftRationale(row);
+    if (needsJuryRationale(row.status) && !adminRationale.trim()) {
+      setError(ADMIN_RATIONALE_REQUIRED);
+      return;
+    }
+    const updated = await patch(row.id, { action: "lock", adminRationale });
     if (!updated) return;
     setRows((prev) =>
-      prev.map((r) => (r.id === row.id ? { ...r, locked: true } : r)),
+      prev.map((r) =>
+        r.id === row.id
+          ? {
+              ...r,
+              locked: true,
+              adminRationale:
+                updated.adminRationale !== undefined
+                  ? updated.adminRationale
+                  : r.adminRationale,
+            }
+          : r,
+      ),
     );
+    clearDraft(row.id);
     router.refresh();
   }
 
@@ -209,30 +248,54 @@ export function OchbAppealAdminTable({
     if (!canUnlock || !row.locked || pendingId) return;
     const updated = await patch(row.id, { action: "unlock" });
     if (!updated) return;
-    const apply = (prev: AppealAdminRow[]) =>
-      prev.map((r) => (r.id === row.id ? { ...r, locked: false } : r));
-    if (where === "graveyard") setGraveyard(apply);
-    else setRows(apply);
+    if (where === "graveyard") {
+      const returned: AppealAdminRow = {
+        ...row,
+        locked: false,
+        status: updated.status ?? "PENDING",
+        adminRationale:
+          updated.adminRationale !== undefined
+            ? updated.adminRationale
+            : row.adminRationale,
+        decidedByName: null,
+      };
+      setGraveyard((prev) => prev.filter((r) => r.id !== row.id));
+      setRows((prev) => [...prev.filter((r) => r.id !== row.id), returned]);
+      setSelectedId(row.id);
+    } else {
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, locked: false } : r)),
+      );
+    }
     router.refresh();
   }
 
   async function onTrash(row: AppealAdminRow) {
     if (pendingId) return;
     if (!window.confirm("На кладбище?")) return;
-    const updated = await patch(row.id, { action: "trash" });
+    const adminRationale = draftRationale(row);
+    if (needsJuryRationale(row.status) && !adminRationale.trim()) {
+      setError(ADMIN_RATIONALE_REQUIRED);
+      return;
+    }
+    const updated = await patch(row.id, { action: "trash", adminRationale });
     if (!updated) return;
     const remaining = rows.filter((r) => r.id !== row.id);
     setRows(remaining);
-    setGraveyard((prev) => [...prev, row]);
+    setGraveyard((prev) => [
+      ...prev,
+      {
+        ...row,
+        adminRationale:
+          updated.adminRationale !== undefined
+            ? updated.adminRationale
+            : row.adminRationale,
+      },
+    ]);
     setSelectedId((prev) =>
       prev === row.id ? (remaining[0]?.id ?? null) : prev,
     );
-    setDrafts((d) => {
-      if (!(row.id in d)) return d;
-      const next = { ...d };
-      delete next[row.id];
-      return next;
-    });
+    clearDraft(row.id);
     router.refresh();
   }
 
@@ -404,8 +467,8 @@ export function OchbAppealAdminTable({
             </table>
           </div>
           {selected ? (
-            <div className="space-y-3">
-              <div className="w-full rounded-xl border border-border bg-surface p-4">
+            <div className="w-full max-w-none space-y-3">
+              <div className="w-full max-w-none rounded-xl border border-border bg-surface p-4">
                 <h3 className="text-xs font-medium uppercase tracking-wider text-muted">
                   Аргументация
                   <span className="ml-2 font-normal normal-case tracking-normal">
@@ -416,7 +479,10 @@ export function OchbAppealAdminTable({
                   {selected.argumentation}
                 </p>
               </div>
-              <div className="w-full rounded-xl border border-border bg-surface p-4">
+              <div
+                id="page-ochb-appeals-comment"
+                className="w-full max-w-none rounded-xl border border-border bg-surface p-4"
+              >
                 <label
                   htmlFor="ochb-appeal-admin-rationale"
                   className="text-xs font-medium uppercase tracking-wider text-muted"
@@ -426,14 +492,14 @@ export function OchbAppealAdminTable({
                 <textarea
                   id="ochb-appeal-admin-rationale"
                   aria-label="Обоснование жюри"
-                  rows={6}
+                  rows={8}
                   disabled={selected.locked}
                   readOnly={selected.locked}
                   value={drafts[selected.id] ?? selected.adminRationale ?? ""}
                   onChange={(e) =>
                     setDrafts((d) => ({ ...d, [selected.id]: e.target.value }))
                   }
-                  className="mt-2 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-60"
+                  className={COMMENT_TEXTAREA_CLASS}
                 />
                 {selected.locked ? null : (
                   <button
@@ -586,6 +652,33 @@ export function OchbAppealAdminTable({
             </table>
           </div>
         )}
+        {graveyard.length > 0 ? (
+          <ul id="page-ochb-appeals-graveyard-comments" className="mt-3 space-y-3">
+            {graveyard.map((row) => (
+              <li key={row.id} className="w-full max-w-none space-y-2">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Аргументация
+                    <span className="ml-2 font-normal normal-case tracking-normal">
+                      {KIND_LABELS[row.kind]} · вопрос {row.questionNumber}
+                    </span>
+                  </p>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm">
+                    {row.argumentation?.trim() ? row.argumentation : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                    Обоснование жюри
+                  </p>
+                  <p className="mt-1.5 whitespace-pre-wrap text-sm">
+                    {row.adminRationale?.trim() ? row.adminRationale : "—"}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </details>
     </>

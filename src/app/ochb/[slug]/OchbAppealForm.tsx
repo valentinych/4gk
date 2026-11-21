@@ -72,7 +72,7 @@ export function OchbAppealForm() {
     <form
       id="page-ochb-appeals-form"
       onSubmit={onSubmit}
-      className="max-w-md space-y-4"
+      className="w-full max-w-none space-y-4"
     >
       <div>
         <label htmlFor="ochb-appeal-kind" className="block text-sm font-medium">
@@ -136,10 +136,10 @@ export function OchbAppealForm() {
           id="ochb-appeal-argumentation"
           name="argumentation"
           required
-          rows={5}
+          rows={8}
           value={argumentation}
           onChange={(e) => setArgumentation(e.target.value)}
-          className="mt-1.5 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent focus:ring-1 focus:ring-accent/30"
+          className="mt-1.5 min-h-40 w-full resize-y rounded-lg border border-border bg-surface px-3 py-2 text-sm outline-none [field-sizing:content] focus:border-accent focus:ring-1 focus:ring-accent/30"
         />
       </div>
       <button

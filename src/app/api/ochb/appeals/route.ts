@@ -15,6 +15,7 @@ import {
   isOchbAppealGraveyardMember,
   isOchbAppealPageAdmin,
   isValidQuestionNumber,
+  ochbAppealUnlockUpdate,
   parseAppealKind,
   parseAppealVerdict,
   parseQuestionNumber,
@@ -202,18 +203,14 @@ export async function PATCH(req: Request) {
     }
     const existing = await db.ochbAppeal.findFirst({
       where: { id, eventId: OCHB_EVENT_ID },
-      select: { id: true },
+      select: { id: true, trashed: true },
     });
     if (!existing) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
     const row = await db.ochbAppeal.update({
       where: { id: existing.id },
-      data: {
-        locked: false,
-        lockedAt: null,
-        lockedByChgkId: null,
-      },
+      data: ochbAppealUnlockUpdate(existing.trashed),
     });
     const decidedByName =
       row.decidedByChgkId != null
@@ -225,6 +222,7 @@ export async function PATCH(req: Request) {
       status: row.status,
       adminRationale: row.adminRationale,
       locked: false,
+      trashed: row.trashed,
       decidedByName,
     });
   }
@@ -257,13 +255,39 @@ export async function PATCH(req: Request) {
   }
 
   if (action === "trash") {
-    const row = existing.trashed
-      ? existing
-      : await db.ochbAppeal.update({
-          where: { id: existing.id },
-          data: { trashed: true },
-        });
-    return NextResponse.json({ ok: true, id: row.id, trashed: true });
+    const comment = Object.prototype.hasOwnProperty.call(raw, "adminRationale")
+      ? typeof raw.adminRationale === "string"
+        ? raw.adminRationale.trim() || null
+        : null
+      : undefined;
+    const nextRationale =
+      comment !== undefined ? comment : existing.adminRationale;
+    if (
+      !existing.locked &&
+      comment !== undefined &&
+      requiresAdminRationale(existing.status) &&
+      !nextRationale?.trim()
+    ) {
+      return NextResponse.json(
+        { error: OCHB_APPEAL_ADMIN_RATIONALE_REQUIRED },
+        { status: 400 },
+      );
+    }
+    const row = await db.ochbAppeal.update({
+      where: { id: existing.id },
+      data: {
+        trashed: true,
+        ...(!existing.locked && comment !== undefined
+          ? { adminRationale: comment }
+          : {}),
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      id: row.id,
+      trashed: true,
+      adminRationale: row.adminRationale,
+    });
   }
 
   if (action === "lock") {
@@ -271,6 +295,23 @@ export async function PATCH(req: Request) {
       return NextResponse.json(
         { error: OCHB_APPEAL_LOCK_PENDING },
         { status: 409 },
+      );
+    }
+    const comment = Object.prototype.hasOwnProperty.call(raw, "adminRationale")
+      ? typeof raw.adminRationale === "string"
+        ? raw.adminRationale.trim() || null
+        : null
+      : undefined;
+    const nextRationale =
+      comment !== undefined ? comment : existing.adminRationale;
+    if (
+      !existing.locked &&
+      requiresAdminRationale(existing.status) &&
+      !nextRationale?.trim()
+    ) {
+      return NextResponse.json(
+        { error: OCHB_APPEAL_ADMIN_RATIONALE_REQUIRED },
+        { status: 400 },
       );
     }
     const row = existing.locked
@@ -281,6 +322,7 @@ export async function PATCH(req: Request) {
             locked: true,
             lockedAt: new Date(),
             lockedByChgkId: user.chgkId,
+            ...(comment !== undefined ? { adminRationale: comment } : {}),
           },
         });
     const decidedByName =

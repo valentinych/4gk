@@ -80,20 +80,27 @@ function MineList({
                   ) : null}
                 </p>
               </div>
-              <div className="w-full">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                  Аргументация
-                </p>
-                <p className="mt-1.5 whitespace-pre-wrap">{item.argumentation}</p>
-              </div>
-              {item.adminRationale ? (
-                <div className="w-full">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                    Обоснование жюри
-                  </p>
-                  <p className="mt-1.5 whitespace-pre-wrap">{item.adminRationale}</p>
+              <details className="w-full">
+                <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted">
+                  Аргументация и обоснование
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                      Аргументация
+                    </p>
+                    <p className="mt-1.5 whitespace-pre-wrap">{item.argumentation}</p>
+                  </div>
+                  {item.adminRationale ? (
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                        Обоснование жюри
+                      </p>
+                      <p className="mt-1.5 whitespace-pre-wrap">{item.adminRationale}</p>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
+              </details>
             </li>
           ))}
         </ul>

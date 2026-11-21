@@ -453,35 +453,42 @@ export function OchbAppealAdminTable({
                           index < rows.length - 1 ? "border-b border-border" : ""
                         }`}
                       >
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                            Аргументация
-                          </p>
-                          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
-                            {row.argumentation?.trim() ? row.argumentation : "—"}
-                          </p>
-                        </div>
-                        <div id={`page-ochb-appeals-comment-${row.id}`}>
-                          <FitTextarea
-                            id={`ochb-appeal-admin-rationale-${row.id}`}
-                            label="Обоснование жюри"
-                            value={drafts[row.id] ?? row.adminRationale ?? ""}
-                            disabled={row.locked}
-                            onChange={(value) =>
-                              setDrafts((d) => ({ ...d, [row.id]: value }))
-                            }
-                          />
-                          {row.locked ? null : (
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => onSaveRationale(row)}
-                              className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
-                            >
-                              Сохранить
-                            </button>
-                          )}
-                        </div>
+                        <details>
+                          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted">
+                            Аргументация и обоснование
+                          </summary>
+                          <div className="mt-3 space-y-3">
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                                Аргументация
+                              </p>
+                              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
+                                {row.argumentation?.trim() ? row.argumentation : "—"}
+                              </p>
+                            </div>
+                            <div id={`page-ochb-appeals-comment-${row.id}`}>
+                              <FitTextarea
+                                id={`ochb-appeal-admin-rationale-${row.id}`}
+                                label="Обоснование жюри"
+                                value={drafts[row.id] ?? row.adminRationale ?? ""}
+                                disabled={row.locked}
+                                onChange={(value) =>
+                                  setDrafts((d) => ({ ...d, [row.id]: value }))
+                                }
+                              />
+                              {row.locked ? null : (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => onSaveRationale(row)}
+                                  className="mt-1.5 inline-flex items-center justify-center rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+                                >
+                                  Сохранить
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </details>
                       </td>
                     </tr>
                     </Fragment>
@@ -630,22 +637,29 @@ export function OchbAppealAdminTable({
                           index < graveyard.length - 1 ? "border-b border-border" : ""
                         }`}
                       >
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                            Аргументация
-                          </p>
-                          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
-                            {row.argumentation?.trim() ? row.argumentation : "—"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wider text-muted">
-                            Обоснование жюри
-                          </p>
-                          <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
-                            {row.adminRationale?.trim() ? row.adminRationale : "—"}
-                          </p>
-                        </div>
+                        <details>
+                          <summary className="cursor-pointer text-xs font-medium uppercase tracking-wider text-muted">
+                            Аргументация и обоснование
+                          </summary>
+                          <div className="mt-2 space-y-2">
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                                Аргументация
+                              </p>
+                              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
+                                {row.argumentation?.trim() ? row.argumentation : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium uppercase tracking-wider text-muted">
+                                Обоснование жюри
+                              </p>
+                              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-5">
+                                {row.adminRationale?.trim() ? row.adminRationale : "—"}
+                              </p>
+                            </div>
+                          </div>
+                        </details>
                       </td>
                     </tr>
                     </Fragment>

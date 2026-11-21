@@ -22,6 +22,7 @@ export function FitTextarea({
     if (!el) return;
 
     const fit = () => {
+      if (el.getClientRects().length === 0) return;
       el.style.height = "auto";
       el.style.height = `${el.scrollHeight}px`;
       if (el.scrollHeight > el.clientHeight) {
@@ -38,7 +39,15 @@ export function FitTextarea({
       fit();
     });
     observer.observe(box);
-    return () => observer.disconnect();
+    const details = el.closest("details");
+    const onToggle = () => {
+      if (details?.open) fit();
+    };
+    details?.addEventListener("toggle", onToggle);
+    return () => {
+      observer.disconnect();
+      details?.removeEventListener("toggle", onToggle);
+    };
   }, [value]);
 
   return (

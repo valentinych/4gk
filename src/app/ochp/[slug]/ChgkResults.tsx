@@ -237,7 +237,7 @@ export default function ChgkResults({
                           {team.name}
                         </span>
                         {amateur ? <OchbAmateurBadge /> : null}
-                        {team.group === 0 && (
+                        {team.group === 0 && !amateur && (
                           <span
                             className="inline-block w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-border overflow-hidden shrink-0 mt-0.5"
                             title="Зачёт ЧСт"
